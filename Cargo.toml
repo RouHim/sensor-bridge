@@ -1,0 +1,10 @@
+[package]
+name = "aida64-sensor-bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wmi = "0.11.4"
+serde = "1.0.152"
+serde_json = "1.0.91"
+serialport = "4.2.0"
