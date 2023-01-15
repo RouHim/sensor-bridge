@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 mod aida_wmi;
 mod serial_port;
+mod i2c_display;
 
 #[derive(Serialize, Deserialize)]
 pub struct SensorValue {
