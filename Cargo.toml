@@ -1,5 +1,5 @@
 [package]
-name = "aida64-sensor-bridge"
+name = "sensor-bridge"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,8 +11,3 @@ serde_json = "1.0.91"
 
 # Write to serial port
 serialport = "4.2.0"
-
-# Write to i2c display
-ssd1306 = "0.7.1"
-linux-embedded-hal = { version = "0.3", features = ["gpio_cdev"] }
-embedded-graphics = "0.7.1"

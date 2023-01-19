@@ -1,5 +1,5 @@
 
-use std::io::prelude::*;
+
 
 use std::time::Duration;
 
@@ -15,8 +15,4 @@ pub fn open(port_name: &str, baud_rate: u32) -> Box<dyn SerialPort> {
 /// List all available serial ports.
 pub fn list_ports() -> Vec<SerialPortInfo> {
     available_ports().expect("No ports found!")
-}
-
-pub fn send_data_to_serial_port(port_handle: &mut Box<dyn SerialPort>, data: &str) {
-    port_handle.write(data.as_bytes()).expect("Failed to write to port");
 }
