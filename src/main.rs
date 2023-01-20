@@ -2,6 +2,7 @@
 #![allow(non_snake_case)]
 
 use std::fmt;
+use std::io::Write;
 
 use serde::{Deserialize, Serialize};
 
@@ -9,14 +10,14 @@ mod aida_wmi;
 mod serial_port;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SensorValue {
+pub struct Aida64Sensor {
     id: String,
     value: String,
     label: String,
     stype: String,
 }
 
-impl fmt::Display for SensorValue {
+impl fmt::Display for Aida64Sensor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "id: {}, value: {}, label: {} type: {}", self.id, self.value, self.label, self.stype)
     }
@@ -24,11 +25,11 @@ impl fmt::Display for SensorValue {
 
 fn main() {
     let wmi_con = aida_wmi::open_namespace();
-    let values = aida_wmi::collect_sensor_values(&wmi_con);
+    let sensors = aida_wmi::collect_sensors(&wmi_con);
 
     println!("Available sensors:");
-    for value in &values {
-        println!("  {}", value);
+    for sensor in &sensors {
+        println!("  {}", sensor);
     }
 
     let ports = serial_port::list_ports();
@@ -38,17 +39,21 @@ fn main() {
     }
 
     loop {
-        for port in &ports {
-            let mut handle = serial_port::open(&port.port_name, 9600);
-            for value in aida_wmi::collect_sensor_values(&wmi_con) {
-                let sensor_value = format!("{}: {}", value.label, value.value);
-                println!("{} --> {}", sensor_value, port.port_name);
-                let _ = handle.write(sensor_value.as_bytes()).expect("Failed to write to port");
-            }
-        };
+
+        let mut port_handle = serial_port::open("COM3", 115200);
+        let _ = port_handle.write(b"Test").unwrap();
+
+        // for port in &ports {
+        //     let mut handle = serial_port::open(&port.port_name, 115200);
+        //     for sensor in aida_wmi::collect_sensors(&wmi_con) {
+        //         if sensor.id == "TCPUPKG" {
+        //             let _ = handle.write(sensor.value.as_bytes()).expect("Failed to write to port");
+        //         };
+        //     }
+        // };
 
         // Sleep for 1 second
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_millis(500));
     }
 }
 
