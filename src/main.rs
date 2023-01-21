@@ -37,11 +37,21 @@ fn main() {
     for port in &ports {
         println!("  {}", port.port_name);
     }
+    let mut port_handle = serial_port::open("COM3", 115200);
 
     loop {
 
-        let mut port_handle = serial_port::open("COM3", 115200);
-        let _ = port_handle.write(b"Test").unwrap();
+        // Random number between 0 and 100
+        let rnd = rand::random::<u32>() % 100;
+
+        // Write to serial port
+        let _ = port_handle
+            .write(
+                [format!("{}", rnd).as_bytes(), &[0xF7], "C;".as_bytes()]
+                    .concat()
+                    .as_slice(),
+            )
+            .unwrap();
 
         // for port in &ports {
         //     let mut handle = serial_port::open(&port.port_name, 115200);
@@ -53,7 +63,7 @@ fn main() {
         // };
 
         // Sleep for 1 second
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
 
