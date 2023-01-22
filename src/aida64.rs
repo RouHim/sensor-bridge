@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 
 use wmi::{COMLibrary, Variant, WMIConnection};
+use std::fmt;
+use serde::{Deserialize, Serialize};
 
-use crate::Aida64Sensor;
-
-pub fn open_namespace() -> WMIConnection {
+pub fn connect() -> WMIConnection {
     let com_con = COMLibrary::new().unwrap();
-    
     WMIConnection::with_namespace_path("Root\\WMI", com_con).unwrap()
 }
 
-pub fn collect_sensors(connection: &WMIConnection) -> Vec<Aida64Sensor> {
+pub fn read_sensors(connection: &WMIConnection) -> Vec<Aida64Sensor> {
     let raw_sensor_values: Vec<HashMap<String, Variant>> = connection.raw_query("SELECT * FROM AIDA64_SensorValues").unwrap();
     raw_sensor_values.iter().map(to_sensor_entry).collect()
 }
@@ -39,5 +38,19 @@ fn to_sensor_entry(entry: &HashMap<String, Variant>) -> Aida64Sensor {
         value: sensor_value,
         label: senor_label,
         stype: senor_type,
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Aida64Sensor {
+    id: String,
+    value: String,
+    label: String,
+    stype: String,
+}
+
+impl fmt::Display for Aida64Sensor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "id: {}, value: {}, label: {} type: {}", self.id, self.value, self.label, self.stype)
     }
 }
