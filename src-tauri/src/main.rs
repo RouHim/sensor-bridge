@@ -42,6 +42,22 @@ fn delete_output_address(com_port: String, address: String) {
     config::write_port_config(&port_config);
 }
 
+/// Returns the address config for the specified address and port.
+#[tauri::command]
+fn load_address_config(com_port: String, output_address: String) -> String {
+    let port_config: ComPortConfig = config::load_port_config(com_port);
+    port_config.output_config.get(&output_address).unwrap().data_config.clone()
+}
+
+/// Saves the address config for the specified address and port.
+/// If the address config does not exist, it will be created.
+#[tauri::command]
+fn save_address_config(com_port: String, output_address: String, data_config: String) {
+    let mut port_config: ComPortConfig = config::load_port_config(com_port);
+    port_config.output_config.get_mut(&output_address).unwrap().data_config = data_config;
+    config::write_port_config(&port_config);
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -50,6 +66,8 @@ fn main() {
             load_port_config,
             add_output_address,
             delete_output_address,
+            load_address_config,
+            save_address_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
