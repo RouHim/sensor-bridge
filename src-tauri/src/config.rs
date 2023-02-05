@@ -20,9 +20,9 @@ pub struct ComPortConfig {
 }
 
 impl ComPortConfig {
-    fn default(com_port: String) -> ComPortConfig {
+    fn default(com_port: &str) -> ComPortConfig {
         ComPortConfig {
-            com_port,
+            com_port: com_port.to_string(),
             active: false,
             baud_rate: 115200,
             push_rate: 100,
@@ -61,9 +61,9 @@ pub struct OutputConfig {
 /// If the file does not exist, it will be created.
 /// Returns the config for the specified com port.
 /// If no config for the specified com port exists, None is returned.
-pub fn load_port_config(com_port: String) -> ComPortConfig {
+pub fn load_port_config(com_port: &str) -> ComPortConfig {
     let config: AppConfig = load_config();
-    let maybe_config = config.com_port_config.get(&com_port);
+    let maybe_config = config.com_port_config.get(com_port);
 
     if maybe_config.is_none() {
         // Create port config

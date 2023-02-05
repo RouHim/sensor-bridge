@@ -94,10 +94,11 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
 
     document.getElementById("kill-switch-input").addEventListener("change", function () {
+        // TODO: this does not work correctly, state is always false
         if (this.checked) {
-            enableArduinoSync();
+            enableSync();
         } else {
-            disableArduinoSync();
+            disableSync();
         }
     });
 
@@ -217,10 +218,12 @@ function loadSensorValues() {
     );
 }
 
-function enableArduinoSync() {
-
+// Enables the sync for the selected com port
+function enableSync() {
+    invoke('enable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
 }
 
-function disableArduinoSync() {
-
+// Disables the sync for the selected com port
+function disableSync() {
+    invoke('disable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
 }
