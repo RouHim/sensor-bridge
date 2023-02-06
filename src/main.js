@@ -72,8 +72,8 @@ function saveAddressConfig() {
 function onAddressConfigChanged() {
     let outputFormat = document.getElementById("txtOutputFormat").value;
 
-    // Replace all sensor ids in the curly brackets with the sensor title
-    let previewText = outputFormat.replace(/{([^}]+)}/g, function (match, sensorId) {
+    // Replace all sensor ids in the [ ] brackets with the sensor title
+    let previewText = outputFormat.replace(/\[([^\]]+)\]/g, function (match, sensorId) {
         return document.getElementById(sensorId).title;
     });
 
@@ -176,8 +176,8 @@ function appendSensorToAddressConfig(sensorId) {
     let textBefore = outputFormat.value.substring(0, cursorPosition);
     let textAfter = outputFormat.value.substring(cursorPosition, outputFormat.value.length);
 
-    // Wrap sensor id with curly brackets
-    sensorId = "{" + sensorId + "}";
+    // Wrap sensor id with brackets
+    sensorId = "[" + sensorId + "]";
 
     outputFormat.value = textBefore + sensorId + textAfter;
 }
