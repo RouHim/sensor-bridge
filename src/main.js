@@ -86,21 +86,14 @@ function onAddressConfigChanged() {
 
 window.addEventListener("DOMContentLoaded", () => {
     lstComPorts = document.querySelector("#lstComPorts");
-    document.querySelector("#btnRefreshComPorts").addEventListener("click", () => loadComPorts());
-    document.querySelector("#btnRefreshSensorValues").addEventListener("click", () => loadSensorValues());
-    document.querySelector("#btnAddOutputAddress").addEventListener("click", () => addOutputAddress());
-    document.querySelector("#btnDeleteOutputAddress").addEventListener("click", () => deleteOutputAddress());
+    document.querySelector("#btnRefreshComPorts").addEventListener("click", loadComPorts);
+    document.querySelector("#btnRefreshSensorValues").addEventListener("click", loadSensorValues);
+    document.querySelector("#btnAddOutputAddress").addEventListener("click", addOutputAddress);
+    document.querySelector("#btnDeleteOutputAddress").addEventListener("click", deleteOutputAddress);
 
     document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
 
-    document.getElementById("kill-switch-input").addEventListener("change", function () {
-        // TODO: this does not work correctly, state is always false
-        if (this.checked) {
-            enableSync();
-        } else {
-            disableSync();
-        }
-    });
+    document.getElementById("chkTransferActive").addEventListener("click", () => toggleSync(this.checked));
 
 
     loadComPorts();
@@ -218,12 +211,11 @@ function loadSensorValues() {
     );
 }
 
-// Enables the sync for the selected com port
-function enableSync() {
-    invoke('enable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
-}
-
-// Disables the sync for the selected com port
-function disableSync() {
-    invoke('disable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
+// Toggles the sync for the selected com port
+function toggleSync(checked) {
+    if (checked) {
+        invoke('enable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
+    } else {
+        invoke('disable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
+    }
 }
