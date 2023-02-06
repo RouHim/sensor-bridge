@@ -93,8 +93,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
 
-    document.getElementById("chkTransferActive").addEventListener("click", () => toggleSync(this.checked));
-
+    document.getElementById("chkTransferActive").addEventListener("click",
+        () => toggleSync(document.getElementById("chkTransferActive").checked)
+    );
 
     loadComPorts();
 });
@@ -214,8 +215,10 @@ function loadSensorValues() {
 // Toggles the sync for the selected com port
 function toggleSync(checked) {
     if (checked) {
+        console.log("enable sync");
         invoke('enable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
     } else {
+        console.log("disable sync");
         invoke('disable_sync', {comPort: document.getElementById("lblHeaderComName").innerText});
     }
 }

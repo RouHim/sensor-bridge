@@ -95,6 +95,11 @@ fn enable_sync(app_state: State<AppState>, com_port: String) {
 }
 
 fn stop_comport_sync_thread(com_port: &str, port_handle: MutexGuard<HashMap<String, ThreadHandle>>) {
+    // If the port handle is not in the map, return
+    if !port_handle.contains_key(com_port) {
+        return;
+    }
+
     let port_thread_handle = port_handle.get(com_port).unwrap();
     *port_thread_handle.running.lock().unwrap() = false;
     port_thread_handle.handle.thread().unpark();
