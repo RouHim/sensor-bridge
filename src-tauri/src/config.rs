@@ -6,7 +6,6 @@ use serde::Serialize;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
-    // com port config hashmap
     pub com_port_config: HashMap<String, ComPortConfig>,
 }
 
@@ -25,7 +24,7 @@ impl ComPortConfig {
             com_port: com_port.to_string(),
             active: false,
             baud_rate: 115200,
-            push_rate: 100,
+            push_rate: 250,
             output_config: OutputConfig::default_singleton("0x3C"),
         }
     }

@@ -66,8 +66,10 @@ fn load_address_config(com_port: String, output_address: String) -> String {
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-fn save_address_config(com_port: String, output_address: String, data_config: String) {
+fn save_config(com_port: String, output_address: String, data_config: String, baud_rate: String, push_rate: String) {
     let mut port_config: ComPortConfig = config::load_port_config(&com_port);
+    port_config.baud_rate = baud_rate.parse().unwrap();
+    port_config.push_rate = push_rate.parse().unwrap();
     port_config.output_config.get_mut(&output_address).unwrap().data_config = data_config;
     config::write_port_config(&port_config);
 }
@@ -134,7 +136,7 @@ fn main() {
             add_output_address,
             delete_output_address,
             load_address_config,
-            save_address_config,
+            save_config,
             enable_sync,
             disable_sync,
         ])

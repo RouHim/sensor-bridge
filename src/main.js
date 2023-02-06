@@ -50,7 +50,7 @@ function deleteOutputAddress() {
     );
 }
 
-function saveAddressConfig() {
+function saveConfig() {
     // Get current com port by header id
     let comPort = document.getElementById("lblHeaderComName").innerText;
 
@@ -65,7 +65,16 @@ function saveAddressConfig() {
         return;
     }
 
-    invoke('save_address_config', {comPort: comPort, outputAddress: outputAddress, dataConfig: dataConfig});
+    let baudRate = document.getElementById("txtBaudRate").value;
+    let pushRate = document.getElementById("txtPushRate").value;
+
+    invoke('save_config', {
+        comPort: comPort,
+        outputAddress: outputAddress,
+        dataConfig: dataConfig,
+        baudRate: baudRate,
+        pushRate: pushRate
+    });
 }
 
 // Renders the txtOutputFormat text field with the current address config to the txtPreview text field
@@ -81,7 +90,7 @@ function onAddressConfigChanged() {
     document.getElementById("txtPreview").innerHTML = previewText;
 
     // Save address config
-    saveAddressConfig();
+    saveConfig();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -92,6 +101,10 @@ window.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#btnDeleteOutputAddress").addEventListener("click", deleteOutputAddress);
 
     document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
+
+    // save config when baud rate or push rate is changed
+    document.getElementById("txtBaudRate").addEventListener("change", saveConfig);
+    document.getElementById("txtPushRate").addEventListener("change", saveConfig);
 
     document.getElementById("chkTransferActive").addEventListener("click",
         () => toggleSync(document.getElementById("chkTransferActive").checked)
