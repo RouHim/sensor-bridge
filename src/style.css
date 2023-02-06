@@ -200,19 +200,6 @@ ul {
     font-size: 0.75em;
     margin-right: 10px;
     margin-left: 10px;
-    animation: pulse 10s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.25);
-    }
-    100% {
-        transform: scale(1);
-    }
 }
 
 .header-button {
@@ -225,7 +212,6 @@ ul {
     cursor: pointer;
     font-size: 0.75em;
 }
-
 
 .kill-switch {
     position: relative;
@@ -254,22 +240,12 @@ ul {
     transform: translate(-50%, -50%);
     font-size: 20px;
     color: #555;
-    transition: all 0.2s ease-in-out;
 }
 
 .kill-switch-input:checked + .kill-switch-icon {
     color: #08ff00;
-    animation: toxic-glow 5s ease-in-out infinite;
 }
 
-
-@keyframes toxic-glow {
-    0% {
-        box-shadow: 0 0 10px 0 rgb(8, 255, 0);
-        border-radius: 50%;
-    }
-    100% {
-        box-shadow: 0 0 0 20px rgba(255, 0, 0, 0);
-        border-radius: 50%;
-    }
+#com-port-config {
+    margin-bottom: 10px;
 }
