@@ -20,3 +20,38 @@ and a arduino board that is connected to the computer via serial port.
 7. Click the `Connect` button
 8. The `sensor-display` software should now display the selected sensors
 9. You can now minimize the `sensor-bridge` application
+
+## Protocols
+
+### Configuration protocol
+
+This is an example of the configuration to be send to the arduino board.
+
+Synopsis:
+
+```
+c{address_1},{address_2},...,{address_n};
+```
+
+
+Example:
+```
+c0x5c,0x5d,0x5e;
+```
+
+### Data protocol
+
+This is an example of the date to be send to the arduino board.
+The data is send as a string of bytes.
+
+Synopsis:
+
+```   
+d{sensor_value_1},{sensor_value_2},...,{sensor_value_n};
+```
+
+Example:
+
+```
+d5%,50C;
+```
