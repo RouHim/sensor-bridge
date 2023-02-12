@@ -22,7 +22,7 @@ fn read_sensor_values() -> String {
     let handle = unsafe { OpenFileMappingW(FILE_MAP_READ, 0, memory_name.as_ptr()) };
 
     if handle == 0 as HANDLE {
-        panic!("Failed to open shared memory");
+        panic!("Failed to open shared memory 'AIDA64_SensorValues'");
     }
 
     // Map the shared memory to a view

@@ -34,9 +34,9 @@ impl OutputConfig {
     fn default_singleton(address: &str) -> HashMap<String, OutputConfig> {
         let mut output_config = HashMap::new();
         output_config.insert(
-            "0x3C".to_string(),
+            address.to_string(),
             OutputConfig {
-                address: "0x3C".to_string(),
+                address: address.to_string(),
                 data_config: Default::default(),
             },
         );

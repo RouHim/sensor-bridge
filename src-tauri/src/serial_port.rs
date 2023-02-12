@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::format;
+
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
