@@ -30,13 +30,17 @@ This is an example of the configuration to be send to the arduino board.
 Synopsis:
 
 ```
-c{address_1}{font_size_1},{address_2}{font_size_2},...,{address_n}{font_size_n
+ci{address_1}{font_size_1},{address_2}{font_size_2},...,{address_n}{font_size_n
 ```
-Where `address` is the address of the I2C display and `font_size` is the font size to be used (Values: 0, 1, 2)
+Where:
+* `c` is the configuration command
+* `i` is the configuration type (Values: `i` for I2C display)
+* `address` is the address of the I2C display
+* `font_size` is the font size to be used (Values: 0, 1, 2)
 
 Example:
 ```
-c0x3C0,0x3C1,0x3C2;
+ci0x3C0,0x3C1,0x3C2;
 ```
 
 ### Data protocol
@@ -47,11 +51,16 @@ The data is send as a string of bytes.
 Synopsis:
 
 ```   
-d{sensor_value_1},{sensor_value_2},...,{sensor_value_n};
+di{sensor_value_1},{sensor_value_2},...,{sensor_value_n};
 ```
+
+Where:
+* `d` is the data command
+* `i` is the data type (Values: `i` for I2C display)
+* `sensor_value` is the value of the sensor to be displayed
 
 Example:
 
 ```
-d5%,50C;
+di5%,50C;
 ```

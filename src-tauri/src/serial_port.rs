@@ -65,7 +65,7 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
             }
 
             // Write data to serial port
-            let data = format!("d{};", data_template);
+            let data = format!("di{};", data_template);
             println!("Sending data: {}", data);
             com_port.write_all(data.as_bytes()).unwrap();
 
@@ -83,6 +83,12 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
 /// Tells the receiving arduino which output addresses to use in which order.
 /// All following data will be sent to the specified addresses in this order.
 /// The arduino will then send the data to the specified addresses.
+/// Syntax: ci<address_id><font_size>,<address_id><font_size>,...;
+/// Example: ci0x3C1,0x5C2,0x7C0;
+/// Where c - tells the arduino that this is a configure command
+///      i - tells the arduino that this is an i2c output device
+///     0x3C - tells the arduino to use the i2c address 0x3C
+///     1 - tells the arduino to use the font size 1
 fn configure_output_addresses(com_port: &mut Box<dyn SerialPort>, output_config: &HashMap<String, OutputConfig>) {
     // Join address string into one comma separated string
     let addresses: Vec<String> = output_config.values()
@@ -91,7 +97,7 @@ fn configure_output_addresses(com_port: &mut Box<dyn SerialPort>, output_config:
     let addresses = addresses.join(",");
 
     // Send configure command to arduino
-    let configure_command_data = format!("c{};", addresses);
+    let configure_command_data = format!("ci{};", addresses);
     println!("Sending configure command: {}", configure_command_data);
     com_port.write_all(configure_command_data.as_bytes()).unwrap();
 }
