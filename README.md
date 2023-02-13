@@ -30,13 +30,13 @@ This is an example of the configuration to be send to the arduino board.
 Synopsis:
 
 ```
-c{address_1},{address_2},...,{address_n};
+c{address_1}{font_size_1},{address_2}{font_size_2},...,{address_n}{font_size_n
 ```
-
+Where `address` is the address of the I2C display and `font_size` is the font size to be used (Values: 0, 1, 2)
 
 Example:
 ```
-c0x5c,0x5d,0x5e;
+c0x3C0,0x3C1,0x3C2;
 ```
 
 ### Data protocol

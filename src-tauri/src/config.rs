@@ -38,6 +38,7 @@ impl OutputConfig {
             OutputConfig {
                 address: address.to_string(),
                 data_config: Default::default(),
+                font_size: 1,
             },
         );
         output_config
@@ -46,6 +47,7 @@ impl OutputConfig {
         OutputConfig {
             address: address.to_string(),
             data_config: Default::default(),
+            font_size: 1,
         }
     }
 }
@@ -54,6 +56,7 @@ impl OutputConfig {
 pub struct OutputConfig {
     pub address: String,
     pub data_config: String,
+    pub font_size: u8,
 }
 
 /// Loads the config file from disk.
@@ -97,9 +100,18 @@ fn load_config() -> AppConfig {
         serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
     }
 
-    let config_file = File::open(config_path).expect("Failed to open config file");
-    let config: AppConfig = serde_json::from_reader(config_file).expect("Failed to parse config file");
-    config
+    let config_file = File::open(&config_path).expect("Failed to open config file");
+    let config = serde_json::from_reader(config_file);
+    
+    // If the config deserialization failed, return the default config and save it to disk
+    if config.is_err() {
+        let config = AppConfig::default();
+        let config_file = File::create(&config_path).expect("Failed to create config file");
+        serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
+        return config;
+    }
+    
+    config.unwrap()
 }
 
 /// Returns the path to the config file.

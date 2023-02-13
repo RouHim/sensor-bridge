@@ -2,7 +2,6 @@ const {invoke} = window.__TAURI__.tauri;
 
 let lstComPorts;
 
-
 function addOutputAddress() {
     // Open modal dialog to request new output address using javascript prompt
     let newOutputAddress = prompt("Please enter the new output address", "");
@@ -57,9 +56,6 @@ function saveConfig() {
     // Get selected output address
     let outputAddress = document.getElementById("txtOutputAddress").value;
 
-    // Get output format
-    let dataConfig = document.getElementById("txtOutputFormat").value;
-
     // If comport or output address is empty, return
     if (comPort === "" || outputAddress === "") {
         return;
@@ -67,11 +63,14 @@ function saveConfig() {
 
     let baudRate = document.getElementById("txtBaudRate").value;
     let pushRate = document.getElementById("txtPushRate").value;
+    let dataConfig = document.getElementById("txtOutputFormat").value;
+    let fontSize = document.getElementById("txtFontSize").selectedIndex;
 
     invoke('save_config', {
         comPort: comPort,
         outputAddress: outputAddress,
         dataConfig: dataConfig,
+        fontSize: fontSize,
         baudRate: baudRate,
         pushRate: pushRate
     });
@@ -105,6 +104,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // save config when baud rate or push rate is changed
     document.getElementById("txtBaudRate").addEventListener("change", saveConfig);
     document.getElementById("txtPushRate").addEventListener("change", saveConfig);
+    document.getElementById("txtFontSize").addEventListener("change", saveConfig);
 
     document.getElementById("chkTransferActive").addEventListener("click",
         () => toggleSync(document.getElementById("chkTransferActive").checked)
@@ -175,8 +175,10 @@ function onAddressChanged() {
     }
 
     invoke('load_address_config', {comPort: comPort, outputAddress: outputAddress}).then(
-        (dataConfig) => {
-            document.getElementById("txtOutputFormat").value = dataConfig;
+        (addressConfig) => {
+            addressConfig = JSON.parse(addressConfig);
+            document.getElementById("txtOutputFormat").value = addressConfig.data_config;
+            document.getElementById("txtFontSize").selectedIndex = addressConfig.font_size;
             onAddressConfigChanged();
         }
     );

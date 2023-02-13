@@ -85,7 +85,9 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
 /// The arduino will then send the data to the specified addresses.
 fn configure_output_addresses(com_port: &mut Box<dyn SerialPort>, output_config: &HashMap<String, OutputConfig>) {
     // Join address string into one comma separated string
-    let addresses: Vec<String> = output_config.keys().cloned().collect();
+    let addresses: Vec<String> = output_config.values()
+        .map(|output_config| format!("{}{}", output_config.address, output_config.font_size))
+        .collect();
     let addresses = addresses.join(",");
 
     // Send configure command to arduino

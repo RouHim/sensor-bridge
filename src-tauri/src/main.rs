@@ -60,17 +60,19 @@ fn delete_output_address(com_port: String, address: String) {
 #[tauri::command]
 fn load_address_config(com_port: String, output_address: String) -> String {
     let port_config: ComPortConfig = config::load_port_config(&com_port);
-    port_config.output_config.get(&output_address).unwrap().data_config.clone()
+    let output_config = port_config.output_config.get(&output_address).unwrap();
+    serde_json::to_string(&output_config).unwrap()
 }
 
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-fn save_config(com_port: String, output_address: String, data_config: String, baud_rate: String, push_rate: String) {
+fn save_config(com_port: String, output_address: String, data_config: String, font_size: u8, baud_rate: String, push_rate: String) {
     let mut port_config: ComPortConfig = config::load_port_config(&com_port);
     port_config.baud_rate = baud_rate.parse().unwrap();
     port_config.push_rate = push_rate.parse().unwrap();
     port_config.output_config.get_mut(&output_address).unwrap().data_config = data_config;
+    port_config.output_config.get_mut(&output_address).unwrap().font_size = font_size;
     config::write_port_config(&port_config);
 }
 

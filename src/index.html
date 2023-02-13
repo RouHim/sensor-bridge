@@ -36,8 +36,16 @@
         <div id="detail-pane">
             <h2 id="lblHeaderComName" style="color: #08ff00"></h2>
 
+            <div id="com-port-config">
+                <label for="txtBaudRate" style="margin-right: 5px">Baud rate:</label>
+                <input type="text" id="txtBaudRate" value="" style="flex-grow: 1">
+                <br><br>
+                <label for="txtPushRate" style="margin-right: 5px">Push rate (ms):</label>
+                <input type="text" id="txtPushRate" value="" style="flex-grow: 1">
+            </div>
+
             <div id="display-address-config" style="margin-bottom: 25px">
-                <label for="txtOutputAddress" style="margin-right: 5px">Output-Address:</label>
+                <label for="txtOutputAddress" style="margin-right: 5px">I2C Address:</label>
                 <select id="txtOutputAddress">
                 </select>
                 <button id="btnAddOutputAddress" class="header-button">
@@ -48,12 +56,13 @@
                 </button>
             </div>
 
-            <div id="com-port-config">
-                <label for="txtBaudRate" style="margin-right: 5px">Baud rate:</label>
-                <input type="text" id="txtBaudRate" value="" style="flex-grow: 1">
-                <br><br>
-                <label for="txtPushRate" style="margin-right: 5px">Push rate (ms):</label>
-                <input type="text" id="txtPushRate" value="" style="flex-grow: 1">
+            <div id="font-size-config" style="margin-bottom: 25px">
+                <label for="txtFontSize" style="margin-right: 5px">Font size:</label>
+                <select id="txtFontSize">
+                    <option value="small">Small</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="large">Large</option>
+                </select>
             </div>
 
             <div class="dashed-border">
