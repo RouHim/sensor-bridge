@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
+use tauri::{AppHandle, Manager, Wry};
+use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 use tauri::State;
 
 use crate::config::{ComPortConfig, OutputConfig};
@@ -23,7 +25,6 @@ pub struct ThreadHandle {
     pub running: Arc<Mutex<bool>>,
     pub handle: Arc<thread::JoinHandle<()>>,
 }
-
 
 #[tauri::command]
 fn get_com_ports() -> Vec<String> {
@@ -99,14 +100,14 @@ fn enable_sync(app_state: State<AppState>, com_port: String) {
 
 /// Starts the sync thread for the specified port
 /// Returns a handle to the thread
-fn start_port_thread(mut port_config: ComPortConfig) -> ThreadHandle {
+fn start_port_thread(port_config: ComPortConfig) -> ThreadHandle {
     let port_running_state_handle = Arc::new(Mutex::new(true));
     let port_handle = serial_port::start_sync(port_config, port_running_state_handle.clone());
-    let thread_handle = ThreadHandle {
+
+    ThreadHandle {
         running: port_running_state_handle,
         handle: port_handle,
-    };
-    thread_handle
+    }
 }
 
 /// Stops the sync thread for the specified port
@@ -136,11 +137,12 @@ fn disable_sync(app_state: State<AppState>, com_port: String) {
 }
 
 fn main() {
-    // Create the port handle map
+    // Create the port handle map wrapped in a mutex
     let app_state_port_handles = Mutex::new(HashMap::new());
 
     // Load the config for all ports
-    // If the port is active, start the sync thread
+    // If the port is active, start a sync thread
+    // And report the handle to the app state
     get_com_ports().iter()
         .map(|port| config::load_port_config(port))
         .filter(|port_config| port_config.active)
@@ -149,7 +151,11 @@ fn main() {
             app_state_port_handles.lock().unwrap().insert(port_config.com_port, thread_handle);
         });
 
+    // Create the tray icon
+
     tauri::Builder::default()
+        .system_tray(build_system_tray())
+        .on_system_tray_event(build_system_tray_handler())
         .manage(AppState {
             port_handle: app_state_port_handles,
         })
@@ -165,5 +171,42 @@ fn main() {
             disable_sync,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running tauri application")
+}
+
+/// Build the system tray handler
+fn build_system_tray_handler() -> fn(&AppHandle<Wry>, SystemTrayEvent) {
+    |app, event| {
+        match event {
+            SystemTrayEvent::DoubleClick { position: _, size: _, .. } => {
+                let window = app.get_window("main").unwrap();
+                if window.is_visible().unwrap() {
+                    window.hide().unwrap();
+                } else {
+                    window.show().unwrap();
+                }
+            }
+            SystemTrayEvent::MenuItemClick { id, .. } => {
+                match id.as_str() {
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    "show" => {
+                        app.get_window("main").unwrap().show().unwrap();
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Build the system tray
+fn build_system_tray() -> SystemTray {
+    SystemTray::new()
+        .with_menu(SystemTrayMenu::new()
+            .add_item(CustomMenuItem::new("show".to_string(), "Show"))
+            .add_item(CustomMenuItem::new("quit".to_string(), "Quit"))
+        )
 }
