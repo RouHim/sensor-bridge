@@ -80,6 +80,9 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
     Arc::new(handle)
 }
 
+/// Prefixes the data with a simple checksum.
+/// The checksum is the length of the data plus two for the checksum but minus the semicolon.
+/// So basically plus one.
 fn prefix_with_simple_checksum(data: String) -> String {
-    format!("{:02}{}", data.len() + 2, data)
+    format!("{:02}{}", data.len() + 1, data)
 }
