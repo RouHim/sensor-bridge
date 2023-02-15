@@ -1,4 +1,5 @@
 #![cfg_attr(
+
 all(not(debug_assertions), target_os = "windows"),
 windows_subsystem = "windows"
 )]
@@ -7,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
-use tauri::{AppHandle, Manager, Wry};
+use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 use tauri::State;
 
@@ -25,6 +26,9 @@ pub struct ThreadHandle {
     pub running: Arc<Mutex<bool>>,
     pub handle: Arc<thread::JoinHandle<()>>,
 }
+
+/// Name of the default window
+const WINDOW_NAME: &str = "main";
 
 #[tauri::command]
 fn get_com_ports() -> Vec<String> {
@@ -152,7 +156,6 @@ fn main() {
         });
 
     // Create the tray icon
-
     tauri::Builder::default()
         .system_tray(build_system_tray())
         .on_system_tray_event(build_system_tray_handler())
@@ -170,8 +173,18 @@ fn main() {
             enable_sync,
             disable_sync,
         ])
+        .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
+}
+
+/// Handle tauri window  events
+fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
+    |event|
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
+            event.window().hide().unwrap();
+            api.prevent_close();
+        }
 }
 
 /// Build the system tray handler
@@ -179,7 +192,7 @@ fn build_system_tray_handler() -> fn(&AppHandle<Wry>, SystemTrayEvent) {
     |app, event| {
         match event {
             SystemTrayEvent::DoubleClick { position: _, size: _, .. } => {
-                let window = app.get_window("main").unwrap();
+                let window = app.get_window(WINDOW_NAME).unwrap();
                 if window.is_visible().unwrap() {
                     window.hide().unwrap();
                 } else {
