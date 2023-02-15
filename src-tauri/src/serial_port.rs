@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -26,11 +25,10 @@ pub fn list_ports() -> Vec<SerialPortInfo> {
 /// Returns a handle to the thread.
 /// The thread will be stopped when the port_running_state_handle is set to false.
 /// The thread will be joined when the handle is dropped.
-/// Two different data commands are supported:
-/// - c<address_id>,<address_id>,...: Replaced with the specified addresses. Used to configure the receiving arduino.
-/// - d<sensor_value>,<sensor_value>,...: Replaced with the specified sensor values to send to the previous configured addresses.
+/// The data command sends a single data item to the serial port containing all data values for all configured outputs.
+/// - <checksum>i<address_id><font_size><data>,<address_id><font_size><data>,...;
+/// - Example: 30i0x3C290°C,0x5C245%,0x8C11000 rpm;
 /// Each data command must end with a semicolon (;).
-/// The data command is sent to the serial port at the specified push rate.
 pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc<Mutex<bool>>) -> Arc<thread::JoinHandle<()>> {
     // Start new thread that writes to the serial port, as configured in to config
     let handle = std::thread::spawn(move || {
@@ -40,20 +38,20 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
 
         // Open the named serial port with specified baud rate
         let mut com_port = open(&com_port_name, baud_rate);
-
         let output_configs = com_port_config.output_config;
-
-        configure_output_addresses(&mut com_port, &output_configs);
-
-        let data_template = output_configs
-            .values()
-            .map(|output_config| output_config.data_config.clone())
-            .collect::<Vec<String>>()
-            .join(",");
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
             let sensors = aida64::read_sensors();
+
+            let data_template = output_configs
+                .values()
+                .map(|output_config| format!(
+                    "{}{}{}",
+                    output_config.address, output_config.font_size, output_config.data_config
+                ))
+                .collect::<Vec<String>>()
+                .join(",");
 
             // Replace all sensor ids with their values
             let mut data_template = data_template.clone();
@@ -65,7 +63,9 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
             }
 
             // Write data to serial port
-            let data = format!("di{};", data_template);
+            let data = prefix_with_simple_checksum(
+                format!("i{};", data_template)
+            );
             println!("Sending data: {}", data);
             com_port.write_all(data.as_bytes()).unwrap();
 
@@ -80,24 +80,6 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
     Arc::new(handle)
 }
 
-/// Tells the receiving arduino which output addresses to use in which order.
-/// All following data will be sent to the specified addresses in this order.
-/// The arduino will then send the data to the specified addresses.
-/// Syntax: ci<address_id><font_size>,<address_id><font_size>,...;
-/// Example: ci0x3C1,0x5C2,0x7C0;
-/// Where c - tells the arduino that this is a configure command
-///      i - tells the arduino that this is an i2c output device
-///     0x3C - tells the arduino to use the i2c address 0x3C
-///     1 - tells the arduino to use the font size 1
-fn configure_output_addresses(com_port: &mut Box<dyn SerialPort>, output_config: &HashMap<String, OutputConfig>) {
-    // Join address string into one comma separated string
-    let addresses: Vec<String> = output_config.values()
-        .map(|output_config| format!("{}{}", output_config.address, output_config.font_size))
-        .collect();
-    let addresses = addresses.join(",");
-
-    // Send configure command to arduino
-    let configure_command_data = format!("ci{};", addresses);
-    println!("Sending configure command: {}", configure_command_data);
-    com_port.write_all(configure_command_data.as_bytes()).unwrap();
+fn prefix_with_simple_checksum(data: String) -> String {
+    format!("{:02}{}", data.len() + 2, data)
 }
