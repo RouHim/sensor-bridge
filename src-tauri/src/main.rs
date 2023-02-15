@@ -27,7 +27,12 @@ pub struct ThreadHandle {
 
 #[tauri::command]
 fn get_com_ports() -> Vec<String> {
-    serial_port::list_ports().iter().map(|x| x.port_name.clone()).collect()
+    let mut ports: Vec<String> = serial_port::list_ports()
+        .iter()
+        .map(|x| x.port_name.clone())
+        .collect();
+    ports.sort_unstable();
+    ports
 }
 
 #[tauri::command]
@@ -84,20 +89,28 @@ fn enable_sync(app_state: State<AppState>, com_port: String) {
     port_config.active = true;
     config::write_port_config(&port_config);
 
-    // Check if the port is already active
-    // If so, interrupt the thread
-    //
+    // Start the sync for the port and hand
+    // This creates a new thread and returns a handle to it
+    let thread_handle = start_port_thread(port_config);
 
-    // Start the sync for the port and handover the running state
+    // Add the port handle to the app state
+    app_state.port_handle.lock().unwrap().insert(com_port, thread_handle);
+}
+
+/// Starts the sync thread for the specified port
+/// Returns a handle to the thread
+fn start_port_thread(mut port_config: ComPortConfig) -> ThreadHandle {
     let port_running_state_handle = Arc::new(Mutex::new(true));
     let port_handle = serial_port::start_sync(port_config, port_running_state_handle.clone());
     let thread_handle = ThreadHandle {
         running: port_running_state_handle,
         handle: port_handle,
     };
-    app_state.port_handle.lock().unwrap().insert(com_port, thread_handle);
+    thread_handle
 }
 
+/// Stops the sync thread for the specified port
+/// This will also remove the port from the app state
 fn stop_comport_sync_thread(com_port: &str, port_handle: MutexGuard<HashMap<String, ThreadHandle>>) {
     // If the port handle is not in the map, return
     if !port_handle.contains_key(com_port) {
@@ -123,13 +136,22 @@ fn disable_sync(app_state: State<AppState>, com_port: String) {
 }
 
 fn main() {
-    // TODO: Load the config for all ports and if they are active,
-    // start the sync for the corresponding port
-    let port_handle = HashMap::new();
+    // Create the port handle map
+    let app_state_port_handles = Mutex::new(HashMap::new());
+
+    // Load the config for all ports
+    // If the port is active, start the sync thread
+    get_com_ports().iter()
+        .map(|port| config::load_port_config(port))
+        .filter(|port_config| port_config.active)
+        .for_each(|port_config| {
+            let thread_handle = start_port_thread(port_config.clone());
+            app_state_port_handles.lock().unwrap().insert(port_config.com_port, thread_handle);
+        });
 
     tauri::Builder::default()
         .manage(AppState {
-            port_handle: Mutex::new(port_handle),
+            port_handle: app_state_port_handles,
         })
         .invoke_handler(tauri::generate_handler![
             get_com_ports,

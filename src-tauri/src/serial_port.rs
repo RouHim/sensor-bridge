@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -7,7 +7,7 @@ use std::time::Duration;
 use serialport::*;
 
 use crate::aida64;
-use crate::config::{ComPortConfig, OutputConfig};
+use crate::config::{ComPortConfig};
 
 /// Opens a serial port and returns a handle to it.
 pub fn open(port_name: &str, baud_rate: u32) -> Box<dyn SerialPort> {

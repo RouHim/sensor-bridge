@@ -1,6 +1,24 @@
 const {invoke} = window.__TAURI__.tauri;
 
-let lstComPorts;
+window.addEventListener("DOMContentLoaded", () => {
+    document.querySelector("#btnRefreshComPorts").addEventListener("click", loadComPorts);
+    document.querySelector("#btnRefreshSensorValues").addEventListener("click", loadSensorValues);
+    document.querySelector("#btnAddOutputAddress").addEventListener("click", addOutputAddress);
+    document.querySelector("#btnDeleteOutputAddress").addEventListener("click", deleteOutputAddress);
+
+    document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
+
+    // save config when baud rate or push rate is changed
+    document.getElementById("txtBaudRate").addEventListener("change", saveConfig);
+    document.getElementById("txtPushRate").addEventListener("change", saveConfig);
+    document.getElementById("txtFontSize").addEventListener("change", saveConfig);
+
+    document.getElementById("chkTransferActive").addEventListener("click",
+        () => toggleSync(document.getElementById("chkTransferActive").checked)
+    );
+
+    loadComPorts();
+});
 
 function addOutputAddress() {
     // Open modal dialog to request new output address using javascript prompt
@@ -92,27 +110,6 @@ function onAddressConfigChanged() {
     saveConfig();
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    lstComPorts = document.querySelector("#lstComPorts");
-    document.querySelector("#btnRefreshComPorts").addEventListener("click", loadComPorts);
-    document.querySelector("#btnRefreshSensorValues").addEventListener("click", loadSensorValues);
-    document.querySelector("#btnAddOutputAddress").addEventListener("click", addOutputAddress);
-    document.querySelector("#btnDeleteOutputAddress").addEventListener("click", deleteOutputAddress);
-
-    document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
-
-    // save config when baud rate or push rate is changed
-    document.getElementById("txtBaudRate").addEventListener("change", saveConfig);
-    document.getElementById("txtPushRate").addEventListener("change", saveConfig);
-    document.getElementById("txtFontSize").addEventListener("change", saveConfig);
-
-    document.getElementById("chkTransferActive").addEventListener("click",
-        () => toggleSync(document.getElementById("chkTransferActive").checked)
-    );
-
-    loadComPorts();
-});
-
 function loadComPorts() {
     // Receive all available com ports
     invoke('get_com_ports').then(
@@ -128,6 +125,11 @@ function loadComPorts() {
                     onComPortSelected(item);
                 });
             });
+
+            // Fire onComPortSelected for the first com port
+            if (listItems.length > 0) {
+                onComPortSelected(listItems[0]);
+            }
         }
     );
 }
