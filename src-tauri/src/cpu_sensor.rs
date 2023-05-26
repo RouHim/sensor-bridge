@@ -17,7 +17,7 @@ impl sensor::SensorProvider for CpuSensor {
 
         let system_stat = System::new();
 
-        // TODO: Request all sensors in parallel
+        // TODO: Request all sensors in parallel using a par_iter
         let bla = |system_stat| get_total_cpu_load(system_stat);
 
         sensors.push(bla(&system_stat));
