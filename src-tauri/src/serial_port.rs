@@ -1,4 +1,3 @@
-
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -6,14 +5,15 @@ use std::time::Duration;
 
 use serialport::*;
 
-use crate::aida64;
-use crate::config::{ComPortConfig};
+use crate::config::ComPortConfig;
+use crate::sensor;
 
 /// Opens a serial port and returns a handle to it.
 pub fn open(port_name: &str, baud_rate: u32) -> Box<dyn SerialPort> {
     serialport::new(port_name, baud_rate)
         .timeout(Duration::from_millis(100))
-        .open().expect("Failed to open port")
+        .open()
+        .expect("Failed to open port")
 }
 
 /// List all available serial ports.
@@ -29,7 +29,10 @@ pub fn list_ports() -> Vec<SerialPortInfo> {
 /// - <checksum>i<address_id><font_size><data>,<address_id><font_size><data>,...;
 /// - Example: 30i0x3C290°C,0x5C245%,0x8C11000 rpm;
 /// Each data command must end with a semicolon (;).
-pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc<Mutex<bool>>) -> Arc<thread::JoinHandle<()>> {
+pub fn start_sync(
+    com_port_config: ComPortConfig,
+    port_running_state_handle: Arc<Mutex<bool>>,
+) -> Arc<thread::JoinHandle<()>> {
     // Start new thread that writes to the serial port, as configured in to config
     let handle = std::thread::spawn(move || {
         let com_port_name = com_port_config.com_port;
@@ -42,14 +45,16 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
-            let sensors = aida64::read_sensors();
+            let sensors = sensor::read_all_sensor_values();
 
             let data_template = output_configs
                 .values()
-                .map(|output_config| format!(
-                    "{}{}{}",
-                    output_config.address, output_config.font_size, output_config.data_config
-                ))
+                .map(|output_config| {
+                    format!(
+                        "{}{}{}",
+                        output_config.address, output_config.font_size, output_config.data_config
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(",");
 
@@ -63,9 +68,7 @@ pub fn start_sync(com_port_config: ComPortConfig, port_running_state_handle: Arc
             }
 
             // Write data to serial port
-            let data = prefix_with_simple_checksum(
-                format!("i{};", data_template)
-            );
+            let data = prefix_with_simple_checksum(format!("i{};", data_template));
             println!("Sending data: {}", data);
             com_port.write_all(data.as_bytes()).unwrap();
 

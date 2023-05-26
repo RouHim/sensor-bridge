@@ -82,7 +82,9 @@ pub fn load_port_config(com_port: &str) -> ComPortConfig {
 /// If the config file already exists, the specified config will be added to it.
 pub fn write_port_config(com_port_config: &ComPortConfig) {
     let mut config: AppConfig = load_config();
-    config.com_port_config.insert(com_port_config.com_port.clone(), com_port_config.clone());
+    config
+        .com_port_config
+        .insert(com_port_config.com_port.clone(), com_port_config.clone());
     let config_path = get_config_path();
     let config_file = File::create(config_path).expect("Failed to create config file");
     serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
@@ -102,7 +104,7 @@ fn load_config() -> AppConfig {
 
     let config_file = File::open(&config_path).expect("Failed to open config file");
     let config = serde_json::from_reader(config_file);
-    
+
     // If the config deserialization failed, return the default config and save it to disk
     if config.is_err() {
         let config = AppConfig::default();
@@ -110,7 +112,7 @@ fn load_config() -> AppConfig {
         serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
         return config;
     }
-    
+
     config.unwrap()
 }
 
