@@ -36,58 +36,79 @@
         <div id="detail-pane">
             <h2 id="lblHeaderComName" style="color: #08ff00"></h2>
 
-            <div id="com-port-config">
-                <label for="txtBaudRate" style="margin-right: 5px">Baud rate:</label>
-                <input type="text" id="txtBaudRate" value="" style="flex-grow: 1">
-                <br><br>
-                <label for="txtPushRate" style="margin-right: 5px">Push rate (ms):</label>
-                <input type="text" id="txtPushRate" value="" style="flex-grow: 1">
-            </div>
-
-            <div id="display-address-config" style="margin-bottom: 25px">
-                <label for="txtOutputAddress" style="margin-right: 5px">Output:</label>
-                <select id="txtOutputAddress">
-                </select>
-                <button id="btnAddOutputAddress" class="header-button">
-                    <i class="fas fa-plus"></i>
-                </button>
-                <button id="btnDeleteOutputAddress" class="header-button">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-
-            <div id="font-size-config" style="margin-bottom: 25px">
-                <label for="txtFontSize" style="margin-right: 5px">Font size:</label>
-                <select id="txtFontSize">
-                    <option value="small">Small</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="large">Large</option>
-                </select>
-            </div>
-
-            <div class="dashed-border">
-                <h3>
-                    Sensor Values
-                    <button id="btnRefreshSensorValues" class="header-button">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </h3>
-
-                <ul id="lstSensorValues">
-                </ul>
-            </div>
-
-            <div style="padding-bottom: 10px; padding-top: 10px">
-                <label for="txtOutputFormat">Configure data to send</label>
-                <input type="text" id="txtOutputFormat" style="width: 90%; height: 20px"/>
-                <i class="fas fa-arrow-down"></i>
-                <p id="txtPreview" class="terminal" style="height: 20px"></p>
-            </div>
-
             <label id="kill-switch-input" class="kill-switch" style="margin-top: 10px">
                 <input id="chkTransferActive" type="checkbox" class="kill-switch-input">
                 <i class="fas fa-power-off kill-switch-icon"></i>
             </label>
+
+            <div id="usb-config">
+                <label for="txtOutputMode" style="margin-right: 5px">Mode:</label>
+                <select id="txtOutputMode">
+                    <option value="lcd">LCD</option>
+                    <option value="i2c">I2C</option>
+                    <option value="spi">SPI</option>
+                </select>
+            </div>
+
+            <hr/>
+
+            <div id="lcd-panel">
+                Hello lcd
+            </div>
+
+            <div id="spi-panel">
+                Hello spi
+            </div>
+
+            <div id="i2c-panel" style="visibility: collapse">
+                <div id="com-port-config">
+                    <label for="txtBaudRate" style="margin-right: 5px">Baud rate:</label>
+                    <input type="text" id="txtBaudRate" value="" style="flex-grow: 1">
+                    <br><br>
+                    <label for="txtPushRate" style="margin-right: 5px">Push rate (ms):</label>
+                    <input type="text" id="txtPushRate" value="" style="flex-grow: 1">
+                </div>
+
+                <div id="display-address-config" style="margin-bottom: 25px">
+                    <label for="txtOutputAddress" style="margin-right: 5px">Output:</label>
+                    <select id="txtOutputAddress">
+                    </select>
+                    <button id="btnAddOutputAddress" class="header-button">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button id="btnDeleteOutputAddress" class="header-button">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div id="font-size-config" style="margin-bottom: 25px">
+                    <label for="txtFontSize" style="margin-right: 5px">Font size:</label>
+                    <select id="txtFontSize">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+
+                <div class="dashed-border">
+                    <h3>
+                        Sensor Values
+                        <button id="btnRefreshSensorValues" class="header-button">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </h3>
+
+                    <ul id="lstSensorValues">
+                    </ul>
+                </div>
+
+                <div style="padding-bottom: 10px; padding-top: 10px">
+                    <label for="txtOutputFormat">Configure data to send</label>
+                    <input type="text" id="txtOutputFormat" style="width: 90%; height: 20px"/>
+                    <i class="fas fa-arrow-down"></i>
+                    <p id="txtPreview" class="terminal" style="height: 20px"></p>
+                </div>
+            </div>
         </div>
     </div>
 

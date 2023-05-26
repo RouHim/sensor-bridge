@@ -8,6 +8,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("txtOutputFormat").addEventListener("input", onAddressConfigChanged);
 
+    // Select current config view
+    document.getElementById("txtOutputMode").addEventListener("change", outputModeSelected);
+
     // save config when baud rate or push rate is changed
     document.getElementById("txtBaudRate").addEventListener("change", saveConfig);
     document.getElementById("txtPushRate").addEventListener("change", saveConfig);
@@ -65,6 +68,31 @@ function deleteOutputAddress() {
             }
         }
     );
+}
+
+function outputModeSelected() {
+    // Get selected output mode
+    let outputMode = document.getElementById("txtOutputMode").value;
+
+    // match output mode to the corresponding config view
+    switch (outputMode) {
+        case "lcd":
+            document.getElementById("lcd-panel").style.visibility = "visible";
+            document.getElementById("i2c-panel").style.visibility = "collapse";
+            document.getElementById("spi-panel").style.visibility = "collapse";
+            break;
+        case "i2c":
+            document.getElementById("lcd-panel").style.visibility = "collapse";
+            document.getElementById("i2c-panel").style.visibility = "visible";
+            document.getElementById("spi-panel").style.visibility = "collapse";
+            break;
+        case "spi":
+            document.getElementById("lcd-panel").style.visibility = "collapse";
+            document.getElementById("i2c-panel").style.visibility = "collapse";
+            document.getElementById("spi-panel").style.visibility = "visible";
+            break;
+    }
+
 }
 
 function saveConfig() {
