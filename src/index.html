@@ -2,10 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <link href="style.css" rel="stylesheet"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Tauri App</title>
-    <script defer src="main.js" type="module"></script>
+
+    <script defer src="js/main.js" type="module"></script>
+<!--    <script src="js/i2c.js" type="module"></script>-->
+    <script src="js/lcd.js" type="module"></script>
+
+    <link href="style.css" rel="stylesheet"/>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
           integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=="
           crossorigin="anonymous"/>
@@ -25,65 +30,81 @@
         <div id="master-pane">
             <h3>
                 COM Ports
-                <button id="btnRefreshComPorts" class="header-button">
+                <button id="btn-refresh-com-ports" class="header-button">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </h3>
 
-            <ul id="lstComPorts">
+            <ul id="main-com-ports">
             </ul>
         </div>
         <div id="detail-pane">
-            <h2 id="lblHeaderComName" style="color: #08ff00"></h2>
+            <h2 id="com-port-name-header" style="color: #08ff00"></h2>
 
             <label id="kill-switch-input" class="kill-switch" style="margin-top: 10px">
-                <input id="chkTransferActive" type="checkbox" class="kill-switch-input">
+                <input id="main-chk-transfer-active" type="checkbox" class="kill-switch-input">
                 <i class="fas fa-power-off kill-switch-icon"></i>
             </label>
 
             <div id="usb-config">
-                <label for="txtOutputMode" style="margin-right: 5px">Mode:</label>
-                <select id="txtOutputMode">
-                    <option value="lcd">LCD</option>
-                    <option value="i2c">I2C</option>
-                    <option value="spi">SPI</option>
+                <label for="txt-display-mode" style="margin-right: 5px">Mode:</label>
+                <select id="txt-display-mode">
+                    <option value="Lcd">LCD</option>
+                    <option value="I2c">I2C</option>
+                    <option value="Spi">SPI</option>
                 </select>
             </div>
 
             <hr/>
 
-            <div id="lcd-panel">
-                Hello lcd
+            <div id="lcd-panel" style="display: block;">
+                <div id="lcd-config">
+                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">Display resolution:</label>
+                    <input type="text" id="lcd-txt-resolution-width" value="1024" style="flex-grow: 1; width: 50px;">
+                    x
+                    <input type="text" id="lcd-txt-resolution-height" value="600" style="flex-grow: 1; width: 50px;">
+                </div>
+
+                <div id="lcd-sensor-entry-config">
+                    <label for="lcd-txt-add-sensor" style="margin-right: 5px">Sensor:</label>
+                    <select id="lcd-txt-add-sensor">
+                    </select>
+                </div>
+
+                <div id="lcd-designer-pane" style="position: relative;">
+                    <div id="child" draggable="true" style="position: absolute;">Childelement</div>
+                    <img id="child2" draggable="true" style="position: absolute; width: 50px" src="https://purepng.com/public/uploads/large/purepng.com-blossom-flowerflower-pink-blossom-flower-961524680272u0zbu.png"/>
+                </div>
             </div>
 
-            <div id="spi-panel">
+            <div id="spi-panel" style="display: none;">
                 Hello spi
             </div>
 
-            <div id="i2c-panel" style="visibility: collapse">
-                <div id="com-port-config">
-                    <label for="txtBaudRate" style="margin-right: 5px">Baud rate:</label>
-                    <input type="text" id="txtBaudRate" value="" style="flex-grow: 1">
+            <div id="i2c-panel" style="display: none;">
+                <div id="i2c-com-port-config">
+                    <label for="i2c-txt-baud-rate" style="margin-right: 5px">Baud rate:</label>
+                    <input type="text" id="i2c-txt-baud-rate" value="" style="flex-grow: 1">
                     <br><br>
-                    <label for="txtPushRate" style="margin-right: 5px">Push rate (ms):</label>
-                    <input type="text" id="txtPushRate" value="" style="flex-grow: 1">
+                    <label for="i2c-txt-push-rate" style="margin-right: 5px">Push rate (ms):</label>
+                    <input type="text" id="i2c-txt-push-rate" value="" style="flex-grow: 1">
                 </div>
 
-                <div id="display-address-config" style="margin-bottom: 25px">
-                    <label for="txtOutputAddress" style="margin-right: 5px">Output:</label>
-                    <select id="txtOutputAddress">
+                <div id="i2c-display-address-config" style="margin-bottom: 25px">
+                    <label for="i2c-txt-output-address" style="margin-right: 5px">Output:</label>
+                    <select id="i2c-txt-output-address">
                     </select>
-                    <button id="btnAddOutputAddress" class="header-button">
+                    <button id="i2c-btn-add-output-address" class="header-button">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button id="btnDeleteOutputAddress" class="header-button">
+                    <button id="i2-btn-delete-output-address" class="header-button">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
 
-                <div id="font-size-config" style="margin-bottom: 25px">
-                    <label for="txtFontSize" style="margin-right: 5px">Font size:</label>
-                    <select id="txtFontSize">
+                <div id="i2c-font-size-config" style="margin-bottom: 25px">
+                    <label for="i2c-txt-font-size" style="margin-right: 5px">Font size:</label>
+                    <select id="i2c-txt-font-size">
                         <option value="small">Small</option>
                         <option value="medium" selected>Medium</option>
                         <option value="large">Large</option>
@@ -93,20 +114,20 @@
                 <div class="dashed-border">
                     <h3>
                         Sensor Values
-                        <button id="btnRefreshSensorValues" class="header-button">
+                        <button id="i2c-btn-refresh-sensor-values" class="header-button">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </h3>
 
-                    <ul id="lstSensorValues">
+                    <ul id="i2c-available-sensor-values">
                     </ul>
                 </div>
 
                 <div style="padding-bottom: 10px; padding-top: 10px">
-                    <label for="txtOutputFormat">Configure data to send</label>
-                    <input type="text" id="txtOutputFormat" style="width: 90%; height: 20px"/>
+                    <label for="i2c-txt-output-format">Configure data to send</label>
+                    <input type="text" id="i2c-txt-output-format" style="width: 90%; height: 20px"/>
                     <i class="fas fa-arrow-down"></i>
-                    <p id="txtPreview" class="terminal" style="height: 20px"></p>
+                    <p id="i2c-txt-preview" class="terminal" style="height: 20px"></p>
                 </div>
             </div>
         </div>

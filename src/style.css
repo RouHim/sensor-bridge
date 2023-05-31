@@ -4,8 +4,8 @@
     line-height: 24px;
     font-weight: 400;
 
-    color: #0f0f0f;
-    background-color: #f6f6f6;
+    color: #f6f6f6;
+    background-color: #2f2f2f;
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -89,21 +89,10 @@ input, button {
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
+    color: #ffffff;
+    background-color: #0f0f0f98;
     transition: border-color 0.25s;
     box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-    cursor: pointer;
-}
-
-button:hover {
-    border-color: #08ff00;
-}
-
-input, button {
     outline: none;
 }
 
@@ -114,28 +103,15 @@ select {
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-    color: #ffffff;
-    background-color: #0f0f0f98;
+    outline: none;
 }
 
+button {
+    cursor: pointer;
+}
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        color: #f6f6f6;
-        background-color: #2f2f2f;
-    }
-
-    a:hover {
-        color: #08ff00;
-    }
-
-    input,
-    button {
-        color: #ffffff;
-        background-color: #0f0f0f98;
-    }
+button:hover {
+    border-color: #08ff00;
 }
 
 li {
@@ -157,7 +133,7 @@ ul {
     margin: 10px auto;
 }
 
-#lstSensorValues {
+#i2c-available-sensor-values {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -246,6 +222,13 @@ ul {
     color: #08ff00;
 }
 
-#com-port-config {
+#i2c-com-port-config {
     margin-bottom: 10px;
+}
+
+#lcd-designer-pane {
+    width: 500px;
+    height: 500px;
+    background-color: red;
+    position: absolute;
 }

@@ -3,6 +3,7 @@ use std::fs::File;
 
 use serde::Deserialize;
 use serde::Serialize;
+use crate::config::OutputMode::{I2c, Lcd, Spi};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
@@ -13,9 +14,7 @@ pub struct AppConfig {
 pub struct ComPortConfig {
     pub com_port: String,
     pub active: bool,
-    pub baud_rate: u32,
-    pub push_rate: u32,
-    pub output_config: HashMap<String, OutputConfig>,
+    pub mode: OutputMode,
 }
 
 impl ComPortConfig {
@@ -23,40 +22,28 @@ impl ComPortConfig {
         ComPortConfig {
             com_port: com_port.to_string(),
             active: false,
-            baud_rate: 115200,
-            push_rate: 250,
-            output_config: OutputConfig::default_singleton("0x3C"),
+            mode: OutputMode::Lcd,
         }
     }
 }
 
-impl OutputConfig {
-    fn default_singleton(address: &str) -> HashMap<String, OutputConfig> {
-        let mut output_config = HashMap::new();
-        output_config.insert(
-            address.to_string(),
-            OutputConfig {
-                address: address.to_string(),
-                data_config: Default::default(),
-                font_size: 1,
-            },
-        );
-        output_config
-    }
-    pub fn default(address: &str) -> OutputConfig {
-        OutputConfig {
-            address: address.to_string(),
-            data_config: Default::default(),
-            font_size: 1,
-        }
-    }
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub enum OutputMode {
+    #[default]
+    Lcd,
+    I2c,
+    Spi,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct OutputConfig {
-    pub address: String,
-    pub data_config: String,
-    pub font_size: u8,
+impl OutputMode {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Lcd" => Lcd,
+            "I2c" => I2c,
+            "Spi" => Spi,
+            _ => Lcd,
+        }
+    }
 }
 
 /// Loads the config file from disk.

@@ -12,16 +12,12 @@ rust-version = "1.57"
 tauri-build = { version = "1.2", features = [] }
 
 [dependencies]
-# Tauri
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.2", features = ["shell-open", "system-tray", "window-all"] }
-# read sensor values
-systemstat = "0.2.3"
-# Write to serial port
-serialport = "4.2"
-# Parallel processing
-rayon = "1.7.0"
+tauri = { version = "1.2", features = ["shell-open", "system-tray", "window-all"] } # Tauri
+systemstat = "0.2.3"    # read sensor values
+serialport = "4.2"      # Write to serial port
+rayon = "1.7.0"         # Parallel processing
 
 [features]
 # by default Tauri runs in production mode
