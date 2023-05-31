@@ -1,5 +1,6 @@
 const {invoke} = window.__TAURI__.tauri;
 import {saveConfig} from './base.js';
+import {onLcdSelected} from './lcd.js';
 
 window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btn-refresh-com-ports").addEventListener("click", loadComPorts);
@@ -24,6 +25,7 @@ function outputModeSelected() {
             document.getElementById("lcd-panel").style.display = "block";
             document.getElementById("i2c-panel").style.display = "none";
             document.getElementById("spi-panel").style.display = "none";
+            onLcdSelected();
             break;
         case "I2c":
             document.getElementById("lcd-panel").style.display = "none";
