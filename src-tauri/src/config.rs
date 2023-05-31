@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fs::File;
 
+use crate::config::OutputMode::{I2c, Lcd, Spi};
 use serde::Deserialize;
 use serde::Serialize;
-use crate::config::OutputMode::{I2c, Lcd, Spi};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
