@@ -15,6 +15,22 @@ pub struct ComPortConfig {
     pub com_port: String,
     pub active: bool,
     pub mode: OutputMode,
+    pub lcd_config: LcdConfig,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct LcdConfig {
+    pub resolution_height: u32,
+    pub resolution_width: u32,
+}
+
+impl LcdConfig {
+    fn default() -> LcdConfig {
+        LcdConfig {
+            resolution_height: 512,
+            resolution_width: 512,
+        }
+    }
 }
 
 impl ComPortConfig {
@@ -22,7 +38,8 @@ impl ComPortConfig {
         ComPortConfig {
             com_port: com_port.to_string(),
             active: false,
-            mode: OutputMode::Lcd,
+            mode: Lcd,
+            lcd_config: LcdConfig::default(),
         }
     }
 }

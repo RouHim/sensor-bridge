@@ -2,6 +2,10 @@ const {invoke} = window.__TAURI__.tauri;
 import {saveConfig} from './base.js';
 import {onLcdSelected} from './lcd.js';
 
+let currentComPort = "";
+
+const lblComPortNameHeader = document.getElementById("com-port-name-header");
+
 window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btn-refresh-com-ports").addEventListener("click", loadComPorts);
 
@@ -13,7 +17,7 @@ window.addEventListener("DOMContentLoaded", () => {
     );
 
     loadComPorts();
-    onLcdSelected();
+    onLcdSelected(currentComPort);
 });
 
 function outputModeSelected() {
@@ -68,11 +72,11 @@ function loadComPorts() {
 }
 
 function onComPortSelected(element) {
-    let portName = element.innerText;
+    currentComPort = element.innerText;
 
-    document.getElementById("com-port-name-header").innerText = portName;
+    lblComPortNameHeader.innerText = currentComPort;
 
-    invoke('load_port_config', {comPort: portName}).then(
+    invoke('load_port_config', {comPort: currentComPort}).then(
         (portConfig) => {
             // cast port config to json object
             portConfig = JSON.parse(portConfig);
@@ -86,9 +90,9 @@ function onComPortSelected(element) {
 function toggleSync(checked) {
     if (checked) {
         console.log("enable sync");
-        invoke('enable_sync', {comPort: document.getElementById("com-port-name-header").innerText});
+        invoke('enable_sync', {comPort: lblComPortNameHeader.innerText});
     } else {
         console.log("disable sync");
-        invoke('disable_sync', {comPort: document.getElementById("com-port-name-header").innerText});
+        invoke('disable_sync', {comPort: lblComPortNameHeader.innerText});
     }
 }

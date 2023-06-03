@@ -1,9 +1,12 @@
 const {invoke} = window.__TAURI__.tauri;
 
+import {saveConfig} from './base.js';
+
 const designerPane = document.getElementById("lcd-designer-pane");
 const txtResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtResolutionHeight = document.getElementById("lcd-txt-resolution-height");
 const btnAddSensor = document.getElementById("lcd-btn-add-sensor");
+const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 window.addEventListener("DOMContentLoaded", () => {
     // Register event for display resolution
     txtResolutionWidth.addEventListener("input", updateLcdDesignPaneDimensions);
@@ -17,9 +20,28 @@ window.addEventListener("DOMContentLoaded", () => {
     designerPane.addEventListener('drop', dropOnParent);
 });
 
-export function onLcdSelected() {
+function loadLcdConfig(comPort) {
+    // FIXME: This does not work and gets smh overwritten
+
+    invoke('load_port_config', {comPort: comPort}).then(
+        (portConfig) => {
+            // cast port config to json object
+            portConfig = JSON.parse(portConfig);
+            const lcdConfig = portConfig.lcd_config;
+
+            // Set display resolution
+            txtResolutionWidth.value = lcdConfig.resolution_width;
+            txtResolutionHeight.value = lcdConfig.resolution_height;
+        }
+    );
+}
+
+export function onLcdSelected(comPort) {
     // Load sensor values
     loadSensorValues();
+
+    // Load lcd config
+    loadLcdConfig(comPort);
 }
 
 function loadSensorValues() {
@@ -67,8 +89,11 @@ function addSensor() {
 
     designerPane.appendChild(sensorValueElement);
 
-    // TODO: Add to ul lcd-designer-placed-elements (with data entries)
-    // TODO: save sensor config
+    // Add sensor to the list
+    lstDesignerPlacedElements.innerHTML += `<li data-id="${sensorId} data-label="${sensorLabel} data-unit="${sensorUnit}">${sensorTextFormat}</li>`;
+
+    // Save config
+    saveConfig();
 }
 
 function dropOnParent(event) {
@@ -92,4 +117,6 @@ function updateLcdDesignPaneDimensions() {
 
     designerPane.style.width = width + "px";
     designerPane.style.height = height + "px";
+
+    saveConfig();
 }

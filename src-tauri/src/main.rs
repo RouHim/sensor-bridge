@@ -1,6 +1,6 @@
 #![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
+all(not(debug_assertions), target_os = "windows"),
+windows_subsystem = "windows"
 )]
 
 use std::collections::HashMap;
@@ -119,9 +119,15 @@ fn load_address_config(com_port: String, output_address: String) -> String {
 fn save_config(
     com_port: String,
     output_mode: String,
+    lcd_config: String,
 ) {
     let mut port_config: ComPortConfig = config::load_port_config(&com_port);
+
     port_config.mode = OutputMode::from_str(output_mode.as_str());
+
+    println!("{}", lcd_config.as_str());
+    port_config.lcd_config = serde_json::from_str(lcd_config.as_str()).unwrap();
+
     config::write_port_config(&port_config);
 }
 
