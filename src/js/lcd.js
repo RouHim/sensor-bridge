@@ -10,39 +10,11 @@ window.addEventListener("DOMContentLoaded", () => {
     txtResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
 
     // Register event for sensor value add
-    btnAddSensor.addEventListener("click", () => {
-        const sensorValueComboBox = document.getElementById("lcd-txt-add-sensor");
-        const sensorId = sensorValueComboBox.options[sensorValueComboBox.selectedIndex].id;
-        const sensorValue = sensorValueComboBox.options[sensorValueComboBox.selectedIndex].title;
-        const sensorLabel = sensorValueComboBox.options[sensorValueComboBox.selectedIndex].value;
-
-        const sensorValueElement = document.createElement("div");
-        sensorValueElement.id = sensorId;
-        sensorValueElement.title = sensorLabel;
-        sensorValueElement.innerHTML = sensorValue;
-
-        sensorValueElement.style.position = "absolute";
-        sensorValueElement.style.left = "0px";
-        sensorValueElement.style.top = "0px";
-        sensorValueElement.draggable = true;
-
-        sensorValueElement.addEventListener('dragstart', (event) => {
-            event.dataTransfer.setData('text/plain', event.target.id);
-        });
-
-        designerPane.appendChild(sensorValueElement);
-    });
+    btnAddSensor.addEventListener("click", addSensor);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
     designerPane.addEventListener('drop', dropOnParent);
-
-    document.getElementById("child").addEventListener('dragstart', (event) => {
-        event.dataTransfer.setData('text/plain', event.target.id);
-    });
-    document.getElementById("child2").addEventListener('dragstart', (event) => {
-        event.dataTransfer.setData('text/plain', event.target.id);
-    });
 });
 
 export function onLcdSelected() {
@@ -60,11 +32,43 @@ function loadSensorValues() {
             // Add sensor values to the sensor value combo box
             let sensorValueComboBox = document.getElementById("lcd-txt-add-sensor");
             sensorValueComboBox.innerHTML = sensorValues.map(
-                (sensorValue) => `<option value="${sensorValue.id}" title="${sensorValue.value}">${sensorValue.label}</option>`
+                (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
             ).join("");
 
         }
     );
+}
+
+function addSensor() {
+    const sensorValueComboBox = document.getElementById("lcd-txt-add-sensor");
+    const selectedSensor = sensorValueComboBox.options[sensorValueComboBox.selectedIndex];
+    const sensorTextFormat = document.getElementById("lcd-txt-sensor-text-format").value;
+
+    const sensorId = selectedSensor.value;
+    const sensorValue = selectedSensor.title;
+    const sensorLabel = selectedSensor.label;
+    const sensorUnit = selectedSensor.getAttribute("data-unit");
+
+    const sensorValueElement = document.createElement("div");
+    sensorValueElement.id = sensorId;
+    sensorValueElement.title = sensorLabel;
+    sensorValueElement.innerHTML = sensorTextFormat
+        .replace("{value}", sensorValue)
+        .replace("{unit}", sensorUnit);
+
+    sensorValueElement.style.position = "absolute";
+    sensorValueElement.style.left = "0px";
+    sensorValueElement.style.top = "0px";
+    sensorValueElement.draggable = true;
+
+    sensorValueElement.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', event.target.id);
+    });
+
+    designerPane.appendChild(sensorValueElement);
+
+    // TODO: Add to ul lcd-designer-placed-elements (with data entries)
+    // TODO: save sensor config
 }
 
 function dropOnParent(event) {

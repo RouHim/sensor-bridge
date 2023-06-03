@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::sensor;
 use crate::sensor::SensorValue;
 use rayon::prelude::*;
@@ -34,7 +35,8 @@ fn get_total_cpu_load(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 
     vec![SensorValue {
         id: "cpu_load_total".to_string(),
-        value: format!("{:.2}%", total_cpu_load),
+        value: format!("{:.2}", total_cpu_load),
+        unit: "%".to_string(),
         label: "Total CPU load".to_string(),
         sensor_type: "percentage".to_string(),
     }]
@@ -52,8 +54,9 @@ fn get_individual_cpu_load(system_stat: &PlatformImpl) -> Vec<SensorValue> {
                 cpu.user * 100.0 + cpu.nice * 100.0 + cpu.system * 100.0 + cpu.interrupt * 100.0;
             SensorValue {
                 id: format!("cpu_load_{}", i),
-                value: format!("{:.2}%", total_cpu_load),
+                value: format!("{:.2}", total_cpu_load),
                 label: format!("CPU {} load", i),
+                unit: "%".to_string(),
                 sensor_type: "percentage".to_string(),
             }
         })

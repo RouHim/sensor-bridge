@@ -13,6 +13,7 @@ window.addEventListener("DOMContentLoaded", () => {
     );
 
     loadComPorts();
+    onLcdSelected();
 });
 
 function outputModeSelected() {

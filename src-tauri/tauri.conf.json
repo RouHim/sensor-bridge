@@ -67,8 +67,8 @@
     "windows": [
       {
         "title": "sensor-bridge",
-        "height": 600,
-        "width": 800,
+        "height": 800,
+        "width": 1280,
         "fullscreen": false,
         "resizable": true
       }

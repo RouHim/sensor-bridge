@@ -12,6 +12,7 @@ pub trait SensorProvider {
 pub struct SensorValue {
     pub id: String,
     pub value: String,
+    pub unit: String,
     pub label: String,
     pub sensor_type: String,
 }
