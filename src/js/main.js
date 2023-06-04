@@ -5,24 +5,24 @@ import {onLcdSelected} from './lcd.js';
 let currentComPort = "";
 
 const lblComPortNameHeader = document.getElementById("com-port-name-header");
+const cmbPortMode = document.getElementById("txt-display-mode");
 
 window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btn-refresh-com-ports").addEventListener("click", loadComPorts);
 
     // Select current config view
-    document.getElementById("txt-display-mode").addEventListener("change", outputModeSelected);
+    cmbPortMode.addEventListener("change", outputModeChanged);
 
     document.getElementById("main-chk-transfer-active").addEventListener("click",
         () => toggleSync(document.getElementById("main-chk-transfer-active").checked)
     );
 
     loadComPorts();
-    onLcdSelected(currentComPort);
 });
 
-function outputModeSelected() {
+function outputModeChanged() {
     // Get selected output mode
-    let outputMode = document.getElementById("txt-display-mode").value;
+    let outputMode = cmbPortMode.value;
 
     // match output mode to the corresponding config view
     switch (outputMode) {
@@ -30,7 +30,7 @@ function outputModeSelected() {
             document.getElementById("lcd-panel").style.display = "block";
             document.getElementById("i2c-panel").style.display = "none";
             document.getElementById("spi-panel").style.display = "none";
-            onLcdSelected();
+            onLcdSelected(currentComPort);
             break;
         case "I2c":
             document.getElementById("lcd-panel").style.display = "none";
@@ -81,7 +81,9 @@ function onComPortSelected(element) {
             // cast port config to json object
             portConfig = JSON.parse(portConfig);
 
-            document.getElementById("txt-display-mode").value = portConfig.mode;
+            // Set com port mode and fire outputModeChanged
+            cmbPortMode.value = portConfig.mode;
+            outputModeChanged();
         }
     );
 }

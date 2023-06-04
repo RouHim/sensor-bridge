@@ -21,8 +21,6 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadLcdConfig(comPort) {
-    // FIXME: This does not work and gets smh overwritten
-
     invoke('load_port_config', {comPort: comPort}).then(
         (portConfig) => {
             // cast port config to json object
@@ -33,7 +31,10 @@ function loadLcdConfig(comPort) {
             txtResolutionWidth.value = lcdConfig.resolution_width;
             txtResolutionHeight.value = lcdConfig.resolution_height;
         }
-    );
+    ).then(() => {
+        // Update ui elements with the loaded lcd config
+        updateLcdDesignPaneDimensions();
+    });
 }
 
 export function onLcdSelected(comPort) {
@@ -42,6 +43,7 @@ export function onLcdSelected(comPort) {
 
     // Load lcd config
     loadLcdConfig(comPort);
+
 }
 
 function loadSensorValues() {
@@ -103,9 +105,6 @@ function dropOnParent(event) {
 
     const x = event.clientX - designerPane.getBoundingClientRect().left - htmlElement.clientWidth / 2;
     const y = event.clientY - designerPane.getBoundingClientRect().top - htmlElement.clientHeight / 2;
-
-    console.log(x);
-    console.log(y);
 
     htmlElement.style.left = `${x}px`;
     htmlElement.style.top = `${y}px`;
