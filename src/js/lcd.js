@@ -154,6 +154,8 @@ function dropOnParent(event) {
 
     htmlElement.style.left = `${x}px`;
     htmlElement.style.top = `${y}px`;
+
+    saveConfig();
 }
 
 function updateLcdDesignPaneDimensions() {
