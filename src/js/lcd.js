@@ -7,6 +7,19 @@ const txtResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtResolutionHeight = document.getElementById("lcd-txt-resolution-height");
 const btnAddSensor = document.getElementById("lcd-btn-add-sensor");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
+
+const txtSensorDescription = document.getElementById("lcd-txt-sensor-description");
+const cmbSensorTypeSelection = document.getElementById("lcd-cmb-sensor-type-selection");
+const txtSensorTextFormat = document.getElementById("lcd-txt-sensor-text-format");
+const txtSensorPositionX = document.getElementById("lcd-txt-sensor-position-x");
+const txtSensorPositionY = document.getElementById("lcd-txt-sensor-position-y");
+
+let lastSelectedSensorListElement = null;
+let lastSelectedDesignerElement = null;
+
+const LIST_ID_PREFIX = "list-";
+const DESIGNER_ID_PREFIX = "designer-";
+
 window.addEventListener("DOMContentLoaded", () => {
     // Register event for display resolution
     txtResolutionWidth.addEventListener("input", updateLcdDesignPaneDimensions);
@@ -54,8 +67,7 @@ function loadSensorValues() {
             sensorValues = JSON.parse(sensorValues);
 
             // Add sensor values to the sensor value combo box
-            let sensorValueComboBox = document.getElementById("lcd-txt-add-sensor");
-            sensorValueComboBox.innerHTML = sensorValues.map(
+            cmbSensorTypeSelection.innerHTML = sensorValues.map(
                 (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
             ).join("");
 
@@ -63,26 +75,45 @@ function loadSensorValues() {
     );
 }
 
+function setSelectedSensor(listHtmlElement) {
+    let elementId = listHtmlElement.id;
+
+    // Remove prefix xyz- including the minus from the id
+    elementId = elementId.substring(elementId.indexOf("-") + 1);
+
+    lastSelectedSensorListElement = document.getElementById(LIST_ID_PREFIX + elementId);
+    lastSelectedDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+
+    console.log(elementId);
+    console.log(lastSelectedSensorListElement.id);
+    console.log(lastSelectedDesignerElement.id);
+}
+
 function addSensor() {
-    const sensorValueComboBox = document.getElementById("lcd-txt-add-sensor");
-    const selectedSensor = sensorValueComboBox.options[sensorValueComboBox.selectedIndex];
-    const sensorTextFormat = document.getElementById("lcd-txt-sensor-text-format").value;
+    if (txtSensorDescription.value === "") {
+        alert("Please enter a description for the sensor.");
+        return;
+    }
+
+    const selectedSensor = cmbSensorTypeSelection.options[cmbSensorTypeSelection.selectedIndex];
+    const sensorTextFormat = txtSensorTextFormat.value;
 
     const sensorId = selectedSensor.value;
     const sensorValue = selectedSensor.title;
-    const sensorLabel = selectedSensor.label;
     const sensorUnit = selectedSensor.getAttribute("data-unit");
+    const calculatedId = txtSensorDescription.value.replace(" ", "-").toLowerCase();
 
+    // Build designer element
     const sensorValueElement = document.createElement("div");
-    sensorValueElement.id = sensorId;
-    sensorValueElement.title = sensorLabel;
+    sensorValueElement.id = DESIGNER_ID_PREFIX + calculatedId;
+    sensorValueElement.title = txtSensorDescription.value;
     sensorValueElement.innerHTML = sensorTextFormat
         .replace("{value}", sensorValue)
         .replace("{unit}", sensorUnit);
 
     sensorValueElement.style.position = "absolute";
-    sensorValueElement.style.left = "0px";
-    sensorValueElement.style.top = "0px";
+    sensorValueElement.style.left = txtSensorPositionX.value + "px";
+    sensorValueElement.style.top = txtSensorPositionY.value + "px";
     sensorValueElement.draggable = true;
 
     sensorValueElement.addEventListener('dragstart', (event) => {
@@ -92,19 +123,34 @@ function addSensor() {
     designerPane.appendChild(sensorValueElement);
 
     // Add sensor to the list
-    lstDesignerPlacedElements.innerHTML += `<li data-id="${sensorId} data-label="${sensorLabel} data-unit="${sensorUnit}">${sensorTextFormat}</li>`;
+    lstDesignerPlacedElements.innerHTML += `<li id="list-${calculatedId}" data-sensor-id="${sensorId} data-sensor-text-format="${sensorTextFormat}">${txtSensorDescription.value}</li>`;
+    // And register click event and pass the clicket element
+    let listEntryElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
+    listEntryElement.addEventListener("click", onSensorListItemClick);
+    setSelectedSensor(listEntryElement);
 
     // Save config
     saveConfig();
 }
 
+function onSensorListItemClick(event) {
+    setSelectedSensor(event.target);
+}
+
 function dropOnParent(event) {
     event.preventDefault();
+
     const elementId = event.dataTransfer.getData('text/plain');
     const htmlElement = document.getElementById(elementId);
 
-    const x = event.clientX - designerPane.getBoundingClientRect().left - htmlElement.clientWidth / 2;
-    const y = event.clientY - designerPane.getBoundingClientRect().top - htmlElement.clientHeight / 2;
+    setSelectedSensor(htmlElement);
+
+    let x = event.clientX - designerPane.getBoundingClientRect().left - htmlElement.clientWidth / 2;
+    let y = event.clientY - designerPane.getBoundingClientRect().top - htmlElement.clientHeight / 2;
+
+    // allow only positive values
+    x = x < 0 ? 0 : x;
+    y = y < 0 ? 0 : y;
 
     htmlElement.style.left = `${x}px`;
     htmlElement.style.top = `${y}px`;

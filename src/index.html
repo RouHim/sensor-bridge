@@ -56,9 +56,9 @@
             <div id="lcd-panel" style="display: block;">
                 <div id="lcd-config" class="flex-container">
                     <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
-                    <input type="text" id="lcd-txt-resolution-width" value="1024" style="width: 50px;">
+                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024" style="width: 50px;">
                     <div style="margin: 5px 10px">x</div>
-                    <input type="text" id="lcd-txt-resolution-height" value="600" style="width: 50px;">
+                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600" style="width: 50px;">
                 </div>
 
                 <div id="lcd-designer-pane" style="position: relative;">
@@ -79,20 +79,30 @@
                 <div id="lcd-elements-detail-editor" class="row-flex-container">
                     <div style="width: 25%; margin-right: 10px; padding-right: 10px; border-right: #ccc solid 1px;">
                         <ul id="lcd-designer-placed-elements">
-                            <li>First</li>
-                            <li>Second</li>
                         </ul>
                     </div>
 
                     <div id="lcd-sensor-entry-config" style="width: 75%">
                         <table>
                             <tr>
+                                <td>Description:</td>
+                                <td><input type="text" id="lcd-txt-sensor-description" value=""></td>
+                            </tr>
+                            <tr>
                                 <td>Sensor:</td>
-                                <td><select id="lcd-txt-add-sensor"></select></td>
+                                <td><select id="lcd-cmb-sensor-type-selection"></select></td>
                             </tr>
                             <tr>
                                 <td>Format:</td>
                                 <td><input type="text" id="lcd-txt-sensor-text-format" value="{value}{unit}"></td>
+                            </tr>
+                            <tr>
+                                <td>Position X:</td>
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-x" value="0"></td>
+                            </tr>
+                            <tr>
+                                <td>Position Y:</td>
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-y" value="0"></td>
                             </tr>
                         </table>
                     </div>
