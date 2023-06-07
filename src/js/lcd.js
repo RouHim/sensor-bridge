@@ -85,6 +85,70 @@ function setSelectedSensor(listHtmlElement) {
 
     lastSelectedSensorListElement = document.getElementById(LIST_ID_PREFIX + elementId);
     lastSelectedDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+
+    // Register arrow key press event to move the selected sensor on the designer pane
+    document.addEventListener("keydown", moveSelectedSensor);
+}
+
+
+// If the ctrl key is pressed, entry is moved by 5px instead of 1px
+function moveSelectedSensor() {
+    // Check if the ctrl key or shift is pressed
+    const isModifierPressed = event.ctrlKey || event.shiftKey;
+
+    // Check if the arrow keys are pressed
+    const isArrowUpPressed = event.key === "ArrowUp";
+    const isArrowDownPressed = event.key === "ArrowDown";
+    const isArrowLeftPressed = event.key === "ArrowLeft";
+    const isArrowRightPressed = event.key === "ArrowRight";
+
+    // Check if the user pressed the ctrl key and an arrow key
+    if (isModifierPressed && (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed)) {
+        // Move the selected sensor by 5px
+        moveSelectedSensorBy(5, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
+    } else if (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed) {
+        // Move the selected sensor by 1px
+        moveSelectedSensorBy(1, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
+    }
+}
+
+function moveSelectedSensorBy(number, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed) {
+    // Get the current position of the selected sensor
+    let currentX = parseInt(lastSelectedDesignerElement.style.left);
+    let currentY = parseInt(lastSelectedDesignerElement.style.top);
+
+    // Move the selected sensor by the given number
+    if (isArrowUpPressed) {
+        currentY -= number;
+    } else if (isArrowDownPressed) {
+        currentY += number;
+    } else if (isArrowLeftPressed) {
+        currentX -= number;
+    } else if (isArrowRightPressed) {
+        currentX += number;
+    }
+
+    // Check if the sensor is out of bounds
+    if (currentX < 0) {
+        currentX = 0;
+    }
+    if (currentY < 0) {
+        currentY = 0;
+    }
+    if (currentX > designerPane.clientWidth - lastSelectedDesignerElement.clientWidth) {
+        currentX = designerPane.clientWidth - lastSelectedDesignerElement.clientWidth;
+    }
+    if (currentY > designerPane.clientHeight - lastSelectedDesignerElement.clientHeight) {
+        currentY = designerPane.clientHeight - lastSelectedDesignerElement.clientHeight;
+    }
+
+    // Update the position of the selected sensor
+    txtSensorPositionX.value = currentX;
+    txtSensorPositionY.value = currentY;
+
+    // Update the position of the selected sensor in the designer
+    lastSelectedDesignerElement.style.left = currentX + "px";
+    lastSelectedDesignerElement.style.top = currentY + "px";
 }
 
 function updateSensor(calculatedId) {
