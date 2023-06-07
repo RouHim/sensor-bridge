@@ -161,7 +161,6 @@ function removeSensor() {
     saveConfig();
 }
 
-// FIXME: This works only for the last selected sensor
 function onSensorListItemClick(event) {
     console.log("clicked: " + event.target.id);
     return;
