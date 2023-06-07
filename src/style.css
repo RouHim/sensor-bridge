@@ -112,7 +112,7 @@ html, body {
     margin-left: 10px;
 }
 
-.header-button {
+.icon-button {
     background: none;
     border: none;
     color: inherit;
@@ -120,7 +120,7 @@ html, body {
     margin-left: 10px;
     font: inherit;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1.25em;
 }
 
 .kill-switch {

@@ -5,7 +5,7 @@ import {saveConfig} from './base.js';
 const designerPane = document.getElementById("lcd-designer-pane");
 const txtResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtResolutionHeight = document.getElementById("lcd-txt-resolution-height");
-const btnAddSensor = document.getElementById("lcd-btn-add-sensor");
+const btnSaveSensor = document.getElementById("lcd-btn-save-sensor");
 const btnRemoveSensor = document.getElementById("lcd-btn-remove-sensor");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 
@@ -27,7 +27,7 @@ window.addEventListener("DOMContentLoaded", () => {
     txtResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
 
     // Register event for sensor value add
-    btnAddSensor.addEventListener("click", addOrUpdateSensor);
+    btnSaveSensor.addEventListener("click", addOrUpdateSensor);
     btnRemoveSensor.addEventListener("click", removeSensor);
 
     // Register drag dropping
@@ -88,6 +88,17 @@ function setSelectedSensor(listHtmlElement) {
 
     // Register arrow key press event to move the selected sensor on the designer pane
     document.addEventListener("keydown", moveSelectedSensor);
+
+    // Set background color of the selected sensor
+    lastSelectedSensorListElement.style.backgroundColor = "rgb(0, 0, 0, 0.5)";
+    // Set background color of all other li elements to transparent
+    Array.from(lstDesignerPlacedElements.children).forEach(
+        (child) => {
+            if (child.id !== lastSelectedSensorListElement.id) {
+                child.style.backgroundColor = "transparent";
+            }
+        }
+    );
 }
 
 

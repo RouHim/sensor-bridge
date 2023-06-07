@@ -24,7 +24,7 @@
         <div id="master-pane">
             <h3>
                 COM Ports
-                <button id="btn-refresh-com-ports" class="header-button">
+                <button id="btn-refresh-com-ports" class="icon-button">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </h3>
@@ -61,18 +61,14 @@
                     <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600" style="width: 50px;">
                 </div>
 
-                <div id="lcd-designer-pane" style="position: relative;">
+                <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px">
                 </div>
 
                 <div class="flex-container">
                     <b>Elements</b>
 
-                    <button id="lcd-btn-add-sensor" class="header-button">
-                        <i class="fas fa-plus"></i>
-                    </button>
-
-                    <button id="lcd-btn-remove-sensor" class="header-button">
-                        <i class="fas fa-minus"></i>
+                    <button id="lcd-btn-remove-sensor" class="icon-button">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
 
@@ -83,6 +79,11 @@
                     </div>
 
                     <div id="lcd-sensor-entry-config" style="width: 75%">
+
+                        <button id="lcd-btn-save-sensor" class="icon-button">
+                            <i class="fas fa-save"></i>
+                        </button>
+
                         <table>
                             <tr>
                                 <td>Description:</td>
@@ -126,10 +127,10 @@
                     <label for="i2c-txt-output-address" style="margin-right: 5px">Output:</label>
                     <select id="i2c-txt-output-address">
                     </select>
-                    <button id="i2c-btn-add-output-address" class="header-button">
+                    <button id="i2c-btn-add-output-address" class="icon-button">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button id="i2-btn-delete-output-address" class="header-button">
+                    <button id="i2-btn-delete-output-address" class="icon-button">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -146,7 +147,7 @@
                 <div class="dashed-border">
                     <h3>
                         Sensor Values
-                        <button id="i2c-btn-refresh-sensor-values" class="header-button">
+                        <button id="i2c-btn-refresh-sensor-values" class="icon-button">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </h3>
