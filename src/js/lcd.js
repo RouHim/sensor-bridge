@@ -58,7 +58,6 @@ export function onLcdSelected(comPort) {
 
     // Load lcd config
     loadLcdConfig(comPort);
-
 }
 
 function loadSensorValues() {
@@ -220,7 +219,12 @@ function addOrUpdateSensor() {
     designerPane.appendChild(designerElement);
 
     // Add sensor to the list
-    lstDesignerPlacedElements.innerHTML += `<li id="list-${calculatedId}" data-sensor-id="${sensorId}" data-sensor-text-format="${sensorTextFormat}">${txtSensorDescription.value}</li>`;
+    lstDesignerPlacedElements.innerHTML += `
+<li draggable="true" id="list-${calculatedId}" data-sensor-id="${sensorId}" data-sensor-text-format="${sensorTextFormat}" ondragstart="onListItemDragStart(event)" ondragover="onListItemDragOver(event)" ondrop="onListItemDrop(event)">
+${txtSensorDescription.value}
+</li>
+`;
+
     let listElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
     setSelectedSensor(listElement);
 
@@ -229,6 +233,9 @@ function addOrUpdateSensor() {
     const sensorListItems = document.querySelectorAll("#lcd-designer-placed-elements li");
     sensorListItems.forEach((sensorListItem) => {
         sensorListItem.addEventListener("click", onSensorListItemClick);
+        sensorListItem.addEventListener('dragstart', onListItemDragStart);
+        sensorListItem.addEventListener('dragover', onListItemDragOver);
+        sensorListItem.addEventListener('drop', onListItemDrop);
     });
 
     // Save config
@@ -296,6 +303,30 @@ function updateLcdDesignPaneDimensions() {
 
     designerPane.style.width = width + "px";
     designerPane.style.height = height + "px";
+
+    saveConfig();
+}
+
+let draggedItem;
+
+function onListItemDragStart(event) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', event.target.textContent);
+    draggedItem = event.target;
+}
+
+function onListItemDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+}
+
+function onListItemDrop(event) {
+    event.preventDefault();
+    if (event.target.tagName === 'LI') {
+        event.target.parentNode.insertBefore(draggedItem, event.target.nextSibling);
+    } else {
+        event.target.appendChild(draggedItem);
+    }
 
     saveConfig();
 }

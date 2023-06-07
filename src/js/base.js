@@ -25,6 +25,8 @@ export function saveConfig() {
         resolution_height: parseInt(lcdResolutionHeight),
     }
 
+    // TODO: save sensor elements to config
+
     invoke('save_config', {
         comPort: comPort,
         outputMode: outputMode,
