@@ -22,6 +22,16 @@ pub struct ComPortConfig {
 pub struct LcdConfig {
     pub resolution_height: u32,
     pub resolution_width: u32,
+    pub elements: Vec<LcdElement>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct LcdElement {
+    pub name: String,
+    pub sensor_id: String,
+    pub text_format: String,
+    pub x: u32,
+    pub y: u32,
 }
 
 impl LcdConfig {
@@ -29,6 +39,7 @@ impl LcdConfig {
         LcdConfig {
             resolution_height: 512,
             resolution_width: 512,
+            elements: vec![],
         }
     }
 }
