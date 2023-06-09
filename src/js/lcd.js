@@ -79,6 +79,12 @@ function loadSensorValues() {
 }
 
 function setSelectedSensor(listHtmlElement) {
+    // If elementId is undefined or null, return
+    if (!listHtmlElement || !listHtmlElement.id) {
+        console.log("Element id is undefined or null");
+        return;
+    }
+
     let elementId = listHtmlElement.id;
 
     // Remove prefix xyz- including the minus from the id
@@ -100,6 +106,9 @@ function setSelectedSensor(listHtmlElement) {
             }
         }
     );
+
+    // Show the sensor details of the last selected sensor
+    showLastSelectedSensorDetail();
 }
 
 
@@ -227,6 +236,12 @@ function saveSensor() {
         event.dataTransfer.setData('text/plain', event.target.id);
     });
 
+    // FIXME: Select sensor on mouse down
+    // event.target.id is empty
+    designerElement.addEventListener('mousedown', (event) => {
+        setSelectedSensor(event.target.id);
+    });
+
     designerPane.appendChild(designerElement);
 
     // Create new li element
@@ -287,14 +302,14 @@ function removeSensor() {
 
 function onSensorListItemClick(event) {
     setSelectedSensor(event.target);
+}
 
+function showLastSelectedSensorDetail() {
     txtSensorName.value = lastSelectedSensorListElement.innerHTML;
-
-    // Select the sensor type in the combo box
     cmbSensorTypeSelection.value = lastSelectedSensorListElement.getAttribute("data-sensor-id");
     txtSensorTextFormat.value = lastSelectedSensorListElement.getAttribute("data-sensor-text-format");
-    txtSensorPositionX.value = lastSelectedDesignerElement.style.left.replace("px", "");
-    txtSensorPositionY.value = lastSelectedDesignerElement.style.top.replace("px", "");
+    txtSensorPositionX.value = lastSelectedSensorListElement.getAttribute("data-sensor-position-x");
+    txtSensorPositionY.value = lastSelectedSensorListElement.getAttribute("data-sensor-position-y");
 }
 
 function dropOnParent(event) {
@@ -302,8 +317,6 @@ function dropOnParent(event) {
 
     const elementId = event.dataTransfer.getData('text/plain');
     const htmlElement = document.getElementById(elementId);
-
-    setSelectedSensor(htmlElement);
 
     let x = event.clientX - designerPane.getBoundingClientRect().left - htmlElement.clientWidth / 2;
     let y = event.clientY - designerPane.getBoundingClientRect().top - htmlElement.clientHeight / 2;
