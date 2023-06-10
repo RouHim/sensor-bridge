@@ -15,6 +15,7 @@ const txtSensorTextFormat = document.getElementById("lcd-txt-sensor-text-format"
 const txtSensorPositionX = document.getElementById("lcd-txt-sensor-position-x");
 const txtSensorPositionY = document.getElementById("lcd-txt-sensor-position-y");
 
+let sensorValues = [];
 let lastSelectedSensorListElement = null;
 let lastSelectedDesignerElement = null;
 
@@ -47,10 +48,62 @@ function loadLcdConfig(comPort) {
             // Set display resolution
             txtResolutionWidth.value = lcdConfig.resolution_width;
             txtResolutionHeight.value = lcdConfig.resolution_height;
+
+            // Clear designer pane
+            designerPane.innerHTML = "";
+
+            // Add elements to designer pane
+            lcdConfig.elements.forEach((element) => {
+                let sensor = sensorValues.find((sensor) => sensor.id === element.sensor_id);
+                let sensorValue = sensor ? sensor.value : "";
+                let sensorUnit = sensor ? sensor.unit : "";
+
+                // Add sensor to designer pane
+                addSensorToDesignerPane(element.sensor_id, element.text_format, sensorValue, sensorUnit, element.name, element.x, element.y);
+
+                addSensorToList(element.id, element.sensor_id, element.text_format, element.x, element.y, element.name);
+            });
+
+            // Select first sensor in the list
+            const firstSensorInList = document.querySelector("#lcd-designer-placed-elements li");
+            if (firstSensorInList) {
+                setSelectedSensor(firstSensorInList);
+            }
         }
     ).then(() => {
         // Update ui elements with the loaded lcd config
         updateLcdDesignPaneDimensions();
+    });
+}
+
+function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, positionY, sensorName) {
+    const liElement = document.createElement("li");
+    liElement.id = LIST_ID_PREFIX + elementId;
+    liElement.setAttribute("data-sensor-id", sensorId);
+    liElement.setAttribute("data-sensor-text-format", sensorTextFormat);
+    liElement.setAttribute("data-sensor-position-x", positionX);
+    liElement.setAttribute("data-sensor-position-y", positionY);
+    liElement.innerHTML = sensorName;
+    liElement.draggable = true;
+    liElement.ondragstart = onListItemDragStart;
+    liElement.ondragover = onListItemDragOver;
+    liElement.ondrop = onListItemDrop;
+
+
+    // Add sensor to the list#
+    lstDesignerPlacedElements.innerHTML += liElement.outerHTML;
+
+    // Set the new li element as selected
+    setSelectedSensor(liElement);
+
+    // Find all li element in the ul lcd-designer-placed-elements and register click event
+    // We have to re-register the click event because the list was re-rendered
+    const sensorListItems = document.querySelectorAll("#lcd-designer-placed-elements li");
+    sensorListItems.forEach((sensorListItem) => {
+        sensorListItem.addEventListener("click", onSensorListItemClick);
+        sensorListItem.addEventListener('dragstart', onListItemDragStart);
+        sensorListItem.addEventListener('dragover', onListItemDragOver);
+        sensorListItem.addEventListener('drop', onListItemDrop);
     });
 }
 
@@ -64,10 +117,10 @@ export function onLcdSelected(comPort) {
 
 function loadSensorValues() {
     invoke('get_sensor_values').then(
-        (sensorValues) => {
+        (loadedSensors) => {
             // cast sensor values to json object
             // Example string: [{"id":"SCPUCLK","value":"3393","label":"CPU Clock","sensor_type":"sys"},{"id":"SCPUUTI","value":"41","label":"CPU Utilization","sensor_type":"sys"},{"id":"SFREEMEM","value":"9241","label":"Free Memory","sensor_type":"sys"},{"id":"SGPU1UTI","value":"7","label":"GPU Utilization","sensor_type":"sys"},{"id":"TCPUPKG","value":"68","label":"CPU Package","sensor_type":"temp"},{"id":"TGPU1DIO","value":"46","label":"GPU Diode","sensor_type":"temp"},{"id":"FCPU","value":"3275","label":"CPU","sensor_type":"fan"},{"id":"PCPUPKG","value":"12.27","label":"CPU Package","sensor_type":"pwr"}]
-            sensorValues = JSON.parse(sensorValues);
+            sensorValues = JSON.parse(loadedSensors);
 
             // Add sensor values to the sensor value combo box
             cmbSensorTypeSelection.innerHTML = sensorValues.map(
@@ -92,6 +145,9 @@ function setSelectedSensor(listHtmlElement) {
 
     lastSelectedSensorListElement = document.getElementById(LIST_ID_PREFIX + elementId);
     lastSelectedDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+
+    console.log("Selected sensor in list: " + lastSelectedSensorListElement.id);
+    console.log("Selected sensor in designer: " + lastSelectedDesignerElement.id);
 
     // Register arrow key press event to move the selected sensor on the designer pane
     document.addEventListener("keydown", moveSelectedSensor);
@@ -198,6 +254,30 @@ function updateSensor(calculatedId) {
     designerElement.style.top = txtSensorPositionY.value + "px";
 }
 
+function addSensorToDesignerPane(elementId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY) {
+    const designerElement = document.createElement("div");
+    designerElement.id = DESIGNER_ID_PREFIX + elementId;
+    designerElement.title = sensorName;
+    designerElement.innerHTML = sensorTextFormat
+        .replace("{value}", sensorValue)
+        .replace("{unit}", sensorUnit);
+
+    designerElement.style.position = "absolute";
+    designerElement.style.left = positionX + "px";
+    designerElement.style.top = positionY + "px";
+    designerElement.draggable = true;
+
+    designerElement.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', event.target.id);
+    });
+
+    designerElement.addEventListener('mousedown', (event) => {
+        setSelectedSensor(event.target);
+    });
+
+    designerPane.appendChild(designerElement);
+}
+
 function saveSensor() {
     if (txtSensorName.value === "") {
         alert("Please enter a name for the sensor.");
@@ -218,61 +298,15 @@ function saveSensor() {
     const sensorId = selectedSensor.value;
     const sensorValue = selectedSensor.title;
     const sensorUnit = selectedSensor.getAttribute("data-unit");
+    const sensorName = txtSensorName.value;
+    let positionX = txtSensorPositionX.value;
+    let positionY = txtSensorPositionY.value;
 
     // Build designer element
-    const designerElement = document.createElement("div");
-    designerElement.id = DESIGNER_ID_PREFIX + calculatedId;
-    designerElement.title = txtSensorName.value;
-    designerElement.innerHTML = sensorTextFormat
-        .replace("{value}", sensorValue)
-        .replace("{unit}", sensorUnit);
-
-    designerElement.style.position = "absolute";
-    designerElement.style.left = txtSensorPositionX.value + "px";
-    designerElement.style.top = txtSensorPositionY.value + "px";
-    designerElement.draggable = true;
-
-    designerElement.addEventListener('dragstart', (event) => {
-        event.dataTransfer.setData('text/plain', event.target.id);
-    });
-
-    // FIXME: Select sensor on mouse down
-    // event.target.id is empty
-    designerElement.addEventListener('mousedown', (event) => {
-        setSelectedSensor(event.target);
-    });
-
-    designerPane.appendChild(designerElement);
+    addSensorToDesignerPane(calculatedId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY);
 
     // Create new li element
-    const liElement = document.createElement("li");
-    liElement.id = LIST_ID_PREFIX + calculatedId;
-    liElement.setAttribute("data-sensor-id", sensorId);
-    liElement.setAttribute("data-sensor-text-format", sensorTextFormat);
-    liElement.setAttribute("data-sensor-position-x", txtSensorPositionX.value);
-    liElement.setAttribute("data-sensor-position-y", txtSensorPositionY.value);
-    liElement.innerHTML = txtSensorName.value;
-    liElement.draggable = true;
-    liElement.ondragstart = onListItemDragStart;
-    liElement.ondragover = onListItemDragOver;
-    liElement.ondrop = onListItemDrop;
-
-
-    // Add sensor to the list#
-    lstDesignerPlacedElements.innerHTML += liElement.outerHTML;
-
-    // Set the new li element as selected
-    setSelectedSensor(liElement);
-
-    // Find all li element in the ul lcd-designer-placed-elements and register click event
-    // We have to re-register the click event because the list was re-rendered
-    const sensorListItems = document.querySelectorAll("#lcd-designer-placed-elements li");
-    sensorListItems.forEach((sensorListItem) => {
-        sensorListItem.addEventListener("click", onSensorListItemClick);
-        sensorListItem.addEventListener('dragstart', onListItemDragStart);
-        sensorListItem.addEventListener('dragover', onListItemDragOver);
-        sensorListItem.addEventListener('drop', onListItemDrop);
-    });
+    addSensorToList(calculatedId, sensorId, sensorTextFormat, positionX, positionY, sensorName);
 
     // Save config
     saveConfig();
