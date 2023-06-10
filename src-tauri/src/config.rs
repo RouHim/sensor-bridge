@@ -27,6 +27,7 @@ pub struct LcdConfig {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct LcdElement {
+    pub id: String,
     pub name: String,
     pub sensor_id: String,
     pub text_format: String,

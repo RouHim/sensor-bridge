@@ -61,16 +61,12 @@ function loadLcdConfig(comPort) {
                 let sensorValue = sensor ? sensor.value : "";
                 let sensorUnit = sensor ? sensor.unit : "";
 
-                // Add sensor to designer pane
-                addSensorToDesignerPane(element.sensor_id, element.text_format, sensorValue, sensorUnit, element.name, element.x, element.y);
-
                 // Add sensor to list
                 addSensorToList(element.id, element.sensor_id, element.text_format, element.x, element.y, element.name);
-            });
 
-            // Set last selected elements
-            lastSelectedSensorListElement = document.querySelector("#lcd-designer-placed-elements li");
-            lastSelectedDesignerElement = document.querySelector("#lcd-designer-pane div");
+                // Add sensor to designer pane
+                addSensorToDesignerPane(element.id, element.text_format, sensorValue, sensorUnit, element.name, element.x, element.y);
+            });
 
             // Select first sensor in the list not the last
             setSelectedSensor(document.querySelector("#lcd-designer-placed-elements li"));
@@ -84,6 +80,7 @@ function loadLcdConfig(comPort) {
 function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, positionY, sensorName) {
     const liElement = document.createElement("li");
     liElement.id = LIST_ID_PREFIX + elementId;
+    liElement.setAttribute("data-element-id", elementId);
     liElement.setAttribute("data-sensor-id", sensorId);
     liElement.setAttribute("data-sensor-text-format", sensorTextFormat);
     liElement.setAttribute("data-sensor-position-x", positionX);
@@ -98,9 +95,6 @@ function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, posit
     // Add sensor to the list#
     lstDesignerPlacedElements.innerHTML += liElement.outerHTML;
 
-    // Set the new li element as selected
-    setSelectedSensor(liElement);
-
     // Find all li element in the ul lcd-designer-placed-elements and register click event
     // We have to re-register the click event because the list was re-rendered
     const sensorListItems = document.querySelectorAll("#lcd-designer-placed-elements li");
@@ -110,6 +104,9 @@ function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, posit
         sensorListItem.addEventListener('dragover', onListItemDragOver);
         sensorListItem.addEventListener('drop', onListItemDrop);
     });
+
+    // Set last selected sensor list element
+    lastSelectedSensorListElement = liElement;
 }
 
 export function onLcdSelected(comPort) {
@@ -279,6 +276,9 @@ function addSensorToDesignerPane(elementId, sensorTextFormat, sensorValue, senso
     });
 
     designerPane.appendChild(designerElement);
+
+    // Set last selected sensor to the new sensor
+    lastSelectedDesignerElement = designerElement;
 }
 
 function saveSensor() {
@@ -305,11 +305,14 @@ function saveSensor() {
     let positionX = txtSensorPositionX.value;
     let positionY = txtSensorPositionY.value;
 
+    // Create new li element
+    addSensorToList(calculatedId, sensorId, sensorTextFormat, positionX, positionY, sensorName);
+
     // Build designer element
     addSensorToDesignerPane(calculatedId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY);
 
-    // Create new li element
-    addSensorToList(calculatedId, sensorId, sensorTextFormat, positionX, positionY, sensorName);
+    // Set the new li element as selected
+    setSelectedSensor(document.getElementById(LIST_ID_PREFIX + calculatedId));
 
     // Save config
     saveConfig();

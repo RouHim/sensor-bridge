@@ -24,7 +24,8 @@ export function saveConfig() {
     let lcdDesignerPlacedElementsListItems = lcdDesignerPlacedElements.getElementsByTagName("li");
     let lcdDesignerPlacedElementsListItemsArray = Array.from(lcdDesignerPlacedElementsListItems);
     let lcdElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
-        let sensorName = listItem.innerText.trim();
+        let elementId = listItem.getAttribute("data-element-id");
+        let elementName = listItem.innerText.trim();
         let sensorId = listItem.getAttribute("data-sensor-id");
         let sensorTextFormat = listItem.getAttribute("data-sensor-text-format");
         let sensorX = parseInt(listItem.getAttribute("data-sensor-position-x"));
@@ -32,7 +33,8 @@ export function saveConfig() {
 
         // Build sensor object
         return {
-            name: sensorName,
+            id: elementId,
+            name: elementName,
             sensor_id: sensorId,
             text_format: sensorTextFormat,
             x: sensorX,
