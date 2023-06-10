@@ -239,7 +239,7 @@ function saveSensor() {
     // FIXME: Select sensor on mouse down
     // event.target.id is empty
     designerElement.addEventListener('mousedown', (event) => {
-        setSelectedSensor(event.target.id);
+        setSelectedSensor(event.target);
     });
 
     designerPane.appendChild(designerElement);
