@@ -52,28 +52,33 @@ function loadLcdConfig(comPort) {
             // Clear designer pane
             designerPane.innerHTML = "";
 
-            // Add elements to designer pane
+            // Add elements to designer pane and list
             lcdConfig.elements.forEach((element) => {
+                // Find sensor in sensor values list
                 let sensor = sensorValues.find((sensor) => sensor.id === element.sensor_id);
+
+                // Load sensor value and unit
                 let sensorValue = sensor ? sensor.value : "";
                 let sensorUnit = sensor ? sensor.unit : "";
 
                 // Add sensor to designer pane
                 addSensorToDesignerPane(element.sensor_id, element.text_format, sensorValue, sensorUnit, element.name, element.x, element.y);
 
+                // Add sensor to list
                 addSensorToList(element.id, element.sensor_id, element.text_format, element.x, element.y, element.name);
             });
 
-            // Select first sensor in the list
-            const firstSensorInList = document.querySelector("#lcd-designer-placed-elements li");
-            if (firstSensorInList) {
-                setSelectedSensor(firstSensorInList);
-            }
+            // Set last selected elements
+            lastSelectedSensorListElement = document.querySelector("#lcd-designer-placed-elements li");
+            lastSelectedDesignerElement = document.querySelector("#lcd-designer-pane div");
+
+            // Select first sensor in the list not the last
+            setSelectedSensor(document.querySelector("#lcd-designer-placed-elements li"));
+
+            // Update designer pane dimensions
+            updateLcdDesignPaneDimensions();
         }
-    ).then(() => {
-        // Update ui elements with the loaded lcd config
-        updateLcdDesignPaneDimensions();
-    });
+    );
 }
 
 function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, positionY, sensorName) {
@@ -146,14 +151,12 @@ function setSelectedSensor(listHtmlElement) {
     lastSelectedSensorListElement = document.getElementById(LIST_ID_PREFIX + elementId);
     lastSelectedDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
 
-    console.log("Selected sensor in list: " + lastSelectedSensorListElement.id);
-    console.log("Selected sensor in designer: " + lastSelectedDesignerElement.id);
-
     // Register arrow key press event to move the selected sensor on the designer pane
     document.addEventListener("keydown", moveSelectedSensor);
 
     // Set background color of the selected sensor
     lastSelectedSensorListElement.style.backgroundColor = "rgb(0, 0, 0, 0.5)";
+
     // Set background color of all other li elements to transparent
     Array.from(lstDesignerPlacedElements.children).forEach(
         (child) => {
