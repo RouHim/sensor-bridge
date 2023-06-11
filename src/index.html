@@ -54,11 +54,17 @@
             <hr/>
 
             <div id="lcd-panel" style="display: block;">
+
                 <div id="lcd-config" class="flex-container">
                     <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
                     <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024" style="width: 50px;">
                     <div style="margin: 5px 10px">x</div>
                     <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600" style="width: 50px;">
+
+                    <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview">
+                        <i class="fas fa-eye"></i>
+                    </button>
+
                 </div>
 
                 <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px">

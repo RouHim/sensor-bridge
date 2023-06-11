@@ -8,6 +8,7 @@ const txtResolutionHeight = document.getElementById("lcd-txt-resolution-height")
 const btnSaveSensor = document.getElementById("lcd-btn-save-sensor");
 const btnRemoveSensor = document.getElementById("lcd-btn-remove-sensor");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
+const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
 
 const txtSensorName = document.getElementById("lcd-txt-sensor-name");
 const cmbSensorTypeSelection = document.getElementById("lcd-cmb-sensor-type-selection");
@@ -18,6 +19,7 @@ const txtSensorPositionY = document.getElementById("lcd-txt-sensor-position-y");
 let sensorValues = [];
 let lastSelectedSensorListElement = null;
 let lastSelectedDesignerElement = null;
+let currentComPort = null;
 
 const LIST_ID_PREFIX = "list-";
 const DESIGNER_ID_PREFIX = "designer-";
@@ -29,14 +31,19 @@ window.addEventListener("DOMContentLoaded", () => {
     txtResolutionWidth.addEventListener("input", updateLcdDesignPaneDimensions);
     txtResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
 
-    // Register event for sensor value add
+    // Register button click events
     btnSaveSensor.addEventListener("click", saveSensor);
     btnRemoveSensor.addEventListener("click", removeSensor);
+    btnToggleLivePreview.addEventListener("click", toggleLivePreview);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
     designerPane.addEventListener('drop', dropOnParent);
 });
+
+function toggleLivePreview() {
+    invoke('toggle_lcd_live_preview', {comPort: currentComPort});
+}
 
 function loadLcdConfig(comPort) {
     invoke('load_port_config', {comPort: comPort}).then(
@@ -51,6 +58,9 @@ function loadLcdConfig(comPort) {
 
             // Clear designer pane
             designerPane.innerHTML = "";
+
+            // Clear sensor list
+            lstDesignerPlacedElements.innerHTML = "";
 
             // Add elements to designer pane and list
             lcdConfig.elements.forEach((element) => {
@@ -115,6 +125,9 @@ export function onLcdSelected(comPort) {
 
     // Load lcd config
     loadLcdConfig(comPort);
+
+    // Set com port as constant
+    currentComPort = comPort;
 }
 
 function loadSensorValues() {
@@ -335,6 +348,9 @@ function removeSensor() {
 
     // Remove sensor from designer
     designerPane.removeChild(lastSelectedDesignerElement);
+
+    // Select the first sensor in the list
+    setSelectedSensor(lstDesignerPlacedElements.firstChild);
 
     // Save config
     saveConfig();

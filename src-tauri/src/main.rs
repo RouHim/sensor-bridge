@@ -17,6 +17,7 @@ mod config;
 mod cpu_sensor;
 mod sensor;
 mod serial_port;
+mod lcd_preview;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
@@ -66,6 +67,7 @@ fn main() {
             save_config,
             enable_sync,
             disable_sync,
+            toggle_lcd_live_preview,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -149,6 +151,14 @@ fn enable_sync(app_state: State<AppState>, com_port: String) {
         .lock()
         .unwrap()
         .insert(com_port, thread_handle);
+}
+
+/// Toggles the live preview for the specified lcd address and port.
+/// If the live preview is enabled, it will be disabled and vice versa.
+#[tauri::command]
+fn toggle_lcd_live_preview(com_port: String) {
+    let port_config: ComPortConfig = config::load_port_config(&com_port);
+    lcd_preview::open(&port_config);
 }
 
 /// Starts the sync thread for the specified port
