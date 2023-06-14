@@ -18,6 +18,7 @@ mod cpu_sensor;
 mod sensor;
 mod serial_port;
 mod lcd_preview;
+mod image_processor;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
@@ -68,6 +69,7 @@ fn main() {
             enable_sync,
             disable_sync,
             toggle_lcd_live_preview,
+            get_lcd_preview_image,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -153,14 +155,6 @@ fn enable_sync(app_state: State<AppState>, com_port: String) {
         .insert(com_port, thread_handle);
 }
 
-/// Toggles the live preview for the specified lcd address and port.
-/// If the live preview is enabled, it will be disabled and vice versa.
-#[tauri::command]
-fn toggle_lcd_live_preview(com_port: String) {
-    let port_config: ComPortConfig = config::load_port_config(&com_port);
-    lcd_preview::open(&port_config);
-}
-
 /// Starts the sync thread for the specified port
 /// Returns a handle to the thread
 fn start_port_thread(port_config: ComPortConfig) -> ThreadHandle {
@@ -202,7 +196,29 @@ fn disable_sync(app_state: State<AppState>, com_port: String) {
     stop_comport_sync_thread(&com_port, port_handle);
 }
 
-/// Handle tauri window  events
+/// Toggles the live preview for the specified lcd address and port.
+/// If the live preview is enabled, it will be disabled and vice versa.
+//noinspection RsWrongGenericArgumentsNumber
+#[tauri::command]
+fn toggle_lcd_live_preview(app_handle: tauri::AppHandle, com_port: String) {
+    let port_config: ComPortConfig = config::load_port_config(&com_port);
+    lcd_preview::open(app_handle, &port_config);
+}
+
+/// Returns the lcd preview image for the specified com port as base64 encoded string
+#[tauri::command]
+fn get_lcd_preview_image(com_port: String) -> String {
+    let port_config: ComPortConfig = config::load_port_config(&com_port);
+    let lcd_config = port_config.lcd_config;
+
+    let image = lcd_preview::generate(lcd_config);
+
+    let string = image_processor::to_base64(image);
+
+    string
+}
+
+/// Handle tauri window events
 fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
     |event| {
         if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
