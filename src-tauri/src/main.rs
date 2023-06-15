@@ -211,9 +211,7 @@ fn get_lcd_preview_image(com_port: String) -> String {
     let port_config: ComPortConfig = config::load_port_config(&com_port);
     let lcd_config = port_config.lcd_config;
 
-    let image = lcd_preview::generate(lcd_config);
-
-    let string = image_processor::to_base64(image);
+    let string = lcd_preview::generate(lcd_config);
 
     string
 }
