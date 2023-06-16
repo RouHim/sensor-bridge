@@ -1,10 +1,11 @@
 use crate::cpu_sensor::CpuSensor;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use crate::cpu_sensor;
+use rayon::prelude::*;
 
 pub trait SensorProvider {
     fn get_name(&self) -> String;
-    fn get_sensor_values(&self) -> Vec<SensorValue>;
 }
 
 /// Provides a single SensorValue
@@ -31,7 +32,18 @@ impl fmt::Display for SensorValue {
 pub fn read_all_sensor_values() -> Vec<SensorValue> {
     let mut sensors = vec![];
 
-    sensors.extend(CpuSensor {}.get_sensor_values());
+    // Store reference to CpuSensor {}.get_sensor_values in a vector
+    let sensor_requests = vec![cpu_sensor::get_sensor_values];
+
+    // Iterate over the vector and call each function using par_iter
+    sensor_requests
+        .par_iter()
+        .flat_map(|f| f())
+        .collect::<Vec<SensorValue>>()
+        .iter()
+        .for_each(|sensor_value| {
+            sensors.push(sensor_value.clone());
+        });
 
     sensors
 }

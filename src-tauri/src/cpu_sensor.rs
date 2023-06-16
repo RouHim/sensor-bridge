@@ -13,17 +13,18 @@ impl sensor::SensorProvider for CpuSensor {
     fn get_name(&self) -> String {
         "CPU".to_string()
     }
+}
 
-    fn get_sensor_values(&self) -> Vec<SensorValue> {
-        let system_stat = System::new();
 
-        let sensors_requests = vec![get_total_cpu_load, get_individual_cpu_load];
+pub fn get_sensor_values() -> Vec<SensorValue> {
+    let system_stat = System::new();
 
-        sensors_requests
-            .par_iter()
-            .flat_map(|f| f(&system_stat))
-            .collect()
-    }
+    let sensors_requests = vec![get_total_cpu_load, get_individual_cpu_load];
+
+    sensors_requests
+        .par_iter()
+        .flat_map(|f| f(&system_stat))
+        .collect()
 }
 
 fn get_total_cpu_load(system_stat: &PlatformImpl) -> Vec<SensorValue> {
