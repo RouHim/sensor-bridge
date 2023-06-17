@@ -4,10 +4,11 @@ windows_subsystem = "windows"
 )]
 
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
-use tauri::State;
+use tauri::{State, Window};
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
@@ -73,7 +74,7 @@ fn main() {
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
-        .expect("error while running tauri application")
+        .expect("error while running tauri application");
 }
 
 #[tauri::command]
@@ -201,7 +202,26 @@ fn disable_sync(app_state: State<AppState>, com_port: String) {
 #[tauri::command]
 fn toggle_lcd_live_preview(app_handle: tauri::AppHandle, com_port: String) {
     let port_config: ComPortConfig = config::load_port_config(&com_port);
-    lcd_preview::open(app_handle, &port_config);
+
+    let maybe_window = app_handle.get_window("lcd_preview");
+
+    if let Some(window) = maybe_window {
+        println!("Window is present in the app handle");
+        // If the window is visible, hide it and stop the sync thread
+        if window.is_visible().unwrap() {
+            println!("Window is visible");
+            window.close().unwrap();
+            // Remove the window from the tauri app handle
+        } else {
+            println!("Window is not visible");
+            // FIXME: This does not work: thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: WindowLabelAlreadyExists("lcd_preview")', src/lcd_preview.rs:18:15
+            // Open window, close it via the x button and then try to open it again
+            lcd_preview::open(app_handle, &port_config);
+        }
+    } else {
+        println!("Window is not present in the app handle");
+        lcd_preview::open(app_handle, &port_config);
+    };
 }
 
 /// Returns the lcd preview image for the specified com port as base64 encoded string

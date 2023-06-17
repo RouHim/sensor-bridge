@@ -3,7 +3,7 @@ use std::io::{Cursor, Seek, SeekFrom};
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageOutputFormat, RgbImage};
 use image::DynamicImage::ImageRgb8;
 use rusttype::{Font, Scale};
-use tauri::AppHandle;
+use tauri::{AppHandle, Size, Window, Wry};
 use crate::{config, sensor};
 use crate::config::{ComPortConfig, LcdConfig};
 
@@ -11,12 +11,20 @@ use crate::config::{ComPortConfig, LcdConfig};
 pub fn open(app_handle: AppHandle, port_config: &ComPortConfig) {
     let com_port = &port_config.com_port;
 
-    let docs_window = tauri::WindowBuilder::new(
+    let lcd_preview_window = tauri::WindowBuilder::new(
         &app_handle,
         "lcd_preview",
         tauri::WindowUrl::App(format!("lcd_preview.html#{com_port}").into()),
     ).build().unwrap();
-    docs_window.show().unwrap();
+
+    lcd_preview_window.set_title("LCD Preview").unwrap();
+    lcd_preview_window.set_resizable(false).unwrap();
+    lcd_preview_window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+        width: port_config.lcd_config.resolution_width,
+        height: port_config.lcd_config.resolution_height,
+    })).unwrap();
+
+    lcd_preview_window.show().unwrap();
 }
 
 pub fn generate(lcd_config: LcdConfig) -> String {

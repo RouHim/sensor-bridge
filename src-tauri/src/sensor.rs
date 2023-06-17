@@ -44,6 +44,6 @@ pub fn read_all_sensor_values() -> Vec<SensorValue> {
         .for_each(|sensor_value| {
             sensors.push(sensor_value.clone());
         });
-
+    
     sensors
 }

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
+    <link href="lcd_preview.css" rel="stylesheet"/>
 </head>
 
 <script>
@@ -10,8 +11,8 @@
     // Set the preview image on page load
     set_lcd_preview_image();
 
-    // Set the preview image every 5 seconds
-    setInterval(set_lcd_preview_image, 5000);
+    // Set the preview image every second
+    setInterval(set_lcd_preview_image, 1000);
 
     /// Set the preview image
     function set_lcd_preview_image() {
@@ -26,6 +27,7 @@
         );
     }
 </script>
+
 
 <body>
 <img id="lcd-preview-image"/>
