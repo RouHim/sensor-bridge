@@ -216,6 +216,7 @@ fn toggle_lcd_live_preview(app_handle: tauri::AppHandle, com_port: String) {
             println!("Window is not visible");
             // FIXME: This does not work: thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: WindowLabelAlreadyExists("lcd_preview")', src/lcd_preview.rs:18:15
             // Open window, close it via the x button and then try to open it again
+            // Maybe just make it visible again instead of opening it again
             lcd_preview::open(app_handle, &port_config);
         }
     } else {
