@@ -200,40 +200,39 @@ fn disable_sync(app_state: State<AppState>, com_port: String) {
 /// If the live preview is enabled, it will be disabled and vice versa.
 //noinspection RsWrongGenericArgumentsNumber
 #[tauri::command]
-fn toggle_lcd_live_preview(app_handle: tauri::AppHandle, com_port: String) {
+fn toggle_lcd_live_preview(app_handle: AppHandle, com_port: String) {
     let port_config: ComPortConfig = config::load_port_config(&com_port);
 
-    let maybe_window = app_handle.get_window("lcd_preview");
+    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
 
     if let Some(window) = maybe_window {
-        println!("Window is present in the app handle");
         // If the window is visible, hide it and stop the sync thread
         if window.is_visible().unwrap() {
-            println!("Window is visible");
             window.close().unwrap();
-            // Remove the window from the tauri app handle
         } else {
-            println!("Window is not visible");
-            // FIXME: This does not work: thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: WindowLabelAlreadyExists("lcd_preview")', src/lcd_preview.rs:18:15
-            // Open window, close it via the x button and then try to open it again
-            // Maybe just make it visible again instead of opening it again
-            lcd_preview::open(app_handle, &port_config);
+            window.show().unwrap();
         }
     } else {
-        println!("Window is not present in the app handle");
         lcd_preview::open(app_handle, &port_config);
     };
 }
 
 /// Returns the lcd preview image for the specified com port as base64 encoded string
+//noinspection RsWrongGenericArgumentsNumber
 #[tauri::command]
-fn get_lcd_preview_image(com_port: String) -> String {
+fn get_lcd_preview_image(app_handle: AppHandle, com_port: String) -> String {
     let port_config: ComPortConfig = config::load_port_config(&com_port);
     let lcd_config = port_config.lcd_config;
 
-    let string = lcd_preview::generate(lcd_config);
+    // If the window is not visible, return an empty string
+    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    if let Some(window) = maybe_window {
+        if !window.is_visible().unwrap() {
+            return String::new();
+        }
+    }
 
-    string
+    lcd_preview::generate(lcd_config)
 }
 
 /// Handle tauri window events

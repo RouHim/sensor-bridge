@@ -7,13 +7,16 @@ use tauri::{AppHandle, Size, Window, Wry};
 use crate::{config, sensor};
 use crate::config::{ComPortConfig, LcdConfig};
 
+// Constant for the window label
+pub const WINDOW_LABEL: &str = "lcd_preview";
+
 //noinspection RsWrongGenericArgumentsNumber
 pub fn open(app_handle: AppHandle, port_config: &ComPortConfig) {
     let com_port = &port_config.com_port;
 
     let lcd_preview_window = tauri::WindowBuilder::new(
         &app_handle,
-        "lcd_preview",
+        WINDOW_LABEL,
         tauri::WindowUrl::App(format!("lcd_preview.html#{com_port}").into()),
     ).build().unwrap();
 
