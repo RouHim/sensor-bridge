@@ -1,14 +1,14 @@
 #![cfg_attr(
-all(not(debug_assertions), target_os = "windows"),
-windows_subsystem = "windows"
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
 )]
 
 use std::collections::HashMap;
-use std::ops::Deref;
+
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
-use tauri::{State, Window};
+use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
@@ -16,10 +16,9 @@ use crate::config::{ComPortConfig, OutputMode};
 
 mod config;
 mod cpu_sensor;
+mod lcd_preview;
 mod sensor;
 mod serial_port;
-mod lcd_preview;
-mod image_processor;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
@@ -100,20 +99,20 @@ fn load_port_config(com_port: String) -> String {
 }
 
 #[tauri::command]
-fn add_output_address(com_port: String, address: String) {
-    let mut port_config: ComPortConfig = config::load_port_config(&com_port);
+fn add_output_address(com_port: String, _address: String) {
+    let port_config: ComPortConfig = config::load_port_config(&com_port);
     config::write_port_config(&port_config);
 }
 
 #[tauri::command]
-fn delete_output_address(com_port: String, address: String) {
-    let mut port_config: ComPortConfig = config::load_port_config(&com_port);
+fn delete_output_address(com_port: String, _address: String) {
+    let port_config: ComPortConfig = config::load_port_config(&com_port);
     config::write_port_config(&port_config);
 }
 
 /// Returns the address config for the specified address and port.
 #[tauri::command]
-fn load_address_config(com_port: String, output_address: String) -> String {
+fn load_address_config(com_port: String, _output_address: String) -> String {
     let port_config: ComPortConfig = config::load_port_config(&com_port);
     serde_json::to_string(&port_config).unwrap()
 }
@@ -121,11 +120,7 @@ fn load_address_config(com_port: String, output_address: String) -> String {
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-fn save_config(
-    com_port: String,
-    output_mode: String,
-    lcd_config: String,
-) {
+fn save_config(com_port: String, output_mode: String, lcd_config: String) {
     let mut port_config: ComPortConfig = config::load_port_config(&com_port);
 
     port_config.mode = OutputMode::from_str(output_mode.as_str());

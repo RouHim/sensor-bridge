@@ -1,7 +1,7 @@
-use std::fmt::Debug;
 use crate::sensor;
 use crate::sensor::SensorValue;
 use rayon::prelude::*;
+
 use std::thread;
 use std::time::Duration;
 use systemstat::platform::PlatformImpl;
@@ -14,7 +14,6 @@ impl sensor::SensorProvider for CpuSensor {
         "CPU".to_string()
     }
 }
-
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     let system_stat = System::new();

@@ -41,7 +41,7 @@ pub fn start_sync(
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
-            let sensors = sensor::read_all_sensor_values();
+            let _sensors = sensor::read_all_sensor_values();
 
             // Write data to serial port
             let data = "";

@@ -1,8 +1,8 @@
-use crate::cpu_sensor::CpuSensor;
+use crate::cpu_sensor;
+
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use crate::cpu_sensor;
-use rayon::prelude::*;
 
 pub trait SensorProvider {
     fn get_name(&self) -> String;
@@ -44,6 +44,6 @@ pub fn read_all_sensor_values() -> Vec<SensorValue> {
         .for_each(|sensor_value| {
             sensors.push(sensor_value.clone());
         });
-    
+
     sensors
 }

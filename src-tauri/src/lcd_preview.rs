@@ -1,11 +1,12 @@
-use std::fmt::format;
-use std::io::{Cursor, Seek, SeekFrom};
-use image::{DynamicImage, GenericImageView, ImageBuffer, ImageOutputFormat, RgbImage};
-use image::DynamicImage::ImageRgb8;
-use rusttype::{Font, Scale};
-use tauri::{AppHandle, Size, Window, Wry};
-use crate::{config, sensor};
 use crate::config::{ComPortConfig, LcdConfig};
+use crate::sensor;
+use image::DynamicImage::ImageRgb8;
+use image::{ImageBuffer, ImageOutputFormat};
+use rusttype::{Font, Scale};
+
+use std::io::{Cursor, Seek, SeekFrom};
+use base64::Engine;
+use tauri::AppHandle;
 
 // Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd_preview";
@@ -18,14 +19,18 @@ pub fn open(app_handle: AppHandle, port_config: &ComPortConfig) {
         &app_handle,
         WINDOW_LABEL,
         tauri::WindowUrl::App(format!("lcd_preview.html#{com_port}").into()),
-    ).build().unwrap();
+    )
+    .build()
+    .unwrap();
 
     lcd_preview_window.set_title("LCD Preview").unwrap();
     lcd_preview_window.set_resizable(false).unwrap();
-    lcd_preview_window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
-        width: port_config.lcd_config.resolution_width,
-        height: port_config.lcd_config.resolution_height,
-    })).unwrap();
+    lcd_preview_window
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: port_config.lcd_config.resolution_width,
+            height: port_config.lcd_config.resolution_height,
+        }))
+        .unwrap();
 
     lcd_preview_window.show().unwrap();
 }
@@ -36,13 +41,16 @@ pub fn generate(lcd_config: LcdConfig) -> String {
 
     // Create a new ImageBuffer with the specified resolution only in black
     let mut image = ImageBuffer::new(lcd_config.resolution_width, lcd_config.resolution_height);
-    for (x, y, pixel) in image.enumerate_pixels_mut() {
+    for (_x, _y, pixel) in image.enumerate_pixels_mut() {
         *pixel = image::Rgb([0, 0, 0]);
     }
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
-    println!("After to build bg {}ms", end.duration_since(start).as_millis());
+    println!(
+        "After to build bg {}ms",
+        end.duration_since(start).as_millis()
+    );
 
     // Draw a simple text on the image using imageproc
     let font_data = Vec::from(include_bytes!("../../fonts/Roboto-Regular.ttf") as &[u8]);
@@ -52,14 +60,19 @@ pub fn generate(lcd_config: LcdConfig) -> String {
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
-    println!("After font setup bg {}ms", end.duration_since(start).as_millis());
+    println!(
+        "After font setup bg {}ms",
+        end.duration_since(start).as_millis()
+    );
 
-    // TODO: this takes a lot of time
     let sensor_values = sensor::read_all_sensor_values();
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
-    println!("After to read sensor bg {}ms", end.duration_since(start).as_millis());
+    println!(
+        "After to read sensor bg {}ms",
+        end.duration_since(start).as_millis()
+    );
 
     // Iterate over lcd elements and draw them on the image
     for lcd_element in lcd_config.elements {
@@ -73,36 +86,58 @@ pub fn generate(lcd_config: LcdConfig) -> String {
 
         let value = sensor_value.value.as_str();
         let unit = sensor_value.unit.as_str();
-        let text = text_format.replace("{value}", value).replace("{unit}", unit);
+        let text = text_format
+            .replace("{value}", value)
+            .replace("{unit}", unit);
 
-        imageproc::drawing::draw_text_mut(&mut image, font_color, x, y, font_scale, &font, text.as_str());
+        imageproc::drawing::draw_text_mut(
+            &mut image,
+            font_color,
+            x,
+            y,
+            font_scale,
+            &font,
+            text.as_str(),
+        );
     }
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
-    println!("After to draw elements {}ms", end.duration_since(start).as_millis());
+    println!(
+        "After to draw elements {}ms",
+        end.duration_since(start).as_millis()
+    );
 
     // Convert the ImageBuffer to a DynamicImage RGB8
     let dynamic_img = ImageRgb8(image);
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
-    println!("After to rmgb8 img {}ms", end.duration_since(start).as_millis());
+    println!(
+        "After to rmgb8 img {}ms",
+        end.duration_since(start).as_millis()
+    );
 
     // Create a Vec<u8> buffer to write the image to it
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
-    dynamic_img.write_to(&mut cursor, ImageOutputFormat::Png).unwrap();
+    dynamic_img
+        .write_to(&mut cursor, ImageOutputFormat::Png)
+        .unwrap();
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
-    println!("After write to dyn img {}ms", end.duration_since(start).as_millis());
+    println!(
+        "After write to dyn img {}ms",
+        end.duration_since(start).as_millis()
+    );
 
     // Reset the cursor to the beginning of the buffer
     cursor.seek(SeekFrom::Start(0)).unwrap();
 
     // Encode the buffer to a base64 string
-    let res_base64 = base64::encode(&buf);
+    let engine = base64::engine::general_purpose::STANDARD;
+    let res_base64 = base64::Engine::encode(&engine, &buf);
 
     // Snapshot end time and print the duration
     let end = std::time::Instant::now();
