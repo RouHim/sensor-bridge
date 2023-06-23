@@ -1,7 +1,7 @@
 use crate::sensor;
-use crate::sensor::SensorValue;
 use rayon::prelude::*;
 
+use sensor_core::SensorValue;
 use std::thread;
 use std::time::Duration;
 use systemstat::platform::PlatformImpl;

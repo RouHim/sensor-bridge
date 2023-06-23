@@ -1,3 +1,4 @@
+use sensor_core::LcdConfig;
 use std::collections::HashMap;
 use std::fs::File;
 
@@ -16,33 +17,6 @@ pub struct ComPortConfig {
     pub active: bool,
     pub mode: OutputMode,
     pub lcd_config: LcdConfig,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct LcdConfig {
-    pub resolution_height: u32,
-    pub resolution_width: u32,
-    pub elements: Vec<LcdElement>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct LcdElement {
-    pub id: String,
-    pub name: String,
-    pub sensor_id: String,
-    pub text_format: String,
-    pub x: u32,
-    pub y: u32,
-}
-
-impl LcdConfig {
-    fn default() -> LcdConfig {
-        LcdConfig {
-            resolution_height: 512,
-            resolution_width: 512,
-            elements: vec![],
-        }
-    }
 }
 
 impl ComPortConfig {

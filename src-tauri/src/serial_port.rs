@@ -1,3 +1,6 @@
+use rmp_serde::{Deserializer, Serializer};
+use sensor_core::SerialTransferData;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -41,12 +44,22 @@ pub fn start_sync(
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
-            let _sensors = sensor::read_all_sensor_values();
+            let sensors = sensor::read_all_sensor_values();
 
-            // Write data to serial port
-            let data = "";
-            println!("Sending data: {}", data);
-            com_port.write_all(data.as_bytes()).unwrap();
+            let serial_transfer_data = SerialTransferData {
+                lcd_config: com_port_config.lcd_config.clone(),
+                sensor_values: sensors,
+            };
+
+            // Serialize data to MessagePack-Format
+            let mut data_to_write = Vec::new();
+            serial_transfer_data
+                .serialize(&mut Serializer::new(&mut data_to_write))
+                .unwrap();
+
+            // Print data buf size to console
+            println!("Sending {} bytes to {}", data_to_write.len(), com_port_name);
+            com_port.write_all(&data_to_write).unwrap();
 
             // Wait for next push
             thread::sleep(Duration::from_millis(PUSH_RATE));
