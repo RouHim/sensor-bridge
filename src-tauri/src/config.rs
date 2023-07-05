@@ -9,6 +9,7 @@ use serde::Serialize;
 pub struct AppConfig {
     pub net_port_config: HashMap<String, NetPortConfig>,
 }
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct NetPortConfig {
     pub device_name: String,

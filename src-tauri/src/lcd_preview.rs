@@ -1,16 +1,16 @@
-use crate::config::ComPortConfig;
 use crate::sensor;
 
 use base64::Engine;
 use sensor_core::LcdConfig;
 use std::io::{Cursor, Seek, SeekFrom};
 use tauri::AppHandle;
+use crate::config::NetPortConfig;
 
 // Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd_preview";
 
 //noinspection RsWrongGenericArgumentsNumber
-pub fn open(app_handle: AppHandle, port_config: &ComPortConfig) {
+pub fn open(app_handle: AppHandle, port_config: &NetPortConfig) {
     let com_port = &port_config.com_port;
 
     let lcd_preview_window = tauri::WindowBuilder::new(

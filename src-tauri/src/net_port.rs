@@ -5,10 +5,8 @@ use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use crate::config::NetPortConfig;
 
-use serialport::*;
-
-use crate::config::ComPortConfig;
 use crate::sensor;
 
 const PUSH_RATE: u64 = 1000;
@@ -28,22 +26,22 @@ pub fn list_ports() -> Vec<String> {
 /// The thread will be stopped when the port_running_state_handle is set to false.
 /// The thread will be joined when the handle is dropped.
 pub fn start_sync(
-    com_port_config: ComPortConfig,
+    net_port_config: NetPortConfig,
     port_running_state_handle: Arc<Mutex<bool>>,
 ) -> Arc<thread::JoinHandle<()>> {
     // Start new thread that writes to the serial port, as configured in to config
     let handle = std::thread::spawn(move || {
-        let com_port_name = com_port_config.com_port;
+        let net_port_name = net_port_config.net_port;
 
         // Open the named serial port with specified baud rate
-        let mut com_port = open(&com_port_name);
+        let mut net_port = open(&net_port_name);
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
             let sensors = sensor::read_all_sensor_values();
 
             let serial_transfer_data = SerialTransferData {
-                lcd_config: com_port_config.lcd_config.clone(),
+                lcd_config: net_port_config.lcd_config.clone(),
                 sensor_values: sensors,
             };
 
@@ -54,8 +52,8 @@ pub fn start_sync(
                 .unwrap();
 
             // Print data buf size to console
-            println!("Sending {} bytes to {}", data_to_write.len(), com_port_name);
-            com_port.write_all(&data_to_write).unwrap();
+            println!("Sending {} bytes to {}", data_to_write.len(), net_port_name);
+            net_port.write_all(&data_to_write).unwrap();
 
             // Wait for next push
             thread::sleep(Duration::from_millis(PUSH_RATE));
