@@ -12,9 +12,6 @@ export function saveConfig() {
         return;
     }
 
-    // Get selected output mode
-    let outputMode = txtDisplayMode.options[txtDisplayMode.selectedIndex].value;
-
     // Get LCD Resolution Height and cast to integer
     let lcdResolutionWidth = document.getElementById("lcd-txt-resolution-width").value;
     let lcdResolutionHeight = document.getElementById("lcd-txt-resolution-height").value;
@@ -52,7 +49,6 @@ export function saveConfig() {
 
     invoke('save_config', {
         comPort: comPort,
-        outputMode: outputMode,
         lcdConfig: JSON.stringify(lcdConfig),
     });
 }
