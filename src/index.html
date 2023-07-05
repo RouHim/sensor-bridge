@@ -23,15 +23,19 @@
     <div class="row-flex-container">
         <div id="master-pane">
             <h3>
-                COM Ports
-                <button id="btn-refresh-com-ports" class="icon-button">
+                Network Ports
+                <button id="btn-refresh-network-ports" class="icon-button" title="Scan network">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+                <button id="btn-add-network-port" class="icon-button" title="Manually add network entry">
+                    <i class="fas fa-plus"></i>
+                </button>
             </h3>
-
-            <ul id="main-com-ports">
+            <hr>
+            <ul id="main-net-ports">
             </ul>
         </div>
+
         <div id="detail-pane">
             <div class="flex-container" style="justify-content: center;">
 
@@ -57,9 +61,11 @@
 
                 <div id="lcd-config" class="flex-container">
                     <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
-                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024" style="width: 50px;">
+                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024"
+                           style="width: 50px;">
                     <div style="margin: 5px 10px">x</div>
-                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600" style="width: 50px;">
+                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600"
+                           style="width: 50px;">
 
                     <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview">
                         <i class="fas fa-eye"></i>
@@ -105,11 +111,13 @@
                             </tr>
                             <tr>
                                 <td>Position X:</td>
-                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-x" value="0"></td>
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-x"
+                                           value="0"></td>
                             </tr>
                             <tr>
                                 <td>Position Y:</td>
-                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-y" value="0"></td>
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-y"
+                                           value="0"></td>
                             </tr>
                         </table>
 
@@ -118,59 +126,6 @@
                 </div>
             </div>
 
-            <div id="spi-panel" style="display: none;">
-                Hello spi
-            </div>
-
-            <div id="i2c-panel" style="display: none;">
-                <div id="i2c-com-port-config">
-                    <label for="i2c-txt-baud-rate" style="margin-right: 5px">Baud rate:</label>
-                    <input type="text" id="i2c-txt-baud-rate" value="" style="flex-grow: 1">
-                    <br><br>
-                    <label for="i2c-txt-push-rate" style="margin-right: 5px">Push rate (ms):</label>
-                    <input type="text" id="i2c-txt-push-rate" value="" style="flex-grow: 1">
-                </div>
-
-                <div id="i2c-display-address-config" style="margin-bottom: 25px">
-                    <label for="i2c-txt-output-address" style="margin-right: 5px">Output:</label>
-                    <select id="i2c-txt-output-address">
-                    </select>
-                    <button id="i2c-btn-add-output-address" class="icon-button">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button id="i2-btn-delete-output-address" class="icon-button">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-
-                <div id="i2c-font-size-config" style="margin-bottom: 25px">
-                    <label for="i2c-txt-font-size" style="margin-right: 5px">Font size:</label>
-                    <select id="i2c-txt-font-size">
-                        <option value="small">Small</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="large">Large</option>
-                    </select>
-                </div>
-
-                <div class="dashed-border">
-                    <h3>
-                        Sensor Values
-                        <button id="i2c-btn-refresh-sensor-values" class="icon-button">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </h3>
-
-                    <ul id="i2c-available-sensor-values">
-                    </ul>
-                </div>
-
-                <div style="padding-bottom: 10px; padding-top: 10px">
-                    <label for="i2c-txt-output-format">Configure data to send</label>
-                    <input type="text" id="i2c-txt-output-format" style="width: 90%; height: 20px"/>
-                    <i class="fas fa-arrow-down"></i>
-                    <p id="i2c-txt-preview" class="terminal" style="height: 20px"></p>
-                </div>
-            </div>
         </div>
     </div>
 

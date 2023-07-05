@@ -11,20 +11,16 @@ use serialport::*;
 use crate::config::ComPortConfig;
 use crate::sensor;
 
-const USB_BAUD_RATE: u32 = 12000;
 const PUSH_RATE: u64 = 1000;
 
 /// Opens a serial port and returns a handle to it.
 pub fn open(port_name: &str) -> Box<dyn SerialPort> {
-    serialport::new(port_name, USB_BAUD_RATE)
-        .timeout(Duration::from_millis(100))
-        .open()
-        .expect("Failed to open port")
+    // TODO erstelle zwei prototypen die via websocket miteinander kommunizieren
 }
 
 /// List all available serial ports.
-pub fn list_ports() -> Vec<SerialPortInfo> {
-    available_ports().expect("No ports found!")
+pub fn list_ports() -> Vec<String> {
+    // TODO
 }
 
 /// Starts a new thread that writes to the serial port.

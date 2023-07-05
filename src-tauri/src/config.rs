@@ -2,49 +2,28 @@ use sensor_core::LcdConfig;
 use std::collections::HashMap;
 use std::fs::File;
 
-use crate::config::OutputMode::{I2c, Lcd, Spi};
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
-    pub com_port_config: HashMap<String, ComPortConfig>,
+    pub net_port_config: HashMap<String, NetPortConfig>,
 }
-
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct ComPortConfig {
-    pub com_port: String,
+pub struct NetPortConfig {
+    pub name: String,
+    pub host: String,
     pub active: bool,
-    pub mode: OutputMode,
     pub lcd_config: LcdConfig,
 }
 
-impl ComPortConfig {
-    fn default(com_port: &str) -> ComPortConfig {
-        ComPortConfig {
-            com_port: com_port.to_string(),
+impl NetPortConfig {
+    fn default(name: &str) -> NetPortConfig {
+        NetPortConfig {
+            name: name.to_string(),
+            host: "".to_string(),
             active: false,
-            mode: Lcd,
-            lcd_config: LcdConfig::default(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub enum OutputMode {
-    #[default]
-    Lcd,
-    I2c,
-    Spi,
-}
-
-impl OutputMode {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "Lcd" => Lcd,
-            "I2c" => I2c,
-            "Spi" => Spi,
-            _ => Lcd,
+            lcd_config: Default::default(),
         }
     }
 }
@@ -53,14 +32,14 @@ impl OutputMode {
 /// If the file does not exist, it will be created.
 /// Returns the config for the specified com port.
 /// If no config for the specified com port exists, None is returned.
-pub fn load_port_config(com_port: &str) -> ComPortConfig {
+pub fn load_net_config(name: &str) -> NetPortConfig {
     let config: AppConfig = load_config();
-    let maybe_config = config.com_port_config.get(com_port);
+    let maybe_config = config.net_port_config.get(name);
 
     if maybe_config.is_none() {
         // Create port config
-        let port_config = ComPortConfig::default(com_port);
-        write_port_config(&port_config);
+        let port_config = NetPortConfig::default(name);
+        write_net_port_config(&port_config);
         return port_config;
     }
 
@@ -70,11 +49,11 @@ pub fn load_port_config(com_port: &str) -> ComPortConfig {
 /// Writes the specified config to disk.
 /// If the config file does not exist, it will be created.
 /// If the config file already exists, the specified config will be added to it.
-pub fn write_port_config(com_port_config: &ComPortConfig) {
+pub fn write_net_port_config(net_port_config: &NetPortConfig) {
     let mut config: AppConfig = load_config();
     config
-        .com_port_config
-        .insert(com_port_config.com_port.clone(), com_port_config.clone());
+        .net_port_config
+        .insert(net_port_config.name.clone(), net_port_config.clone());
     let config_path = get_config_path();
     let config_file = File::create(config_path).expect("Failed to create config file");
     serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
