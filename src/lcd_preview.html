@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <link href="lcd_preview.css" rel="stylesheet"/>
+</head>
+
+<script>
+    const {invoke} = window.__TAURI__.tauri;
+
+    // Set the preview image on page load
+    set_lcd_preview_image();
+
+    // Set the preview image every second
+    setInterval(set_lcd_preview_image, 1000);
+
+    /// Set the preview image
+    function set_lcd_preview_image() {
+        // Load the current com port from the url after the # symbol
+        const currentComPort = window.location.hash.substr(1);
+
+        invoke('get_lcd_preview_image', {comPort: currentComPort}).then(
+            (preview_image) => {
+                const img = document.getElementById("lcd-preview-image");
+                img.src = "data:image/png;base64," + preview_image;
+            }
+        );
+    }
+</script>
+
+
+<body>
+<img id="lcd-preview-image"/>
+</body>
+</html>
