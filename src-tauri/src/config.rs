@@ -1,6 +1,8 @@
+use sensor_core::LcdConfig;
 use std::collections::HashMap;
 use std::fs::File;
 
+use crate::config::OutputMode::{I2c, Lcd, Spi};
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -13,9 +15,8 @@ pub struct AppConfig {
 pub struct ComPortConfig {
     pub com_port: String,
     pub active: bool,
-    pub baud_rate: u32,
-    pub push_rate: u32,
-    pub output_config: HashMap<String, OutputConfig>,
+    pub mode: OutputMode,
+    pub lcd_config: LcdConfig,
 }
 
 impl ComPortConfig {
@@ -23,40 +24,29 @@ impl ComPortConfig {
         ComPortConfig {
             com_port: com_port.to_string(),
             active: false,
-            baud_rate: 115200,
-            push_rate: 250,
-            output_config: OutputConfig::default_singleton("0x3C"),
+            mode: Lcd,
+            lcd_config: LcdConfig::default(),
         }
     }
 }
 
-impl OutputConfig {
-    fn default_singleton(address: &str) -> HashMap<String, OutputConfig> {
-        let mut output_config = HashMap::new();
-        output_config.insert(
-            address.to_string(),
-            OutputConfig {
-                address: address.to_string(),
-                data_config: Default::default(),
-                font_size: 1,
-            },
-        );
-        output_config
-    }
-    pub fn default(address: &str) -> OutputConfig {
-        OutputConfig {
-            address: address.to_string(),
-            data_config: Default::default(),
-            font_size: 1,
-        }
-    }
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub enum OutputMode {
+    #[default]
+    Lcd,
+    I2c,
+    Spi,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct OutputConfig {
-    pub address: String,
-    pub data_config: String,
-    pub font_size: u8,
+impl OutputMode {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "Lcd" => Lcd,
+            "I2c" => I2c,
+            "Spi" => Spi,
+            _ => Lcd,
+        }
+    }
 }
 
 /// Loads the config file from disk.
@@ -82,7 +72,9 @@ pub fn load_port_config(com_port: &str) -> ComPortConfig {
 /// If the config file already exists, the specified config will be added to it.
 pub fn write_port_config(com_port_config: &ComPortConfig) {
     let mut config: AppConfig = load_config();
-    config.com_port_config.insert(com_port_config.com_port.clone(), com_port_config.clone());
+    config
+        .com_port_config
+        .insert(com_port_config.com_port.clone(), com_port_config.clone());
     let config_path = get_config_path();
     let config_file = File::create(config_path).expect("Failed to create config file");
     serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
@@ -102,7 +94,7 @@ fn load_config() -> AppConfig {
 
     let config_file = File::open(&config_path).expect("Failed to open config file");
     let config = serde_json::from_reader(config_file);
-    
+
     // If the config deserialization failed, return the default config and save it to disk
     if config.is_err() {
         let config = AppConfig::default();
@@ -110,7 +102,7 @@ fn load_config() -> AppConfig {
         serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
         return config;
     }
-    
+
     config.unwrap()
 }
 

@@ -1,93 +1,176 @@
 <!DOCTYPE html>
+<!--suppress HtmlFormInputWithoutLabel -->
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <link href="style.css" rel="stylesheet"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Tauri App</title>
-    <script defer src="main.js" type="module"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+
+    <script defer src="js/main.js" type="module"></script>
+    <!--    <script src="js/i2c.js" type="module"></script>-->
+    <script src="js/lcd.js" type="module"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <link href="style.css" rel="stylesheet"/>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+          integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=="
           crossorigin="anonymous"/>
 </head>
 
 <body>
-<div class="container">
-    <h1>
-        <i class="header-icon fas fa-microchip"></i>
-        Sensor-Bridge
-        <i class="header-icon fas fa-microchip"></i>
-    </h1>
-
-    <hr style="width: 100%; height: 1px; background-color: #FFF; border: none"/>
-
-    <div class="main-container">
+<div id="base-container">
+    <div class="row-flex-container">
         <div id="master-pane">
             <h3>
                 COM Ports
-                <button id="btnRefreshComPorts" class="header-button">
+                <button id="btn-refresh-com-ports" class="icon-button">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </h3>
 
-            <ul id="lstComPorts">
+            <ul id="main-com-ports">
             </ul>
         </div>
         <div id="detail-pane">
-            <h2 id="lblHeaderComName" style="color: #08ff00"></h2>
+            <div class="flex-container" style="justify-content: center;">
 
-            <div id="com-port-config">
-                <label for="txtBaudRate" style="margin-right: 5px">Baud rate:</label>
-                <input type="text" id="txtBaudRate" value="" style="flex-grow: 1">
-                <br><br>
-                <label for="txtPushRate" style="margin-right: 5px">Push rate (ms):</label>
-                <input type="text" id="txtPushRate" value="" style="flex-grow: 1">
-            </div>
+                <i class="header-icon fas fa-usb"></i>
 
-            <div id="display-address-config" style="margin-bottom: 25px">
-                <label for="txtOutputAddress" style="margin-right: 5px">Output:</label>
-                <select id="txtOutputAddress">
+                <h2 id="com-port-name-header" class="flex-item" style="color: #08ff00"></h2>
+
+                <select id="txt-display-mode" class="flex-item">
+                    <option value="Lcd">LCD</option>
+                    <option value="I2c">I2C</option>
+                    <option value="Spi">SPI</option>
                 </select>
-                <button id="btnAddOutputAddress" class="header-button">
-                    <i class="fas fa-plus"></i>
-                </button>
-                <button id="btnDeleteOutputAddress" class="header-button">
-                    <i class="fas fa-trash"></i>
-                </button>
+
+                <label id="kill-switch-input" class="kill-switch flex-item" style="margin-left: auto;">
+                    <input id="main-chk-transfer-active" type="checkbox" class="kill-switch-input">
+                    <i class="fas fa-power-off kill-switch-icon"></i>
+                </label>
             </div>
 
-            <div id="font-size-config" style="margin-bottom: 25px">
-                <label for="txtFontSize" style="margin-right: 5px">Font size:</label>
-                <select id="txtFontSize">
-                    <option value="small">Small</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="large">Large</option>
-                </select>
-            </div>
+            <hr/>
 
-            <div class="dashed-border">
-                <h3>
-                    Sensor Values
-                    <button id="btnRefreshSensorValues" class="header-button">
-                        <i class="fas fa-sync-alt"></i>
+            <div id="lcd-panel" style="display: block;">
+
+                <div id="lcd-config" class="flex-container">
+                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
+                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024" style="width: 50px;">
+                    <div style="margin: 5px 10px">x</div>
+                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600" style="width: 50px;">
+
+                    <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview">
+                        <i class="fas fa-eye"></i>
                     </button>
-                </h3>
 
-                <ul id="lstSensorValues">
-                </ul>
+                </div>
+
+                <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px">
+                </div>
+
+                <div class="flex-container">
+                    <b>Elements</b>
+
+                    <button id="lcd-btn-remove-sensor" class="icon-button">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div id="lcd-elements-detail-editor" class="row-flex-container">
+                    <div style="width: 25%; margin-right: 10px; padding-right: 10px; border-right: #ccc solid 1px;">
+                        <ul id="lcd-designer-placed-elements">
+                        </ul>
+                    </div>
+
+                    <div id="lcd-sensor-entry-config" style="width: 75%">
+
+                        <button id="lcd-btn-save-sensor" class="icon-button">
+                            <i class="fas fa-save"></i>
+                        </button>
+
+                        <table>
+                            <tr>
+                                <td>Name:</td>
+                                <td><input type="text" id="lcd-txt-sensor-name" value=""></td>
+                            </tr>
+                            <tr>
+                                <td>Sensor:</td>
+                                <td><select id="lcd-cmb-sensor-type-selection"></select></td>
+                            </tr>
+                            <tr>
+                                <td>Format:</td>
+                                <td><input type="text" id="lcd-txt-sensor-text-format" value="{value}{unit}"></td>
+                            </tr>
+                            <tr>
+                                <td>Position X:</td>
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-x" value="0"></td>
+                            </tr>
+                            <tr>
+                                <td>Position Y:</td>
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-y" value="0"></td>
+                            </tr>
+                        </table>
+
+                    </div>
+
+                </div>
             </div>
 
-            <div style="padding-bottom: 10px; padding-top: 10px">
-                <label for="txtOutputFormat">Configure data to send</label>
-                <input type="text" id="txtOutputFormat" style="width: 90%; height: 20px"/>
-                <i class="fas fa-arrow-down"></i>
-                <p id="txtPreview" class="terminal" style="height: 20px"></p>
+            <div id="spi-panel" style="display: none;">
+                Hello spi
             </div>
 
-            <label id="kill-switch-input" class="kill-switch" style="margin-top: 10px">
-                <input id="chkTransferActive" type="checkbox" class="kill-switch-input">
-                <i class="fas fa-power-off kill-switch-icon"></i>
-            </label>
+            <div id="i2c-panel" style="display: none;">
+                <div id="i2c-com-port-config">
+                    <label for="i2c-txt-baud-rate" style="margin-right: 5px">Baud rate:</label>
+                    <input type="text" id="i2c-txt-baud-rate" value="" style="flex-grow: 1">
+                    <br><br>
+                    <label for="i2c-txt-push-rate" style="margin-right: 5px">Push rate (ms):</label>
+                    <input type="text" id="i2c-txt-push-rate" value="" style="flex-grow: 1">
+                </div>
+
+                <div id="i2c-display-address-config" style="margin-bottom: 25px">
+                    <label for="i2c-txt-output-address" style="margin-right: 5px">Output:</label>
+                    <select id="i2c-txt-output-address">
+                    </select>
+                    <button id="i2c-btn-add-output-address" class="icon-button">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button id="i2-btn-delete-output-address" class="icon-button">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div id="i2c-font-size-config" style="margin-bottom: 25px">
+                    <label for="i2c-txt-font-size" style="margin-right: 5px">Font size:</label>
+                    <select id="i2c-txt-font-size">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+
+                <div class="dashed-border">
+                    <h3>
+                        Sensor Values
+                        <button id="i2c-btn-refresh-sensor-values" class="icon-button">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </h3>
+
+                    <ul id="i2c-available-sensor-values">
+                    </ul>
+                </div>
+
+                <div style="padding-bottom: 10px; padding-top: 10px">
+                    <label for="i2c-txt-output-format">Configure data to send</label>
+                    <input type="text" id="i2c-txt-output-format" style="width: 90%; height: 20px"/>
+                    <i class="fas fa-arrow-down"></i>
+                    <p id="i2c-txt-preview" class="terminal" style="height: 20px"></p>
+                </div>
+            </div>
         </div>
     </div>
 

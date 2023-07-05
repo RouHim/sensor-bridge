@@ -1,32 +1,34 @@
-:root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-
-    color: #0f0f0f;
-    background-color: #f6f6f6;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
+html, body {
+    height: 100%;
+    max-width: 100%;
+    margin: 0;
 }
 
-.container {
-    margin: 0;
+#base-container {
+    /* Stretch https://stackoverflow.com/a/40445860/4046388 */
     display: flex;
     flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.row-flex-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.center {
     justify-content: center;
     text-align: center;
 }
 
-.main-container {
+.flex-container {
     display: flex;
-    flex-direction: row;
-    justify-content: center;
-    text-align: center;
+    align-items: center;
+}
+
+.flex-item {
+    margin: 0 5px;
 }
 
 #master-pane, #detail-pane {
@@ -34,21 +36,14 @@
 }
 
 #master-pane {
-    width: 25%;
+    width: 15%;
     height: 100%;
 }
 
 #detail-pane {
-    width: 75%;
+    width: 85%;
     height: 100%;
-    border-left: 1px solid #FFF;
-}
-
-.logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
+    border-left: 1px solid var(--text);
 }
 
 .row {
@@ -56,108 +51,17 @@
     justify-content: center;
 }
 
-a {
-    font-weight: 500;
-    color: #08ff00;
-    text-decoration: inherit;
-}
-
-a:hover {
-    color: #08ff00;
-}
-
-h1 {
-    text-align: center;
-    margin: 10px;
-}
-
-h2, h3 {
-    text-align: center;
-    margin-bottom: 25px;
-    margin-top: 0;
-    padding-top: 0;
-}
-
-input[type="text"] {
-    text-align: center;
-}
-
-input, button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-    cursor: pointer;
-}
-
-button:hover {
-    border-color: #08ff00;
-}
-
-input, button {
-    outline: none;
-}
-
-select {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-    color: #ffffff;
-    background-color: #0f0f0f98;
-}
-
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        color: #f6f6f6;
-        background-color: #2f2f2f;
-    }
-
-    a:hover {
-        color: #08ff00;
-    }
-
-    input,
-    button {
-        color: #ffffff;
-        background-color: #0f0f0f98;
-    }
-}
-
-li {
-    list-style-type: none;
-}
-
-ul {
-    padding-left: 0;
-    margin-left: 0;
-}
-
 .terminal {
     width: 90%;
     padding: 10px;
-    background-color: #000;
+    background-color: var(--background);
     color: #08ff00;
     font-family: monospace;
     white-space: pre;
     margin: 10px auto;
 }
 
-#lstSensorValues {
+#i2c-available-sensor-values {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -171,7 +75,7 @@ ul {
 
 .sensor-item {
     cursor: pointer;
-    border-bottom: 1px solid #FFF;
+    border-bottom: 1px solid var(--text);
     margin: 5px;
     padding: 5px;
     transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out;
@@ -182,9 +86,15 @@ ul {
     border-bottom: 1px solid #08ff00;
 }
 
+#main-com-ports {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
 .com-port-item {
     cursor: pointer;
-    border-left: 1px solid #FFF;
+    border-left: 1px solid var(--text);
     margin: 5px;
     padding: 5px;
     transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out;
@@ -197,12 +107,12 @@ ul {
 }
 
 .header-icon {
-    font-size: 0.75em;
+    font-size: 25px;
     margin-right: 10px;
     margin-left: 10px;
 }
 
-.header-button {
+.icon-button {
     background: none;
     border: none;
     color: inherit;
@@ -210,7 +120,7 @@ ul {
     margin-left: 10px;
     font: inherit;
     cursor: pointer;
-    font-size: 0.75em;
+    font-size: 1.25em;
 }
 
 .kill-switch {
@@ -246,6 +156,37 @@ ul {
     color: #08ff00;
 }
 
-#com-port-config {
+#i2c-com-port-config {
     margin-bottom: 10px;
+}
+
+#lcd-designer-pane {
+    width: 500px;
+    height: 500px;
+    background-color: #502c2c;
+    position: absolute;
+}
+
+#lcd-designer-placed-elements {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #555;
+    border-radius: 6px;
+    background-color: var(--background);
+    color: var(--form-text);
+}
+
+#lcd-designer-placed-elements > li {
+    padding: 5px 10px;
+    border-bottom: 1px solid #555;
+    cursor: pointer;
+}
+
+#lcd-designer-placed-elements > li:last-child {
+    border-bottom: none;
+}
+
+tbody tr:nth-child(odd), tbody tr:nth-child(even) {
+    background-color: transparent;
 }
