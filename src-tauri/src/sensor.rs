@@ -2,8 +2,6 @@ use crate::cpu_sensor;
 
 use rayon::prelude::*;
 use sensor_core::SensorValue;
-use serde::{Deserialize, Serialize};
-use std::fmt;
 
 pub trait SensorProvider {
     fn get_name(&self) -> String;

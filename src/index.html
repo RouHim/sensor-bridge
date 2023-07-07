@@ -4,11 +4,9 @@
 <head>
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Tauri App</title>
+    <title>SensorBridge</title>
 
-    <script defer src="js/main.js" type="module"></script>
-    <!--    <script src="js/i2c.js" type="module"></script>-->
-    <script src="js/lcd.js" type="module"></script>
+    <script defer src="script.js" type="module"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <link href="style.css" rel="stylesheet"/>
@@ -24,10 +22,7 @@
         <div id="master-pane">
             <h3>
                 Network Ports
-                <button id="btn-refresh-network-ports" class="icon-button" title="Scan network">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button id="btn-add-network-port" class="icon-button" title="Manually add network entry">
+                <button id="btn-add-network-device" class="icon-button" title="Manually add network entry">
                     <i class="fas fa-plus"></i>
                 </button>
             </h3>
@@ -37,35 +32,53 @@
         </div>
 
         <div id="detail-pane">
-            <div class="flex-container" style="justify-content: center;">
+            <div class="flex-container" style="justify-content: left;">
 
-                <i class="header-icon fas fa-usb"></i>
+                <!-- TODO: add these to the li element on hover -->
+                <button id="lcd-btn-save-network-device" class="icon-button" style="font-size: 2em; margin-right: 10px;"
+                        title="Save device configuration">
+                    <i class="fas fa-save"></i>
+                </button>
 
-                <h2 id="com-port-name-header" class="flex-item" style="color: #08ff00"></h2>
+                <button id="lcd-btn-remove-network-device" class="icon-button"
+                        style="font-size: 2em; margin-right: 10px;"
+                        title="Remove device configuration">
+                    <i class="fas fa-trash"></i>
+                </button>
 
-                <select id="txt-display-mode" class="flex-item">
-                    <option value="Lcd">LCD</option>
-                    <option value="I2c">I2C</option>
-                    <option value="Spi">SPI</option>
-                </select>
-
-                <label id="kill-switch-input" class="kill-switch flex-item" style="margin-left: auto;">
+                <label id="kill-switch-input" class="kill-switch flex-item" title="Enable or disable the display">
                     <input id="main-chk-transfer-active" type="checkbox" class="kill-switch-input">
                     <i class="fas fa-power-off kill-switch-icon"></i>
                 </label>
+
             </div>
 
             <hr/>
 
             <div id="lcd-panel" style="display: block;">
 
+                <div id="device-config">
+                    <div class="flex-container">
+                        <label for="lcd-txt-device-name" style="width: 200px; margin-right: 5px">Device name:</label>
+                        <input id="lcd-txt-device-name" style="width: 150px;"
+                               title="Enter a simple name of your device">
+                    </div>
+                    <div class="flex-container">
+                        <label for="lcd-txt-network-address" style="width: 200px; margin-right: 5px">Network
+                            address:</label>
+                        <input id="lcd-txt-network-address" style="width: 150px;"
+                               title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
+                    </div>
+
+                </div>
+
                 <div id="lcd-config" class="flex-container">
                     <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
                     <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024"
-                           style="width: 50px;">
+                           style="width: 75px;">
                     <div style="margin: 5px 10px">x</div>
                     <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600"
-                           style="width: 50px;">
+                           style="width: 75px;">
 
                     <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview">
                         <i class="fas fa-eye"></i>
@@ -79,6 +92,7 @@
                 <div class="flex-container">
                     <b>Elements</b>
 
+                    <!-- TODO: add these to the li element on hover -->
                     <button id="lcd-btn-remove-sensor" class="icon-button">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -91,8 +105,7 @@
                     </div>
 
                     <div id="lcd-sensor-entry-config" style="width: 75%">
-
-                        <button id="lcd-btn-save-sensor" class="icon-button">
+                        <button id="lcd-btn-save-sensor" class="icon-button" title="Save sensor configuration">
                             <i class="fas fa-save"></i>
                         </button>
 

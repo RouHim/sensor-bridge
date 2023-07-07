@@ -4,43 +4,52 @@ use std::fs::File;
 
 use serde::Deserialize;
 use serde::Serialize;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
-    pub net_port_config: HashMap<String, NetPortConfig>,
+    pub network_devices: HashMap<String, NetPortConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct NetPortConfig {
-    pub device_name: String,
-    pub host: String,
+    pub id: String,
+    pub name: String,
+    pub address: String,
     pub active: bool,
     pub lcd_config: LcdConfig,
 }
 
 impl NetPortConfig {
-    fn default(name: &str) -> NetPortConfig {
+    fn default() -> NetPortConfig {
         NetPortConfig {
-            device_name: name.to_string(),
-            host: "".to_string(),
+            id: Uuid::new_v4().to_string(),
+            name: "A new device".to_string(),
+            address: "".to_string(),
             active: false,
             lcd_config: Default::default(),
         }
     }
 }
 
+pub fn create() -> NetPortConfig {
+    let new_config = NetPortConfig::default();
+    write(&new_config);
+    new_config
+}
+
 /// Loads the config file from disk.
 /// If the file does not exist, it will be created.
 /// Returns the config for the specified com port.
 /// If no config for the specified com port exists, None is returned.
-pub fn load_net_config(name: &str) -> NetPortConfig {
-    let config: AppConfig = load_config();
-    let maybe_config = config.net_port_config.get(name);
+pub fn read(network_device_id: &str) -> NetPortConfig {
+    let config: AppConfig = read_from_app_config();
+    let maybe_config = config.network_devices.get(network_device_id);
 
     if maybe_config.is_none() {
         // Create port config
-        let port_config = NetPortConfig::default(name);
-        write_net_port_config(&port_config);
+        let port_config = NetPortConfig::default();
+        write(&port_config);
         return port_config;
     }
 
@@ -50,11 +59,17 @@ pub fn load_net_config(name: &str) -> NetPortConfig {
 /// Writes the specified config to disk.
 /// If the config file does not exist, it will be created.
 /// If the config file already exists, the specified config will be added to it.
-pub fn write_net_port_config(net_port_config: &NetPortConfig) {
-    let mut config: AppConfig = load_config();
+pub fn write(net_port_config: &NetPortConfig) {
+    let mut config: AppConfig = read_from_app_config();
     config
-        .net_port_config
-        .insert(net_port_config.device_name.clone(), net_port_config.clone());
+        .network_devices
+        .insert(net_port_config.id.clone(), net_port_config.clone());
+    write_to_app_config(&config);
+}
+
+/// Writes the specified config to disk.
+/// If the config file does not exist, it will be created.
+fn write_to_app_config(config: &AppConfig) {
     let config_path = get_config_path();
     let config_file = File::create(config_path).expect("Failed to create config file");
     serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
@@ -62,7 +77,7 @@ pub fn write_net_port_config(net_port_config: &NetPortConfig) {
 
 /// Loads the config file from disk.
 /// If the file does not exist, it will be created.
-fn load_config() -> AppConfig {
+pub fn read_from_app_config() -> AppConfig {
     let config_path = get_config_path();
 
     // Check if config file exists, otherwise create it
@@ -94,4 +109,11 @@ fn get_config_path() -> String {
     config_path.pop();
     config_path.push("config.json");
     config_path.to_str().unwrap().to_string()
+}
+
+/// Removes the specified network device from the config file.
+pub fn remove(network_device_id: &str) {
+    let mut config: AppConfig = read_from_app_config();
+    config.network_devices.remove(network_device_id);
+    write_to_app_config(&config);
 }

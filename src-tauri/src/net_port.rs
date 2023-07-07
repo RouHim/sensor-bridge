@@ -1,24 +1,34 @@
-use rmp_serde::{Deserializer, Serializer};
-use sensor_core::SerialTransferData;
-use serde::{Deserialize, Serialize};
-use std::io::Write;
+use crate::config::NetPortConfig;
+use message_io::network::{Endpoint, SendStatus, Transport};
+use message_io::node::NodeHandler;
+use rmp_serde::Serializer;
+use sensor_core::TransferData;
+use serde::Serialize;
+
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use crate::config::NetPortConfig;
 
 use crate::sensor;
 
-const PUSH_RATE: u64 = 1000;
+const PUSH_RATE: u64 = 500;
 
 /// Opens a serial port and returns a handle to it.
-pub fn open(port_name: &str) -> Box<dyn SerialPort> {
-    // TODO erstelle zwei prototypen die via websocket miteinander kommunizieren
+pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
+    let (handler, _listener) = message_io::node::split::<()>();
+    let tcp_endpoint = connect_to_tcp_socket(net_port_config, &handler);
+    (handler, tcp_endpoint)
 }
 
-/// List all available serial ports.
-pub fn list_ports() -> Vec<String> {
-    // TODO
+fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<()>) -> Endpoint {
+    let address = format!("{}:10489", net_port_config.address);
+    println!("Connecting to device {}({})", net_port_config.name, address);
+
+    handler
+        .network()
+        .connect(Transport::FramedTcp, address)
+        .unwrap()
+        .0
 }
 
 /// Starts a new thread that writes to the serial port.
@@ -31,16 +41,16 @@ pub fn start_sync(
 ) -> Arc<thread::JoinHandle<()>> {
     // Start new thread that writes to the serial port, as configured in to config
     let handle = std::thread::spawn(move || {
-        let net_port_name = net_port_config.net_port;
+        let net_device_name = &net_port_config.name;
 
         // Open the named serial port with specified baud rate
-        let mut net_port = open(&net_port_name);
+        let (node_handle, mut tcp_endpoint) = open(&net_port_config);
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
             let sensors = sensor::read_all_sensor_values();
 
-            let serial_transfer_data = SerialTransferData {
+            let serial_transfer_data = TransferData {
                 lcd_config: net_port_config.lcd_config.clone(),
                 sensor_values: sensors,
             };
@@ -52,8 +62,29 @@ pub fn start_sync(
                 .unwrap();
 
             // Print data buf size to console
-            println!("Sending {} bytes to {}", data_to_write.len(), net_port_name);
-            net_port.write_all(&data_to_write).unwrap();
+            println!(
+                "Sending {} bytes to {}",
+                data_to_write.len(),
+                net_device_name
+            );
+            let send_status: SendStatus = node_handle.network().send(tcp_endpoint, &data_to_write);
+
+            match send_status {
+                SendStatus::MaxPacketSizeExceeded => {
+                    println!(" MaxPacketSizeExceeded")
+                }
+                SendStatus::Sent => {
+                    println!(" Successfully")
+                }
+                SendStatus::ResourceNotFound => {
+                    println!(" Not found --> Reconnecting");
+                    tcp_endpoint = connect_to_tcp_socket(&net_port_config, &node_handle)
+                }
+                SendStatus::ResourceNotAvailable => {
+                    println!(" Not available --> Reconnecting");
+                    tcp_endpoint = connect_to_tcp_socket(&net_port_config, &node_handle)
+                }
+            }
 
             // Wait for next push
             thread::sleep(Duration::from_millis(PUSH_RATE));
