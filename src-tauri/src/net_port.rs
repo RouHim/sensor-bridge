@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use crate::sensor;
 
-const PUSH_RATE: u64 = 1000;
+const PUSH_RATE: u64 = 500;
 
 /// Opens a serial port and returns a handle to it.
 pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
@@ -44,7 +44,7 @@ pub fn start_sync(
         let net_device_name = &net_port_config.name;
 
         // Open the named serial port with specified baud rate
-        let (node_handle, mut tcp_endpoint) = open(&net_port_config);
+        let mut net_port = open(&net_port_config);
 
         while *port_running_state_handle.lock().unwrap() {
             // Read sensor values
@@ -67,7 +67,7 @@ pub fn start_sync(
                 data_to_write.len(),
                 net_device_name
             );
-            let send_status: SendStatus = node_handle.network().send(tcp_endpoint, &data_to_write);
+            let send_status: SendStatus = net_port.0.network().send(net_port.1, &data_to_write);
 
             match send_status {
                 SendStatus::MaxPacketSizeExceeded => {
@@ -78,11 +78,11 @@ pub fn start_sync(
                 }
                 SendStatus::ResourceNotFound => {
                     println!(" Not found --> Reconnecting");
-                    tcp_endpoint = connect_to_tcp_socket(&net_port_config, &node_handle)
+                    net_port = open(&net_port_config);
                 }
                 SendStatus::ResourceNotAvailable => {
                     println!(" Not available --> Reconnecting");
-                    tcp_endpoint = connect_to_tcp_socket(&net_port_config, &node_handle)
+                    net_port = open(&net_port_config);
                 }
             }
 
