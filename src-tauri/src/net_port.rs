@@ -12,6 +12,7 @@ use std::time::Duration;
 use crate::sensor;
 
 const PUSH_RATE: u64 = 1000;
+const NETWORK_PORT: u64 = 10489;
 
 /// Opens a serial port and returns a handle to it.
 pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
@@ -21,7 +22,7 @@ pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
 }
 
 fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<()>) -> Endpoint {
-    let address = format!("{}:10489", net_port_config.address);
+    let address = format!("{}:{NETWORK_PORT}", net_port_config.address);
     println!("Connecting to device {}({})", net_port_config.name, address);
 
     handler
