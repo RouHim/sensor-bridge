@@ -18,6 +18,7 @@ mod cpu_sensor;
 mod lcd_preview;
 mod net_port;
 mod sensor;
+mod system_sensor;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
@@ -38,7 +39,6 @@ fn main() {
     // Load the config for all ports
     // If the port is active, start a sync thread
     // And report the handle to the app state
-    // TODO: load from config and start threads
     config::read_from_app_config()
         .network_devices
         .values()
