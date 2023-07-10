@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use crate::sensor;
 
-const PUSH_RATE: u64 = 500;
+const PUSH_RATE: u64 = 1000;
 
 /// Opens a serial port and returns a handle to it.
 pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
