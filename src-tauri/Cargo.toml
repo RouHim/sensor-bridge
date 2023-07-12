@@ -13,7 +13,6 @@ tauri-build = { version = "1.2", features = [] }
 
 [dependencies]
 sensor-core = { git = "https://github.com/RouHim/sensor-core.git", branch = "main" }
-#sensor-core = { path = "../../sensor-core" }
 serde = { version = "1.0", features = ["derive"] }      # Serialization
 serde_json = "1.0"                                      # De/Serialize to json
 rmp-serde = "1.1"                                       # De/Serialize to MessagePack
@@ -25,6 +24,11 @@ message-io = { version = "0.17", default-features = false, features = ["tcp"] } 
 uuid = { version = "1.4.0", features = ["v4"] }         # Generate UUID v4
 image = "0.24"                                          # Image processing
 chrono ="0.4"                                           # Time handling
+
+# Linux specific dependencies
+[target.'cfg(target_os = "linux")'.dependencies]
+lm-sensors = "0.1"                                      # Read sensor values from lm-sensors
+
 
 [features]
 # by default Tauri runs in production mode

@@ -1,5 +1,5 @@
-use crate::cpu_sensor;
-use crate::system_sensor;
+use crate::{linux_lm_sensors, misc_sensor};
+use crate::system_stat_sensor;
 
 use rayon::prelude::*;
 use sensor_core::SensorValue;
@@ -9,12 +9,16 @@ pub trait SensorProvider {
 }
 
 pub fn read_all_sensor_values() -> Vec<SensorValue> {
+    // Measurement that it tooks to read all sensors
+    let start = std::time::Instant::now();
+
     let mut sensors = vec![];
 
     // Store reference to CpuSensor {}.get_sensor_values in a vector
     let sensor_requests = vec![
-        cpu_sensor::get_sensor_values,
-        system_sensor::get_sensor_values,
+        system_stat_sensor::get_sensor_values,
+        misc_sensor::get_sensor_values,
+        linux_lm_sensors::get_sensor_values,
     ];
 
     // Iterate over the vector and call each function using par_iter
@@ -26,6 +30,8 @@ pub fn read_all_sensor_values() -> Vec<SensorValue> {
         .for_each(|sensor_value| {
             sensors.push(sensor_value.clone());
         });
+
+    println!("Reading all sensors took {:?}", std::time::Instant::now().duration_since(start));
 
     sensors
 }

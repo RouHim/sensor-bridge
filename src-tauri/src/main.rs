@@ -14,11 +14,13 @@ use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 mod config;
-mod cpu_sensor;
 mod lcd_preview;
+mod misc_sensor;
 mod net_port;
 mod sensor;
-mod system_sensor;
+mod system_stat_sensor;
+#[cfg(target_os = "linux")]
+mod linux_lm_sensors;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
