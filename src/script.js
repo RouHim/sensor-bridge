@@ -605,6 +605,11 @@ function updateLcdDesignPaneDimensions() {
     let width = txtResolutionWidth.value;
     let height = txtResolutionHeight.value;
 
+    // Check if width and height are valid numbers over 0, otherwise return
+    if (isNaN(width) || width <= 0 || isNaN(height) || height <= 0) {
+        return;
+    }
+
     designerPane.style.width = width + "px";
     designerPane.style.height = height + "px";
 

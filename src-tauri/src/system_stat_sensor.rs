@@ -42,7 +42,12 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
     let mut network_bytes: std::collections::HashMap<String, (u64, u64)> = std::collections::HashMap::new();
 
     for (iface_name, iface_data) in &network {
-        let net_data = system_stat.network_stats(&iface_name).unwrap();
+        let net_data = system_stat.network_stats(&iface_name);
+        if net_data.is_err() {
+            continue;
+        }
+
+        let net_data = net_data.unwrap();
 
         // Read RX and TX in megabytes
         let rx = net_data.rx_bytes.0;
@@ -81,7 +86,12 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 
     // Read RX and TX again
     for (iface_name, iface_data) in network {
-        let net_data = system_stat.network_stats(&iface_name).unwrap();
+        let net_data = system_stat.network_stats(&iface_name);
+        if net_data.is_err() {
+            continue;
+        }
+
+        let net_data = net_data.unwrap();
 
         // Read RX and TX in megabytes
         let rx = net_data.rx_bytes.0;
@@ -178,11 +188,15 @@ fn get_total_delayed_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 }
 
 fn get_cpu_temp_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
-    let cpu_temp = system_stat.cpu_temp().unwrap();
+    let cpu_temp = system_stat.cpu_temp();
+
+    if cpu_temp.is_err() {
+        return vec![];
+    }
 
     vec![SensorValue {
         id: "cpu_temp_package".to_string(),
-        value: format!("{:.2}", cpu_temp),
+        value: format!("{:.2}", cpu_temp.unwrap()),
         label: "CPU package temperature".to_string(),
         unit: "°C".to_string(),
         sensor_type: "temperature".to_string(),
@@ -190,7 +204,13 @@ fn get_cpu_temp_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 }
 
 fn get_uptime_sensor(system_stat: &PlatformImpl) -> Vec<SensorValue> {
-    let uptime = system_stat.uptime().unwrap();
+    let uptime = system_stat.uptime();
+
+    if uptime.is_err() {
+        return vec![];
+    }
+
+    let uptime = uptime.unwrap();
 
     // Format as hh:mm:ss
     vec![SensorValue {
@@ -209,7 +229,13 @@ fn get_uptime_sensor(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 
 // Reads in mega bytes
 fn get_memory_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
-    let mem = system_stat.memory().unwrap();
+    let mem = system_stat.memory();
+
+    if mem.is_err() {
+        return vec![];
+    }
+
+    let mem = mem.unwrap();
 
     // Collect sensors in mega bytes
     vec![

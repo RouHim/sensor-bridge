@@ -2,16 +2,16 @@
 use lm_sensors::prelude::*;
 use sensor_core::SensorValue;
 
-
 pub fn get_sensor_values() -> Vec<SensorValue> {
-    // if not linux, return empty vector
-    if !cfg!(target_os = "linux") {
-        return vec![];
-    }
-
     get_all_available_sensors()
 }
 
+#[cfg(target_os = "windows")]
+fn get_all_available_sensors() -> Vec<SensorValue> {
+    vec![]
+}
+
+#[cfg(target_os = "linux")]
 fn get_all_available_sensors() -> Vec<SensorValue> {
     let mut sensor_values: Vec<SensorValue> = vec![];
 
@@ -47,7 +47,6 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
                 });
             }
         }
-
     }
 
     sensor_values
