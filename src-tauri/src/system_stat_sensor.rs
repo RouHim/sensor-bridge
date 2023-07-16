@@ -1,12 +1,15 @@
 use crate::sensor;
 use rayon::prelude::*;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 use sensor_core::SensorValue;
 use std::thread;
 use std::time::Duration;
 use systemstat::platform::PlatformImpl;
-use systemstat::{IpAddr, Platform, System};
 use systemstat::IpAddr::{V4, V6};
+use systemstat::{Platform, System};
 
 pub struct SystemStatSensor {}
 
@@ -25,6 +28,8 @@ pub fn get_sensor_values() -> Vec<SensorValue> {
         get_memory_sensors,
         get_uptime_sensor,
         get_network_sensors,
+        #[cfg(target_os = "linux")]
+        get_disk_rw_sensors,
     ];
 
     sensors_requests
@@ -39,7 +44,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
     let mut sensor_values: Vec<SensorValue> = vec![];
 
     // Hashmap that stores the rx and tx bytes for each network interface
-    let mut network_bytes: std::collections::HashMap<String, (u64, u64)> = std::collections::HashMap::new();
+    let mut network_bytes: HashMap<String, (u64, u64)> = HashMap::new();
 
     for (iface_name, iface_data) in &network {
         let net_data = system_stat.network_stats(&iface_name);
@@ -85,7 +90,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
     thread::sleep(Duration::from_millis(250));
 
     // Read RX and TX again
-    for (iface_name, iface_data) in network {
+    for (iface_name, _iface_data) in network {
         let net_data = system_stat.network_stats(&iface_name);
         if net_data.is_err() {
             continue;
@@ -100,45 +105,28 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
         // Get previous RX and TX from hashmap
         let (prev_rx, prev_tx) = network_bytes.get(&iface_name).unwrap();
 
-        // Calculate RX and TX in megabytes
-        let mut rx_delta = (rx - prev_rx) as f64 / 1024.0 / 1024.0;
-        let mut tx_delta = (tx - prev_tx) as f64 / 1024.0 / 1024.0;
-
+        // Calculate RX and TX in bytes
         // Cause we only waited 250ms, we need to multiply by 4 to get the correct value
-        rx_delta *= 4.0;
-        tx_delta *= 4.0;
+        let rx_delta = (rx - prev_rx) * 4;
+        let tx_delta = (tx - prev_tx) * 4;
+
+        let (dl_rate, dl_rate_format) = pretty_bytes(rx_delta as usize);
+        let (ul_rate, ul_rate_format) = pretty_bytes(tx_delta as usize);
 
         // Add RX and TX to the vector
         sensor_values.push(SensorValue {
-            id: format!("network_rx_{}", iface_name),
-            value: format!("{:.2}", rx_delta),
-            unit: "MB/s".to_string(),
-            label: format!("{} Downloadrate", iface_name),
+            id: format!("network_rx_{iface_name}"),
+            value: format!("{:.2}", dl_rate),
+            unit: format!("{dl_rate_format}/s"),
+            label: format!("{iface_name} download rate"),
             sensor_type: "number".to_string(),
         });
 
         sensor_values.push(SensorValue {
-            id: format!("network_tx_{}", iface_name),
-            value: format!("{:.2}", tx_delta),
-            unit: "MB/s".to_string(),
-            label: format!("{} Uploadrate", iface_name),
-            sensor_type: "number".to_string(),
-        });
-
-        // Also add total RX and TX to the vector
-        sensor_values.push(SensorValue {
-            id: format!("network_rx_total"),
-            value: format!("{:.2}", rx_delta),
-            unit: "MB/s".to_string(),
-            label: format!("Total Download"),
-            sensor_type: "number".to_string(),
-        });
-
-        sensor_values.push(SensorValue {
-            id: format!("network_tx_total"),
-            value: format!("{:.2}", tx_delta),
-            unit: "MB/s".to_string(),
-            label: format!("Total Upload"),
+            id: format!("network_tx_{iface_name}"),
+            value: format!("{:.2}", ul_rate),
+            unit: format!("{ul_rate_format}/s"),
+            label: format!("{iface_name} upload rate"),
             sensor_type: "number".to_string(),
         });
     }
@@ -237,35 +225,134 @@ fn get_memory_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 
     let mem = mem.unwrap();
 
-    // Collect sensors in mega bytes
+    let mem_total = mem.total.as_u64();
+    let mem_free = mem.free.as_u64();
+    let mem_used = mem_total - mem_free;
+
+    let (mem_total, mem_total_unit) = pretty_bytes(mem_total as usize);
+    let (mem_used, mem_used_unit) = pretty_bytes(mem_used as usize);
+    let (mem_free, mem_free_unit) = pretty_bytes(mem_free as usize);
+
+    // Collect sensors and use pretty_bytes to convert the values
     vec![
         SensorValue {
             id: "memory_total".to_string(),
-            value: format!("{:.0}", mem.total.as_u64() as f64 / 1024.0 / 1024.0),
+            value: format!("{:.2}", mem_total),
             label: "Total memory".to_string(),
-            unit: "MB".to_string(),
+            unit: mem_total_unit,
             sensor_type: "number".to_string(),
         },
         SensorValue {
             id: "memory_used".to_string(),
-            value: format!("{:.0}", mem.total.as_u64() as f64 / 1024.0 / 1024.0 - mem.free.as_u64() as f64 / 1024.0 / 1024.0),
+            value: format!("{:.2}", mem_used),
             label: "Used memory".to_string(),
-            unit: "MB".to_string(),
+            unit: mem_used_unit,
             sensor_type: "number".to_string(),
         },
         SensorValue {
             id: "memory_free".to_string(),
-            value: format!("{:.0}", mem.free.as_u64() as f64 / 1024.0 / 1024.0),
+            value: format!("{:.2}", mem_free),
             label: "Free memory".to_string(),
-            unit: "MB".to_string(),
+            unit: mem_free_unit,
             sensor_type: "number".to_string(),
         },
         SensorValue {
             id: "memory_used_percentage".to_string(),
-            value: format!("{:.2}", (mem.total.as_u64() as f64 / 1024.0 / 1024.0 - mem.free.as_u64() as f64 / 1024.0 / 1024.0) / (mem.total.as_u64() as f64 / 1024.0 / 1024.0) * 100.0),
+            value: format!("{:.2}", mem_used as f64 / mem_total as f64 * 100.0),
             label: "Used memory percentage".to_string(),
             unit: "%".to_string(),
             sensor_type: "percentage".to_string(),
         },
     ]
+}
+
+#[cfg(target_os = "linux")]
+fn get_disk_rw_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
+    let disks = system_stat.block_device_statistics();
+
+    if disks.is_err() {
+        return vec![];
+    };
+
+    let disks = disks.unwrap();
+
+    // Snapshot read_ios and write_ios per disk
+    let mut read_ios: HashMap<String, usize> = HashMap::new();
+    let mut write_ios: HashMap<String, usize> = HashMap::new();
+    disks.iter().for_each(|disk| {
+        read_ios.insert(disk.1.name.clone(), disk.1.read_sectors);
+        write_ios.insert(disk.1.name.clone(), disk.1.write_sectors);
+    });
+
+    thread::sleep(Duration::from_millis(250));
+
+    let disks = system_stat.block_device_statistics().unwrap();
+
+    // Calculate read and write per second per disk
+    disks
+        .into_iter()
+        .flat_map(|disk| {
+            let sector_size = get_sector_size(&disk.1.name);
+
+            // Calculate read and write per second per disk based on the difference between
+            // the current and previous sector count
+            // To compensate the 250ms sleep not 1 second, multiply by 4
+            let read =
+                (disk.1.read_sectors - read_ios.get(&disk.1.name).unwrap()) * sector_size * 4;
+            let write =
+                (disk.1.write_sectors - write_ios.get(&disk.1.name).unwrap()) * sector_size * 4;
+
+            let (read, read_unit) = pretty_bytes(read);
+            let (write, write_unit) = pretty_bytes(write);
+
+            vec![
+                SensorValue {
+                    id: format!("disk_read_{}", disk.1.name),
+                    value: format!("{:.2}", read),
+                    label: format!("Disk {} read", disk.1.name),
+                    unit: format!("{}/s", read_unit),
+                    sensor_type: "number".to_string(),
+                },
+                SensorValue {
+                    id: format!("disk_write_{}", disk.1.name),
+                    value: format!("{:.2}", write),
+                    label: format!("Disk {} write", disk.1.name),
+                    unit: format!("{}/s", write_unit),
+                    sensor_type: "number".to_string(),
+                },
+            ]
+        })
+        .collect()
+}
+
+/// Returns the sector size of the given device
+/// This is needed to calculate the read and write per second
+/// The sector size is read from /sys/block/{dev}/queue/hw_sector_size, thus this is only
+/// supported on Linux
+#[cfg(target_os = "linux")]
+fn get_sector_size(dev: &str) -> usize {
+    // The input could be sda or sda, but also sda1, sda2, ..., sdaN
+    // So we need to strip the partition number if it exists
+    let dev = dev.trim_end_matches(|c: char| c.is_numeric());
+
+    let file = File::open(format!("/sys/block/{dev}/queue/hw_sector_size")).unwrap();
+    let mut reader = BufReader::new(file);
+    let mut line = String::new();
+    reader.read_line(&mut line).unwrap();
+    line.trim().parse::<usize>().unwrap()
+}
+
+/// Pretty print bytes, e.g. 534 MB
+/// Returns a tuple of (value, unit)
+fn pretty_bytes(value: usize) -> (f64, String) {
+    let mut value = value as f64;
+    let mut unit = 0;
+    let units = vec!["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+    while value > 1024f64 {
+        value /= 1024f64;
+        unit += 1;
+    }
+
+    (value, units[unit].to_string())
 }

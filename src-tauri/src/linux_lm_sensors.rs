@@ -16,10 +16,10 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
     let mut sensor_values: Vec<SensorValue> = vec![];
 
     // Get all available sensors
-// Initialize LM sensors library.
+    // Initialize LM sensors library.
     let sensors = lm_sensors::Initializer::default().initialize().unwrap();
 
-// Print all chips.
+    // Print all chips.
     for chip in sensors.chip_iter(None) {
         let chip_name = chip.prefix().unwrap().unwrap();
         for feature in chip.feature_iter() {
@@ -27,7 +27,12 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
             // Get first sub feature
             let first_sub_feature = feature.sub_feature_iter().next();
             if let Some(sub_feature) = first_sub_feature {
-                let feature_value = sub_feature.value().unwrap();
+                let sub_feature_value = sub_feature.value();
+                if sub_feature_value.is_err() {
+                    continue;
+                }
+
+                let feature_value = sub_feature_value.unwrap();
 
                 let sensor_name = format!("{}-{}", chip_name, name);
                 let sensor_value = feature_value.raw_value();

@@ -15,11 +15,11 @@ use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 mod config;
 mod lcd_preview;
+mod linux_lm_sensors;
 mod misc_sensor;
 mod net_port;
 mod sensor;
 mod system_stat_sensor;
-mod linux_lm_sensors;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,

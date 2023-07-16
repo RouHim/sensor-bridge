@@ -1,5 +1,5 @@
-use crate::{linux_lm_sensors, misc_sensor};
 use crate::system_stat_sensor;
+use crate::{linux_lm_sensors, misc_sensor};
 
 use rayon::prelude::*;
 use sensor_core::SensorValue;
@@ -31,7 +31,10 @@ pub fn read_all_sensor_values() -> Vec<SensorValue> {
             sensors.push(sensor_value.clone());
         });
 
-    println!("Reading all sensors took {:?}", std::time::Instant::now().duration_since(start));
+    println!(
+        "Reading all sensors took {:?}",
+        std::time::Instant::now().duration_since(start)
+    );
 
     sensors
 }
