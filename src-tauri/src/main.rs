@@ -16,6 +16,7 @@ use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 mod config;
 mod lcd_preview;
 mod linux_lm_sensors;
+mod linux_mangohud;
 mod misc_sensor;
 mod net_port;
 mod sensor;

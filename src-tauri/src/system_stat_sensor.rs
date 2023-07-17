@@ -331,12 +331,12 @@ fn get_disk_rw_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
 /// supported on Linux
 #[cfg(target_os = "linux")]
 fn get_sector_size(dev: &str) -> usize {
-    // The input could be sda or sda, but also sda1, sda2, ..., sdaN
-    // So we need to strip the partition number if it exists
-    let dev = dev.trim_end_matches(|c: char| c.is_numeric());
-
-    let file = File::open(format!("/sys/block/{dev}/queue/hw_sector_size")).unwrap();
-    let mut reader = BufReader::new(file);
+    let file_path = format!("/sys/block/{dev}/queue/hw_sector_size");
+    let file = File::open(file_path);
+    if file.is_err() {
+        return 512;
+    }
+    let mut reader = BufReader::new(file.unwrap());
     let mut line = String::new();
     reader.read_line(&mut line).unwrap();
     line.trim().parse::<usize>().unwrap()

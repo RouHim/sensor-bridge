@@ -1,5 +1,5 @@
-use crate::system_stat_sensor;
 use crate::{linux_lm_sensors, misc_sensor};
+use crate::{linux_mangohud, system_stat_sensor};
 
 use rayon::prelude::*;
 use sensor_core::SensorValue;
@@ -19,6 +19,7 @@ pub fn read_all_sensor_values() -> Vec<SensorValue> {
         system_stat_sensor::get_sensor_values,
         misc_sensor::get_sensor_values,
         linux_lm_sensors::get_sensor_values,
+        linux_mangohud::get_sensor_values,
     ];
 
     // Iterate over the vector and call each function using par_iter
