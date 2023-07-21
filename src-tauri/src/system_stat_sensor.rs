@@ -1,6 +1,10 @@
 use crate::sensor;
 use rayon::prelude::*;
 use std::collections::HashMap;
+#[cfg(target_os = "linux")]
+use std::fs::File;
+#[cfg(target_os = "linux")]
+use std::io::{BufRead, BufReader};
 
 use sensor_core::SensorValue;
 use std::thread;

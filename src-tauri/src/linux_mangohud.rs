@@ -1,3 +1,7 @@
+#[cfg(target_os = "linux")]
+use std::fs;
+#[cfg(target_os = "linux")]
+use std::io::BufRead;
 use sensor_core::SensorValue;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
@@ -53,11 +57,14 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
 /// Parses the csv data from the latest log file and return selected entries (header and latest record)
 fn get_csv_data(mangohud_log_dir: String) -> Option<String> {
     // Check if there was a log file that was updated in the last 5 seconds
-    let log_file_path = PathBuf::from(mangohud_log_dir);
-    let files = fs::read_dir(log_file_path).unwrap();
+    let log_file_path = std::path::PathBuf::from(mangohud_log_dir);
+    let files = match fs::read_dir(log_file_path) {
+        Ok(files) => files,
+        _ => return None,
+    };
 
     // Get only the latest log file
-    let latest_log_file: Option<PathBuf> = files
+    let latest_log_file: Option<std::path::PathBuf> = files
         .into_iter()
         .flatten()
         .filter(|f| f.path().is_file())
@@ -70,13 +77,13 @@ fn get_csv_data(mangohud_log_dir: String) -> Option<String> {
         None => return None,
     };
 
-    let file: File = match File::open(latest_log_file) {
+    let file: std::fs::File = match std::fs::File::open(latest_log_file) {
         Ok(value) => value,
         Err(_) => return None,
     };
 
     // Get the 3rd line
-    let header_data = BufReader::new(&file).lines().nth(2);
+    let header_data = std::io::BufReader::new(&file).lines().nth(2);
     // And the last non empty line
     let record_data = rev_buf_reader::RevBufReader::new(file)
         .lines()
@@ -141,7 +148,7 @@ fn get_mangohud_log_dir() -> Option<String> {
 
 #[cfg(target_os = "linux")]
 /// Returns the log dir of mangohud if it is set in the config file
-fn get_mangohud_log_dir_from_file(config_file: &PathBuf) -> Option<String> {
+fn get_mangohud_log_dir_from_file(config_file: &std::path::PathBuf) -> Option<String> {
     let config_file_contents = fs::read_to_string(config_file).unwrap();
     let config_file_lines = config_file_contents.lines();
 

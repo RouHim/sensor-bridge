@@ -1,4 +1,5 @@
 use sensor_core::SensorValue;
+#[cfg(target_os = "windows")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
 use wmi::*;
