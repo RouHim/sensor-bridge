@@ -14,7 +14,7 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
         "ROOT\\LibreHardwareMonitor",
         COMLibrary::new().unwrap(),
     )
-        .unwrap();
+    .unwrap();
 
     let hardware_list: Vec<HashMap<String, Variant>> =
         match wmi_con.raw_query("SELECT * FROM Hardware") {

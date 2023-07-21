@@ -4,6 +4,7 @@ use crate::config::NetPortConfig;
 
 use sensor_core::LcdConfig;
 use std::io::{Cursor, Seek, SeekFrom};
+use std::thread;
 use tauri::AppHandle;
 
 // Constant for the window label
@@ -11,26 +12,27 @@ pub const WINDOW_LABEL: &str = "lcd_preview";
 
 //noinspection RsWrongGenericArgumentsNumber
 pub fn open(app_handle: AppHandle, port_config: &NetPortConfig) {
-    let network_device_id = &port_config.id;
+    let network_device_id = port_config.id.clone();
+    let width = port_config.lcd_config.resolution_width;
+    let height = port_config.lcd_config.resolution_height;
 
-    let lcd_preview_window = tauri::WindowBuilder::new(
-        &app_handle,
-        WINDOW_LABEL,
-        tauri::WindowUrl::App(format!("lcd_preview.html#{network_device_id}").into()),
-    )
-    .build()
-    .unwrap();
-
-    lcd_preview_window.set_title("LCD Preview").unwrap();
-    lcd_preview_window.set_resizable(false).unwrap();
-    lcd_preview_window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: port_config.lcd_config.resolution_width,
-            height: port_config.lcd_config.resolution_height,
-        }))
+    thread::spawn(move || {
+        let lcd_preview_window = tauri::WindowBuilder::new(
+            &app_handle,
+            WINDOW_LABEL,
+            tauri::WindowUrl::App(format!("lcd_preview.html#{network_device_id}").into()),
+        )
+        .build()
         .unwrap();
 
-    lcd_preview_window.show().unwrap();
+        lcd_preview_window.set_title("LCD Preview").unwrap();
+        lcd_preview_window.set_resizable(false).unwrap();
+        lcd_preview_window
+            .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
+            .unwrap();
+
+        lcd_preview_window.show().unwrap();
+    });
 }
 
 /// Returns the lcd preview image for the specified com port as base64 encoded string
