@@ -1,8 +1,6 @@
 use crate::sensor;
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 
 use sensor_core::SensorValue;
 use std::thread;

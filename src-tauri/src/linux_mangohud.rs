@@ -1,8 +1,4 @@
 use sensor_core::SensorValue;
-use std::fs;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
@@ -53,6 +49,7 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
         .collect()
 }
 
+#[cfg(target_os = "linux")]
 /// Parses the csv data from the latest log file and return selected entries (header and latest record)
 fn get_csv_data(mangohud_log_dir: String) -> Option<String> {
     // Check if there was a log file that was updated in the last 5 seconds
@@ -105,6 +102,7 @@ fn get_csv_data(mangohud_log_dir: String) -> Option<String> {
     Some(format!("{}\n{}", header_data, record_data))
 }
 
+#[cfg(target_os = "linux")]
 /// Returns the unit for a given header name
 fn get_unit_by_header_name(header_name: &str) -> String {
     if header_name.ends_with("_load") || header_name.ends_with("_used") {
@@ -120,6 +118,7 @@ fn get_unit_by_header_name(header_name: &str) -> String {
     }
 }
 
+#[cfg(target_os = "linux")]
 /// Returns the log dir of mangohud if it is set in the config file
 fn get_mangohud_log_dir() -> Option<String> {
     let mut mangohud_log_dir: Option<String> = None;
@@ -140,6 +139,7 @@ fn get_mangohud_log_dir() -> Option<String> {
     mangohud_log_dir
 }
 
+#[cfg(target_os = "linux")]
 /// Returns the log dir of mangohud if it is set in the config file
 fn get_mangohud_log_dir_from_file(config_file: &PathBuf) -> Option<String> {
     let config_file_contents = fs::read_to_string(config_file).unwrap();
