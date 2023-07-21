@@ -1,3 +1,4 @@
+use crate::utils::pretty_bytes;
 use sensor_core::SensorValue;
 #[cfg(target_os = "windows")]
 use std::collections::HashMap;
@@ -74,9 +75,17 @@ fn to_sensor_value(
     let hardware_name = hardware_list.get(&parent).unwrap();
     let (sensor_value_type, unit) = match_sensor_type(&sensor_type);
 
-    //  TODO: For sensor types: "Throughput", "Data", "SmallData" convert to
-    // Human readable value and unit
+    // For sensor types: "Throughput", "Data", "SmallData" convert to human readable value and unit
+    let (value, unit) = if sensor_type.eq("Throughput") {
+        let (value, unit) = pretty_bytes(*value as usize);
+        (value, format!("{unit}/s"))
+    } else if sensor_type.eq("Data") || sensor_type.eq("SmallData") {
+        pretty_bytes(*value as usize)
+    } else {
+        (*value as f64, unit)
+    };
 
+    // Improve the label, by appending the sensor type at the end
     let label = if name.contains(&sensor_type) {
         format!("{hardware_name} {name}")
     } else {

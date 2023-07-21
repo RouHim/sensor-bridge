@@ -21,6 +21,7 @@ mod misc_sensor;
 mod net_port;
 mod sensor;
 mod system_stat_sensor;
+mod utils;
 mod windows_libre_hardware_monitor_sensor;
 
 pub struct AppState {
