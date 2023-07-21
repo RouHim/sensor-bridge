@@ -1,5 +1,6 @@
 use sensor_core::LcdConfig;
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 
 use serde::Deserialize;
@@ -102,13 +103,20 @@ pub fn read_from_app_config() -> AppConfig {
 }
 
 /// Returns the path to the config file.
-/// The config file is located in the same directory as the executable.
+/// The config file is located in the systems config directory.
 /// The file name is config.json.
 fn get_config_path() -> String {
-    let mut config_path = std::env::current_exe().expect("Failed to get current exe path");
-    config_path.pop();
-    config_path.push("config.json");
-    config_path.to_str().unwrap().to_string()
+    let app_config_path = dirs::config_dir().unwrap()
+        .join("sensor-bridge");
+
+    if !app_config_path.exists() {
+        let _ = fs::create_dir_all(&app_config_path);
+    }
+
+    app_config_path
+        .join("config.json")
+        .to_str().unwrap()
+        .to_string()
 }
 
 /// Removes the specified network device from the config file.
