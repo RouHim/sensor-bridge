@@ -9,7 +9,7 @@ edition = "2021"
 rust-version = "1.57"
 
 [build-dependencies]
-tauri-build = { version = "1.2", features = [] }
+tauri-build = { version = "1.4.0", features = [] }
 
 [dependencies]
 sensor-core = { git = "https://github.com/RouHim/sensor-core.git", branch = "main" }                # My own lib used for rendering and core types
