@@ -1,66 +1,56 @@
 use sensor_core::LcdConfig;
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 
-use crate::config::OutputMode::{I2c, Lcd, Spi};
 use serde::Deserialize;
 use serde::Serialize;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
-    pub com_port_config: HashMap<String, ComPortConfig>,
+    pub network_devices: HashMap<String, NetPortConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct ComPortConfig {
-    pub com_port: String,
+pub struct NetPortConfig {
+    pub id: String,
+    pub name: String,
+    pub address: String,
     pub active: bool,
-    pub mode: OutputMode,
     pub lcd_config: LcdConfig,
 }
 
-impl ComPortConfig {
-    fn default(com_port: &str) -> ComPortConfig {
-        ComPortConfig {
-            com_port: com_port.to_string(),
+impl NetPortConfig {
+    fn default() -> NetPortConfig {
+        NetPortConfig {
+            id: Uuid::new_v4().to_string(),
+            name: "A new device".to_string(),
+            address: "".to_string(),
             active: false,
-            mode: Lcd,
-            lcd_config: LcdConfig::default(),
+            lcd_config: Default::default(),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub enum OutputMode {
-    #[default]
-    Lcd,
-    I2c,
-    Spi,
-}
-
-impl OutputMode {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "Lcd" => Lcd,
-            "I2c" => I2c,
-            "Spi" => Spi,
-            _ => Lcd,
-        }
-    }
+pub fn create() -> NetPortConfig {
+    let new_config = NetPortConfig::default();
+    write(&new_config);
+    new_config
 }
 
 /// Loads the config file from disk.
 /// If the file does not exist, it will be created.
 /// Returns the config for the specified com port.
 /// If no config for the specified com port exists, None is returned.
-pub fn load_port_config(com_port: &str) -> ComPortConfig {
-    let config: AppConfig = load_config();
-    let maybe_config = config.com_port_config.get(com_port);
+pub fn read(network_device_id: &str) -> NetPortConfig {
+    let config: AppConfig = read_from_app_config();
+    let maybe_config = config.network_devices.get(network_device_id);
 
     if maybe_config.is_none() {
         // Create port config
-        let port_config = ComPortConfig::default(com_port);
-        write_port_config(&port_config);
+        let port_config = NetPortConfig::default();
+        write(&port_config);
         return port_config;
     }
 
@@ -70,11 +60,17 @@ pub fn load_port_config(com_port: &str) -> ComPortConfig {
 /// Writes the specified config to disk.
 /// If the config file does not exist, it will be created.
 /// If the config file already exists, the specified config will be added to it.
-pub fn write_port_config(com_port_config: &ComPortConfig) {
-    let mut config: AppConfig = load_config();
+pub fn write(net_port_config: &NetPortConfig) {
+    let mut config: AppConfig = read_from_app_config();
     config
-        .com_port_config
-        .insert(com_port_config.com_port.clone(), com_port_config.clone());
+        .network_devices
+        .insert(net_port_config.id.clone(), net_port_config.clone());
+    write_to_app_config(&config);
+}
+
+/// Writes the specified config to disk.
+/// If the config file does not exist, it will be created.
+fn write_to_app_config(config: &AppConfig) {
     let config_path = get_config_path();
     let config_file = File::create(config_path).expect("Failed to create config file");
     serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
@@ -82,7 +78,7 @@ pub fn write_port_config(com_port_config: &ComPortConfig) {
 
 /// Loads the config file from disk.
 /// If the file does not exist, it will be created.
-fn load_config() -> AppConfig {
+pub fn read_from_app_config() -> AppConfig {
     let config_path = get_config_path();
 
     // Check if config file exists, otherwise create it
@@ -107,11 +103,25 @@ fn load_config() -> AppConfig {
 }
 
 /// Returns the path to the config file.
-/// The config file is located in the same directory as the executable.
+/// The config file is located in the systems config directory.
 /// The file name is config.json.
 fn get_config_path() -> String {
-    let mut config_path = std::env::current_exe().expect("Failed to get current exe path");
-    config_path.pop();
-    config_path.push("config.json");
-    config_path.to_str().unwrap().to_string()
+    let app_config_path = dirs::config_dir().unwrap().join("sensor-bridge");
+
+    if !app_config_path.exists() {
+        let _ = fs::create_dir_all(&app_config_path);
+    }
+
+    app_config_path
+        .join("config.json")
+        .to_str()
+        .unwrap()
+        .to_string()
+}
+
+/// Removes the specified network device from the config file.
+pub fn remove(network_device_id: &str) {
+    let mut config: AppConfig = read_from_app_config();
+    config.network_devices.remove(network_device_id);
+    write_to_app_config(&config);
 }

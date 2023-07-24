@@ -1,10 +1,17 @@
 const {invoke} = window.__TAURI__.tauri;
 
-import {saveConfig} from './base.js';
+const listNetPorts = document.getElementById("main-net-ports");
 
-const designerPane = document.getElementById("lcd-designer-pane");
+const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
+const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
+const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
+
+const btnTransferActive = document.getElementById("main-chk-transfer-active");
+const txtDeviceName = document.getElementById("lcd-txt-device-name");
+const txtNetworkAddress = document.getElementById("lcd-txt-network-address");
 const txtResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtResolutionHeight = document.getElementById("lcd-txt-resolution-height");
+const designerPane = document.getElementById("lcd-designer-pane");
 const btnSaveSensor = document.getElementById("lcd-btn-save-sensor");
 const btnRemoveSensor = document.getElementById("lcd-btn-remove-sensor");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
@@ -19,12 +26,13 @@ const txtSensorPositionY = document.getElementById("lcd-txt-sensor-position-y");
 let sensorValues = [];
 let lastSelectedSensorListElement = null;
 let lastSelectedDesignerElement = null;
-let currentComPort = null;
 
 const LIST_ID_PREFIX = "list-";
 const DESIGNER_ID_PREFIX = "designer-";
 
 let draggedLiElement;
+
+let currentNetworkDeviceId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
     // Register event for display resolution
@@ -32,21 +40,213 @@ window.addEventListener("DOMContentLoaded", () => {
     txtResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
 
     // Register button click events
-    btnSaveSensor.addEventListener("click", saveSensor);
-    btnRemoveSensor.addEventListener("click", removeSensor);
+    btnAddNetworkDevice.addEventListener("click", createNetworkPort);
+    btnRemoveNetworkDevice.addEventListener("click", removeDevice);
+    btnSaveNetworkDevice.addEventListener("click", saveDeviceConfig);
+    btnSaveSensor.addEventListener("click", saveDeviceConfig);
+    btnTransferActive.addEventListener("click", () => toggleSync(btnTransferActive.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
+    btnRemoveSensor.addEventListener("click", removeSensor);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
     designerPane.addEventListener('drop', dropOnParent);
+
+    // Load all devices from config
+    loadDeviceConfigs();
+    // Select first net port
+    if (listNetPorts.childElementCount > 0) {
+        onNetDeviceSelected(listNetPorts.firstElementChild);
+    }
 });
 
-function toggleLivePreview() {
-    invoke('toggle_lcd_live_preview', {comPort: currentComPort});
+function removeDevice() {
+    // Get selected net port id
+    let networkDeviceId = currentNetworkDeviceId;
+
+    // If net port id is empty, return
+    if (networkDeviceId === "") {
+        return;
+    }
+
+    // Remove net port from list
+    listNetPorts.removeChild(document.getElementById(networkDeviceId));
+
+    // Remove net port from backend
+    invoke('remove_network_device_config', {networkDeviceId: networkDeviceId});
+
+    // If is at least one net port, select the first one
+    if (listNetPorts.childElementCount > 0) {
+        onNetDeviceSelected(listNetPorts.firstElementChild);
+    } else {
+        clearForm();
+    }
 }
 
-function loadLcdConfig(comPort) {
-    invoke('load_port_config', {comPort: comPort}).then(
+function clearForm() {
+    txtDeviceName.value = "";
+    txtNetworkAddress.value = "";
+    txtResolutionWidth.value = "";
+    txtResolutionHeight.value = "";
+    lstDesignerPlacedElements.innerHTML = "";
+}
+
+function createNetworkPort() {
+    invoke('create_network_device_config')
+        .then((networkDeviceId) => {
+            // Set port id as constant
+            currentNetworkDeviceId = networkDeviceId;
+
+            // Load all device configs from config
+            loadDeviceConfigs().then(() => {
+                // Select new net device
+                let liElement = document.getElementById(networkDeviceId);
+                onNetDeviceSelected(liElement);
+            });
+        });
+}
+
+function loadDeviceConfigs() {
+    // Load config from backend
+    return invoke('get_app_config').then((appConfig) => {
+        // Map config to JSON
+        appConfig = JSON.parse(appConfig);
+
+        // Clear net port list
+        listNetPorts.innerHTML = "";
+
+        // Add net ports to list
+        let networkDevices = appConfig.network_devices;
+
+        // If network devices is undefined or null or empty, return
+        if (networkDevices === undefined || networkDevices === null || networkDevices.length === 0) {
+            return;
+        }
+
+        // Iterate json array and add net ports to list
+        for (const deviceId in networkDevices) {
+            const device = networkDevices[deviceId];
+            addNetworkDeviceToList(device.id, device.name);
+        }
+
+        // Select first net port
+        if (listNetPorts.childElementCount > 0) {
+            onNetDeviceSelected(listNetPorts.firstElementChild);
+        }
+    });
+}
+
+function addNetworkDeviceToList(id, name) {
+    // Create new net port li element
+    const liElement = document.createElement("li");
+    liElement.id = id;
+    liElement.innerText = name;
+    liElement.classList.add("net-port-item");
+    liElement.addEventListener("click", () => onNetDeviceSelected(liElement));
+
+    // Add to net port list
+    listNetPorts.appendChild(liElement);
+}
+
+function saveConfig() {
+    // If net port id is empty, return
+    if (currentNetworkDeviceId === "") {
+        return;
+    }
+
+    // Get device name and network address
+    let deviceName = txtDeviceName.value;
+    let deviceAddress = txtNetworkAddress.value;
+
+    // Get LCD Resolution Height and cast to integer
+    let lcdResolutionWidth = txtResolutionWidth.value;
+    let lcdResolutionHeight = txtResolutionHeight.value;
+
+    // Find all list items of lcd-designer-placed-elements extract sensors and save them to the lcd config
+    let lcdDesignerPlacedElementsListItems = lstDesignerPlacedElements.getElementsByTagName("li");
+    let lcdDesignerPlacedElementsListItemsArray = Array.from(lcdDesignerPlacedElementsListItems);
+    let lcdElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
+        let elementId = listItem.getAttribute("data-element-id");
+        let elementName = listItem.innerText.trim();
+        let sensorId = listItem.getAttribute("data-sensor-id");
+        let sensorTextFormat = listItem.getAttribute("data-sensor-text-format");
+        let sensorX = parseInt(listItem.getAttribute("data-sensor-position-x"));
+        let sensorY = parseInt(listItem.getAttribute("data-sensor-position-y"));
+
+        // Build sensor object
+        return {
+            id: elementId,
+            name: elementName,
+            sensor_id: sensorId,
+            text_format: sensorTextFormat,
+            x: sensorX,
+            y: sensorY,
+        };
+    });
+
+
+    // Build lcd config object, with integers
+    let lcdConfig = {
+        resolution_width: parseInt(lcdResolutionWidth),
+        resolution_height: parseInt(lcdResolutionHeight),
+        elements: lcdElements,
+    }
+
+    invoke('save_app_config', {
+        id: currentNetworkDeviceId,
+        name: deviceName,
+        address: deviceAddress,
+        lcdConfig: JSON.stringify(lcdConfig),
+    });
+}
+
+function onNetDeviceSelected(element) {
+    let networkDeviceId = element.id;
+    currentNetworkDeviceId = networkDeviceId;
+
+    invoke('get_network_device_config', {networkDeviceId: networkDeviceId}).then(
+        (portConfig) => {
+            // cast port config to json object
+            portConfig = JSON.parse(portConfig);
+
+            // Set name, host and resolution
+            txtDeviceName.value = portConfig.name;
+            txtNetworkAddress.value = portConfig.address;
+
+            // Set active sync state
+            btnTransferActive.checked = portConfig.active;
+
+            // Set as selected net port in list
+            listNetPorts.querySelectorAll("li").forEach((liElement) => {
+                liElement.classList.remove("selected");
+            });
+            element.classList.add("selected");
+
+            // Load sensor values
+            loadSensorValues();
+
+            // Load lcd config
+            loadLcdConfig(networkDeviceId);
+        }
+    );
+}
+
+// Toggles the sync for the selected net port
+function toggleSync(checked) {
+    if (checked) {
+        invoke('enable_sync', {networkDeviceId: currentNetworkDeviceId});
+    } else {
+        invoke('disable_sync', {networkDeviceId: currentNetworkDeviceId});
+    }
+}
+
+
+function toggleLivePreview() {
+    invoke('toggle_lcd_live_preview', {networkDeviceId: currentNetworkDeviceId});
+}
+
+function loadLcdConfig(networkDeviceId) {
+    invoke('get_network_device_config', {networkDeviceId: networkDeviceId}).then(
         (portConfig) => {
             // cast port config to json object
             portConfig = JSON.parse(portConfig);
@@ -78,11 +278,14 @@ function loadLcdConfig(comPort) {
                 addSensorToDesignerPane(element.id, element.text_format, sensorValue, sensorUnit, element.name, element.x, element.y);
             });
 
-            // Select first sensor in the list not the last
-            setSelectedSensor(document.querySelector("#lcd-designer-placed-elements li"));
+            // If there are elements, select the first one
+            if (lcdConfig.elements.length > 0) {
+                setSelectedSensor(document.querySelector("#lcd-designer-placed-elements li"));
+            }
 
             // Update designer pane dimensions
-            updateLcdDesignPaneDimensions();
+            designerPane.style.width = lcdConfig.resolution_width + "px";
+            designerPane.style.height = lcdConfig.resolution_height + "px";
         }
     );
 }
@@ -117,17 +320,6 @@ function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, posit
 
     // Set last selected sensor list element
     lastSelectedSensorListElement = liElement;
-}
-
-export function onLcdSelected(comPort) {
-    // Load sensor values
-    loadSensorValues();
-
-    // Load lcd config
-    loadLcdConfig(comPort);
-
-    // Set com port as constant
-    currentComPort = comPort;
 }
 
 function loadSensorValues() {
@@ -294,7 +486,15 @@ function addSensorToDesignerPane(elementId, sensorTextFormat, sensorValue, senso
     lastSelectedDesignerElement = designerElement;
 }
 
-function saveSensor() {
+function saveDeviceConfig() {
+    if (txtDeviceName.value === "") {
+        alert("Please enter a name for the device.");
+        return;
+    }
+    if (txtNetworkAddress.value === "") {
+        alert("Please enter a network address for the device.");
+        return;
+    }
     if (txtSensorName.value === "") {
         alert("Please enter a name for the sensor.");
         return;
@@ -305,27 +505,30 @@ function saveSensor() {
     // Check if sensor is already exists, if so, update the sensor
     if (document.getElementById(LIST_ID_PREFIX + calculatedId) !== null) {
         updateSensor(calculatedId);
-        return;
+    } else {
+        // Add new sensor to list
+        const selectedSensor = cmbSensorTypeSelection.options[cmbSensorTypeSelection.selectedIndex];
+        const sensorTextFormat = txtSensorTextFormat.value;
+        const sensorId = selectedSensor.value;
+        const sensorValue = selectedSensor.title;
+        const sensorUnit = selectedSensor.getAttribute("data-unit");
+        const sensorName = txtSensorName.value;
+        let positionX = txtSensorPositionX.value;
+        let positionY = txtSensorPositionY.value;
+
+        // Create new li element
+        addSensorToList(calculatedId, sensorId, sensorTextFormat, positionX, positionY, sensorName);
+
+        // Build designer element
+        addSensorToDesignerPane(calculatedId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY);
+
+        // Set the new li element as selected
+        setSelectedSensor(document.getElementById(LIST_ID_PREFIX + calculatedId));
     }
 
-    const selectedSensor = cmbSensorTypeSelection.options[cmbSensorTypeSelection.selectedIndex];
-
-    const sensorTextFormat = txtSensorTextFormat.value;
-    const sensorId = selectedSensor.value;
-    const sensorValue = selectedSensor.title;
-    const sensorUnit = selectedSensor.getAttribute("data-unit");
-    const sensorName = txtSensorName.value;
-    let positionX = txtSensorPositionX.value;
-    let positionY = txtSensorPositionY.value;
-
-    // Create new li element
-    addSensorToList(calculatedId, sensorId, sensorTextFormat, positionX, positionY, sensorName);
-
-    // Build designer element
-    addSensorToDesignerPane(calculatedId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY);
-
-    // Set the new li element as selected
-    setSelectedSensor(document.getElementById(LIST_ID_PREFIX + calculatedId));
+    // Update the device name in list
+    const deviceNameElement = document.getElementById(currentNetworkDeviceId);
+    deviceNameElement.innerText = txtDeviceName.value;
 
     // Save config
     saveConfig();
@@ -388,12 +591,24 @@ function dropOnParent(event) {
     lastSelectedSensorListElement.setAttribute("data-sensor-position-x", x);
     lastSelectedSensorListElement.setAttribute("data-sensor-position-y", y);
 
+    // Select the sensor in the list
+    setSelectedSensor(lastSelectedSensorListElement);
+
+    // Update X and Y position in the detail pane
+    txtSensorPositionX.value = x;
+    txtSensorPositionY.value = y;
+
     saveConfig();
 }
 
 function updateLcdDesignPaneDimensions() {
     let width = txtResolutionWidth.value;
     let height = txtResolutionHeight.value;
+
+    // Check if width and height are valid numbers over 0, otherwise return
+    if (isNaN(width) || width <= 0 || isNaN(height) || height <= 0) {
+        return;
+    }
 
     designerPane.style.width = width + "px";
     designerPane.style.height = height + "px";

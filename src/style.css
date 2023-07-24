@@ -36,12 +36,12 @@ html, body {
 }
 
 #master-pane {
-    width: 15%;
+    width: 20%;
     height: 100%;
 }
 
 #detail-pane {
-    width: 85%;
+    width: 80%;
     height: 100%;
     border-left: 1px solid var(--text);
 }
@@ -86,13 +86,13 @@ html, body {
     border-bottom: 1px solid #08ff00;
 }
 
-#main-com-ports {
+#main-net-ports {
     list-style-type: none;
     margin: 0;
     padding: 0;
 }
 
-.com-port-item {
+.net-port-item {
     cursor: pointer;
     border-left: 1px solid var(--text);
     margin: 5px;
@@ -100,10 +100,15 @@ html, body {
     transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out;
 }
 
-.com-port-item:hover {
+.net-port-item:hover {
     transform: scale(1.1);
     border-left: 1px solid #08ff00;
     color: #08ff00;
+}
+
+/* If class .net-port-item and .selected is set make the color red */
+.net-port-item.selected {
+    color: red;
 }
 
 .header-icon {
@@ -154,10 +159,6 @@ html, body {
 
 .kill-switch-input:checked + .kill-switch-icon {
     color: #08ff00;
-}
-
-#i2c-com-port-config {
-    margin-bottom: 10px;
 }
 
 #lcd-designer-pane {
