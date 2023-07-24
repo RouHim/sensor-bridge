@@ -14,7 +14,7 @@ tauri-build = { version = "1.4.0", features = [] }
 [dependencies]
 sensor-core = { git = "https://github.com/RouHim/sensor-core.git", branch = "main" }                # My own lib used for rendering and core types
 serde = { version = "1.0.175", features = ["derive"] }                                              # Serialization
-serde_json = "1.0.100"                                                                              # De/Serialize to json
+serde_json = "1.0.103"                                                                              # De/Serialize to json
 rmp-serde = "1.1.2"                                                                                 # De/Serialize to MessagePack
 tauri = { version = "1.4.1", features = ["dialog-all", "shell-open", "system-tray", "window-all"] } # Tauri
 systemstat = "0.2.3"                                                                                # read common system sensor values
