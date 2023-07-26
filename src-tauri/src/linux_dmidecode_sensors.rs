@@ -1,7 +1,10 @@
+#[cfg(target_os = "linux")]
 use std::fs;
 use std::sync::{Arc, Mutex};
 
+#[cfg(target_os = "linux")]
 use dmidecode::{BaseBoard, Bios, EntryPoint, Structure};
+#[cfg(target_os = "linux")]
 use log::info;
 use sensor_core::SensorValue;
 use super_shell::RootShell;
