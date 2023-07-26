@@ -3,6 +3,7 @@ use std::fs;
 #[cfg(target_os = "linux")]
 use std::io::BufRead;
 
+#[cfg(target_os = "linux")]
 use log::{debug, info, warn};
 use sensor_core::SensorValue;
 

@@ -13,6 +13,7 @@ pub struct DmiDecodeSensors {
     pub root_shell: Arc<Mutex<Option<RootShell>>>,
 }
 
+#[cfg(target_os = "linux")]
 const DMIDECODE_DATA_PATH: &str = "/tmp/dmidecode.bin";
 
 impl DmiDecodeSensors {
