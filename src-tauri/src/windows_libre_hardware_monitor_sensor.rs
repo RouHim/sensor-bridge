@@ -1,4 +1,3 @@
-use crate::utils::pretty_bytes;
 use sensor_core::SensorValue;
 #[cfg(target_os = "windows")]
 use std::collections::HashMap;

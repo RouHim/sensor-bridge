@@ -106,9 +106,9 @@ html, body {
     color: #08ff00;
 }
 
-/* If class .net-port-item and .selected is set make the color red */
 .net-port-item.selected {
-    color: red;
+    border-left: 1px solid #08ff00;
+    color: #08ff00;
 }
 
 .header-icon {
@@ -164,7 +164,7 @@ html, body {
 #lcd-designer-pane {
     width: 500px;
     height: 500px;
-    background-color: #502c2c;
+    background-color: var(--background);
     position: absolute;
 }
 

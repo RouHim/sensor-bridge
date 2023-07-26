@@ -1,5 +1,4 @@
 use crate::sensor;
-use rayon::prelude::*;
 
 use sensor_core::SensorValue;
 
@@ -14,7 +13,7 @@ impl sensor::SensorProvider for SystemSensor {
 pub fn get_sensor_values() -> Vec<SensorValue> {
     let sensors_requests = vec![get_system_time];
 
-    sensors_requests.par_iter().flat_map(|f| f()).collect()
+    sensors_requests.iter().flat_map(|f| f()).collect()
 }
 
 fn get_system_time() -> Vec<SensorValue> {

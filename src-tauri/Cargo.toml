@@ -25,12 +25,16 @@ uuid = { version = "1.4.1", features = ["v4"] }                                 
 image = "0.24.6"                                                                                    # Image processing
 chrono = "0.4.26"                                                                                   # Time handling
 dirs = "5.0.1"                                                                                      # Special folder handling
+log = "0.4.19"                                                                                      # Logging
+env_logger = "0.10.0"                                                                               # Logging
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
 lm-sensors = "0.1.5"                                                                                # Read sensor values from lm-sensors
 csv = "1.2.2"                                                                                       # CSV parsing
 rev_buf_reader = "0.3.0"                                                                            # Reverse buffer reader
+super-shell = "1.2.0"                                                                               # Privileged shell execution
+dmidecode = "0.7.5"                                                                                 # Read linux system information from dmidecode
 
 # Windows specific dependencies
 [target.'cfg(target_os = "windows")'.dependencies]

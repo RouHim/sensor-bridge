@@ -1,17 +1,18 @@
-use crate::{sensor, utils};
-use rayon::prelude::*;
 use std::collections::HashMap;
 #[cfg(target_os = "linux")]
 use std::fs::File;
 #[cfg(target_os = "linux")]
 use std::io::{BufRead, BufReader};
-
-use sensor_core::SensorValue;
 use std::thread;
 use std::time::Duration;
+
+use rayon::prelude::*;
+use sensor_core::SensorValue;
 use systemstat::platform::PlatformImpl;
 use systemstat::IpAddr::{V4, V6};
 use systemstat::{Platform, System};
+
+use crate::{sensor, utils};
 
 pub struct SystemStatSensor {}
 
@@ -25,19 +26,31 @@ pub fn get_sensor_values() -> Vec<SensorValue> {
     let system_stat = System::new();
 
     let sensors_requests = vec![
+        // Blocks for 250ms
         get_total_delayed_sensors,
+        // Blocks for 250ms
+        #[cfg(target_os = "linux")]
+        get_disk_rw_sensors,
         get_cpu_temp_sensors,
         get_memory_sensors,
         get_uptime_sensor,
         get_network_sensors,
-        #[cfg(target_os = "linux")]
-        get_disk_rw_sensors,
     ];
 
-    sensors_requests
-        .par_iter()
-        .flat_map(|f| f(&system_stat))
-        .collect()
+    // Limit the number of threads to 3
+    // Because otherwise the CPU load will be too high on some high core cpu systems
+    // But we need at most 3 to read sensors because two of them are blocking for 250ms
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(3)
+        .build()
+        .unwrap();
+
+    pool.install(|| {
+        sensors_requests
+            .par_iter()
+            .flat_map(|f| f(&system_stat))
+            .collect()
+    })
 }
 
 fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
