@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 use log::debug;
 use sensor_core::SensorValue;
@@ -13,21 +14,24 @@ pub trait SensorProvider {
 }
 
 pub fn read_all_sensor_values(static_sensor_values: &Arc<Vec<SensorValue>>) -> Vec<SensorValue> {
-    // Measurement that it took to read all sensors
-    let start = std::time::Instant::now();
+    let static_sensor_values = static_sensor_values.iter().cloned().collect();
 
-    let sensor_values: Vec<SensorValue> = [
-        static_sensor_values.iter().cloned().collect(),
-        read_dynamic_sensor_values(),
-    ]
-    .concat();
+    thread::spawn(move || {
+        // Measurement that it took to read all sensors
+        let start = std::time::Instant::now();
 
-    debug!(
-        "Reading all sensors took {:?}",
-        std::time::Instant::now().duration_since(start)
-    );
+        let sensor_values: Vec<SensorValue> =
+            [static_sensor_values, read_dynamic_sensor_values()].concat();
 
-    sensor_values
+        debug!(
+            "Reading all sensors took {:?}",
+            std::time::Instant::now().duration_since(start)
+        );
+
+        sensor_values
+    })
+    .join()
+    .unwrap()
 }
 
 /// Reads the dynamic sensor values

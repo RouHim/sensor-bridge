@@ -10,9 +10,11 @@ pub fn get_sensor_values() -> Vec<SensorValue> {
 
 #[cfg(target_os = "windows")]
 fn get_all_available_sensors() -> Vec<SensorValue> {
-    let com_library = COMLibrary::new().unwrap();
-    let wmi_con =
-        WMIConnection::with_namespace_path("ROOT\\LibreHardwareMonitor", com_library).unwrap();
+    let wmi_con = WMIConnection::with_namespace_path(
+        "ROOT\\LibreHardwareMonitor",
+        COMLibrary::new().unwrap(),
+    )
+    .unwrap();
 
     let hardware_list: Vec<HashMap<String, Variant>> =
         match wmi_con.raw_query("SELECT * FROM Hardware") {
