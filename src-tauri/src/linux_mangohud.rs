@@ -1,8 +1,10 @@
-use sensor_core::SensorValue;
 #[cfg(target_os = "linux")]
 use std::fs;
 #[cfg(target_os = "linux")]
 use std::io::BufRead;
+
+use log::{debug, info, warn};
+use sensor_core::SensorValue;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
@@ -15,6 +17,12 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
 
 #[cfg(target_os = "linux")]
 fn get_all_available_sensors() -> Vec<SensorValue> {
+    // Check if mangohud is installed
+    if fs::metadata("/usr/bin/mangohud").is_err() {
+        info!("MangoHUD is not installed");
+        return vec![];
+    }
+
     // Get mango hud log dir
     let mangohud_log_dir = match get_mangohud_log_dir() {
         Some(value) => value,
@@ -77,10 +85,12 @@ fn get_csv_data(mangohud_log_dir: String) -> Option<String> {
         None => return None,
     };
 
-    let file: std::fs::File = match std::fs::File::open(latest_log_file) {
+    let file: fs::File = match fs::File::open(&latest_log_file) {
         Ok(value) => value,
         Err(_) => return None,
     };
+
+    debug!("Found latest MangoHUD log file: {:?}", latest_log_file);
 
     // Get the 3rd line
     let header_data = std::io::BufReader::new(&file).lines().nth(2);
@@ -132,6 +142,7 @@ fn get_mangohud_log_dir() -> Option<String> {
 
     let mut mangohud_conf_path = std::path::PathBuf::from("/usr/bin/MangoHud.conf");
     if mangohud_conf_path.exists() {
+        debug!("Found MangoHUD config file: {:?}", mangohud_conf_path);
         mangohud_log_dir = get_mangohud_log_dir_from_file(&mangohud_conf_path);
     }
 
@@ -139,9 +150,12 @@ fn get_mangohud_log_dir() -> Option<String> {
     if mangohud_conf_path.exists() {
         let user_config = get_mangohud_log_dir_from_file(&mangohud_conf_path);
         if user_config.is_some() {
+            debug!("Found MangoHUD log dir in user config: {:?}", user_config);
             mangohud_log_dir = user_config;
         }
     }
+
+    debug!("Found MangoHUD log dir: {:?}", mangohud_log_dir);
 
     mangohud_log_dir
 }
@@ -164,6 +178,8 @@ fn get_mangohud_log_dir_from_file(config_file: &std::path::PathBuf) -> Option<St
         let value = line_parts.nth(1).unwrap().trim();
         return Some(value.to_string());
     }
+
+    warn!("MangoHUD config file does not contain output_folder");
 
     None
 }

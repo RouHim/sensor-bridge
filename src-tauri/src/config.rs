@@ -7,11 +7,13 @@ use serde::Deserialize;
 use serde::Serialize;
 use uuid::Uuid;
 
+/// The app config
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
     pub network_devices: HashMap<String, NetPortConfig>,
 }
 
+/// Config for a single network device
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct NetPortConfig {
     pub id: String,

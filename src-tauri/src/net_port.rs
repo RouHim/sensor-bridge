@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
 use rmp_serde::Serializer;
@@ -107,6 +107,7 @@ pub fn start_sync(
 /// and send them to the network tcp port
 fn wait(start_time: Instant) {
     let processing_duration = Instant::now().duration_since(start_time);
+    debug!("Processing duration: {:?}", processing_duration);
     let time_to_wait = PUSH_RATE
         .checked_sub(processing_duration)
         .unwrap_or_else(|| {

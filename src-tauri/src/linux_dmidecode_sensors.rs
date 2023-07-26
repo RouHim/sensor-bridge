@@ -2,6 +2,7 @@ use std::fs;
 use std::sync::{Arc, Mutex};
 
 use dmidecode::{BaseBoard, Bios, EntryPoint, Structure};
+use log::info;
 use sensor_core::SensorValue;
 use super_shell::RootShell;
 
@@ -20,7 +21,12 @@ impl DmiDecodeSensors {
 
     #[cfg(target_os = "linux")]
     pub fn get_sensor_values(&self) -> Vec<SensorValue> {
-        // Measure time
+        // Check if dmidecode is installed
+        if fs::metadata("/usr/sbin/dmidecode").is_err() {
+            info!("dmidecode is not installed");
+            return vec![];
+        }
+
         let mut root_shell = self.root_shell.lock().unwrap();
         let root_shell = root_shell.as_mut().unwrap();
         root_shell.execute(format!("rm -f {DMIDECODE_DATA_PATH}"));
