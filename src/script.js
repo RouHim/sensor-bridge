@@ -4,27 +4,30 @@ const listNetPorts = document.getElementById("main-net-ports");
 
 const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
 const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
-const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
-
-const btnTransferActive = document.getElementById("main-chk-transfer-active");
-const txtDeviceName = document.getElementById("lcd-txt-device-name");
-const txtNetworkAddress = document.getElementById("lcd-txt-network-address");
-const txtResolutionWidth = document.getElementById("lcd-txt-resolution-width");
-const txtResolutionHeight = document.getElementById("lcd-txt-resolution-height");
-const designerPane = document.getElementById("lcd-designer-pane");
-const btnSaveSensor = document.getElementById("lcd-btn-save-sensor");
-const btnRemoveSensor = document.getElementById("lcd-btn-remove-sensor");
-const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
+const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
+const btnTransferActive = document.getElementById("main-chk-transfer-active");
 
-const txtSensorName = document.getElementById("lcd-txt-sensor-name");
-const cmbSensorTypeSelection = document.getElementById("lcd-cmb-sensor-type-selection");
-const txtSensorTextFormat = document.getElementById("lcd-txt-sensor-text-format");
-const txtSensorPositionX = document.getElementById("lcd-txt-sensor-position-x");
-const txtSensorPositionY = document.getElementById("lcd-txt-sensor-position-y");
+const txtDeviceName = document.getElementById("lcd-txt-device-name");
+const txtDeviceNetworkAddress = document.getElementById("lcd-txt-device-network-address");
+const txtLcdResolutionWidth = document.getElementById("lcd-txt-resolution-width");
+const txtLcdResolutionHeight = document.getElementById("lcd-txt-resolution-height");
+const designerPane = document.getElementById("lcd-designer-pane");
+const btnSaveElement = document.getElementById("lcd-btn-save-element");
+const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
+const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
+
+const txtElementName = document.getElementById("lcd-txt-element-name");
+const cmbElementType = document.getElementById("lcd-cmb-element-type");
+const txtElementPositionX = document.getElementById("lcd-txt-element-position-x");
+const txtElementPositionY = document.getElementById("lcd-txt-element-position-y");
+const cmbSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
+const txtElementTextFormat = document.getElementById("lcd-txt-element-text-format");
+const txtElementFontSize = document.getElementById("lcd-txt-element-font-size");
+const txtElementFontColor = document.getElementById("lcd-txt-element-font-color");
 
 let sensorValues = [];
-let lastSelectedSensorListElement = null;
+let lastSelectedListElement = null;
 let lastSelectedDesignerElement = null;
 
 const LIST_ID_PREFIX = "list-";
@@ -36,17 +39,17 @@ let currentNetworkDeviceId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
     // Register event for display resolution
-    txtResolutionWidth.addEventListener("input", updateLcdDesignPaneDimensions);
-    txtResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
+    txtLcdResolutionWidth.addEventListener("input", updateLcdDesignPaneDimensions);
+    txtLcdResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
 
     // Register button click events
     btnAddNetworkDevice.addEventListener("click", createNetworkPort);
     btnRemoveNetworkDevice.addEventListener("click", removeDevice);
     btnSaveNetworkDevice.addEventListener("click", saveDeviceConfig);
-    btnSaveSensor.addEventListener("click", saveDeviceConfig);
+    btnSaveElement.addEventListener("click", saveDeviceConfig);
     btnTransferActive.addEventListener("click", () => toggleSync(btnTransferActive.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
-    btnRemoveSensor.addEventListener("click", removeSensor);
+    btnRemoveElement.addEventListener("click", removeElement);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
@@ -85,9 +88,9 @@ function removeDevice() {
 
 function clearForm() {
     txtDeviceName.value = "";
-    txtNetworkAddress.value = "";
-    txtResolutionWidth.value = "";
-    txtResolutionHeight.value = "";
+    txtDeviceNetworkAddress.value = "";
+    txtLcdResolutionWidth.value = "";
+    txtLcdResolutionHeight.value = "";
     lstDesignerPlacedElements.innerHTML = "";
 }
 
@@ -156,31 +159,37 @@ function saveConfig() {
 
     // Get device name and network address
     let deviceName = txtDeviceName.value;
-    let deviceAddress = txtNetworkAddress.value;
+    let deviceAddress = txtDeviceNetworkAddress.value;
 
     // Get LCD Resolution Height and cast to integer
-    let lcdResolutionWidth = txtResolutionWidth.value;
-    let lcdResolutionHeight = txtResolutionHeight.value;
+    let lcdResolutionWidth = txtLcdResolutionWidth.value;
+    let lcdResolutionHeight = txtLcdResolutionHeight.value;
 
     // Find all list items of lcd-designer-placed-elements extract sensors and save them to the lcd config
     let lcdDesignerPlacedElementsListItems = lstDesignerPlacedElements.getElementsByTagName("li");
     let lcdDesignerPlacedElementsListItemsArray = Array.from(lcdDesignerPlacedElementsListItems);
     let lcdElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
-        let elementId = listItem.getAttribute("data-element-id");
+        let elementId = listItem.getAttribute("data-sensor-id");
+        let elementType = listItem.getAttribute("data-element-type");
         let elementName = listItem.innerText.trim();
         let sensorId = listItem.getAttribute("data-sensor-id");
-        let sensorTextFormat = listItem.getAttribute("data-sensor-text-format");
-        let sensorX = parseInt(listItem.getAttribute("data-sensor-position-x"));
-        let sensorY = parseInt(listItem.getAttribute("data-sensor-position-y"));
+        let elementTextFormat = listItem.getAttribute("data-element-text-format");
+        let elementX = parseInt(listItem.getAttribute("data-element-position-x"));
+        let elementY = parseInt(listItem.getAttribute("data-element-position-y"));
+        let elementFontSize = parseInt(listItem.getAttribute("data-element-font-size"));
+        let elementFontColor = listItem.getAttribute("data-element-font-color");
 
-        // Build sensor object
+        // Build display element
         return {
             id: elementId,
             name: elementName,
+            x: elementX,
+            y: elementY,
+            element_type: elementType,
             sensor_id: sensorId,
-            text_format: sensorTextFormat,
-            x: sensorX,
-            y: sensorY,
+            text_format: elementTextFormat,
+            font_size: elementFontSize,
+            font_color: elementFontColor,
         };
     });
 
@@ -211,7 +220,7 @@ function onNetDeviceSelected(element) {
 
             // Set name, host and resolution
             txtDeviceName.value = portConfig.name;
-            txtNetworkAddress.value = portConfig.address;
+            txtDeviceNetworkAddress.value = portConfig.address;
 
             // Set active sync state
             btnTransferActive.checked = portConfig.active;
@@ -253,8 +262,8 @@ function loadLcdConfig(networkDeviceId) {
             const lcdConfig = portConfig.lcd_config;
 
             // Set display resolution
-            txtResolutionWidth.value = lcdConfig.resolution_width;
-            txtResolutionHeight.value = lcdConfig.resolution_height;
+            txtLcdResolutionWidth.value = lcdConfig.resolution_width;
+            txtLcdResolutionHeight.value = lcdConfig.resolution_height;
 
             // Clear designer pane
             designerPane.innerHTML = "";
@@ -271,16 +280,16 @@ function loadLcdConfig(networkDeviceId) {
                 let sensorValue = sensor ? sensor.value : "";
                 let sensorUnit = sensor ? sensor.unit : "";
 
-                // Add sensor to list
-                addSensorToList(element.id, element.sensor_id, element.text_format, element.x, element.y, element.name);
+                // Add element to list
+                addElementToList(element.id, element.sensor_id, element.text_format, element.x, element.y, element.name, element.type, element.font_size, element.font_color);
 
-                // Add sensor to designer pane
-                addSensorToDesignerPane(element.id, element.text_format, sensorValue, sensorUnit, element.name, element.x, element.y);
+                // Add element to designer pane
+                addElementToDesignerPane(element.id, element.text_format, sensorValue, sensorUnit, element.name, element.type, element.x, element.y, element.font_size, element.font_color);
             });
 
             // If there are elements, select the first one
             if (lcdConfig.elements.length > 0) {
-                setSelectedSensor(document.querySelector("#lcd-designer-placed-elements li"));
+                setSelectedElement(document.querySelector("#lcd-designer-placed-elements li"));
             }
 
             // Update designer pane dimensions
@@ -290,47 +299,49 @@ function loadLcdConfig(networkDeviceId) {
     );
 }
 
-function addSensorToList(elementId, sensorId, sensorTextFormat, positionX, positionY, sensorName) {
+function addElementToList(elementId, sensorId, elementTextFormat, positionX, positionY, elementName, elementType, elementFontSize, elementFontColor) {
     const liElement = document.createElement("li");
     liElement.id = LIST_ID_PREFIX + elementId;
-    liElement.setAttribute("data-element-id", elementId);
+    liElement.setAttribute("data-sensor-id", elementId);
     liElement.setAttribute("data-sensor-id", sensorId);
-    liElement.setAttribute("data-sensor-text-format", sensorTextFormat);
-    liElement.setAttribute("data-sensor-position-x", positionX);
-    liElement.setAttribute("data-sensor-position-y", positionY);
-    liElement.innerHTML = sensorName;
+    liElement.setAttribute("data-element-text-format", elementTextFormat);
+    liElement.setAttribute("data-element-type", elementType);
+    liElement.setAttribute("data-element-position-x", positionX);
+    liElement.setAttribute("data-element-position-y", positionY);
+    liElement.setAttribute("data-element-font-size", elementFontSize);
+    liElement.setAttribute("data-element-font-color", elementFontColor);
+    liElement.innerHTML = elementName;
     liElement.draggable = true;
-    liElement.ondragstart = onListItemDragStart;
+    liElement.ondragstart = onListElementDragStart;
     liElement.ondragover = onListItemDragOver;
-    liElement.ondrop = onListItemDrop;
+    liElement.ondrop = onListElementDrop;
 
 
-    // Add sensor to the list#
+    // Add element to the list#
     lstDesignerPlacedElements.innerHTML += liElement.outerHTML;
 
     // Find all li element in the ul lcd-designer-placed-elements and register click event
     // We have to re-register the click event because the list was re-rendered
-    const sensorListItems = document.querySelectorAll("#lcd-designer-placed-elements li");
-    sensorListItems.forEach((sensorListItem) => {
-        sensorListItem.addEventListener("click", onSensorListItemClick);
-        sensorListItem.addEventListener('dragstart', onListItemDragStart);
-        sensorListItem.addEventListener('dragover', onListItemDragOver);
-        sensorListItem.addEventListener('drop', onListItemDrop);
+    const designerPlacedElements = document.querySelectorAll("#lcd-designer-placed-elements li");
+    designerPlacedElements.forEach((designerElement) => {
+        designerElement.addEventListener("click", onListElementClick);
+        designerElement.addEventListener('dragstart', onListElementDragStart);
+        designerElement.addEventListener('dragover', onListItemDragOver);
+        designerElement.addEventListener('drop', onListElementDrop);
     });
 
     // Set last selected sensor list element
-    lastSelectedSensorListElement = liElement;
+    lastSelectedListElement = liElement;
 }
 
 function loadSensorValues() {
     invoke('get_sensor_values').then(
         (loadedSensors) => {
             // cast sensor values to json object
-            // Example string: [{"id":"SCPUCLK","value":"3393","label":"CPU Clock","sensor_type":"sys"},{"id":"SCPUUTI","value":"41","label":"CPU Utilization","sensor_type":"sys"},{"id":"SFREEMEM","value":"9241","label":"Free Memory","sensor_type":"sys"},{"id":"SGPU1UTI","value":"7","label":"GPU Utilization","sensor_type":"sys"},{"id":"TCPUPKG","value":"68","label":"CPU Package","sensor_type":"temp"},{"id":"TGPU1DIO","value":"46","label":"GPU Diode","sensor_type":"temp"},{"id":"FCPU","value":"3275","label":"CPU","sensor_type":"fan"},{"id":"PCPUPKG","value":"12.27","label":"CPU Package","sensor_type":"pwr"}]
             sensorValues = JSON.parse(loadedSensors);
 
             // Add sensor values to the sensor value combo box
-            cmbSensorTypeSelection.innerHTML = sensorValues.map(
+            cmbSensorIdSelection.innerHTML = sensorValues.map(
                 (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
             ).join("");
 
@@ -338,7 +349,7 @@ function loadSensorValues() {
     );
 }
 
-function setSelectedSensor(listHtmlElement) {
+function setSelectedElement(listHtmlElement) {
     // If elementId is undefined or null, return
     if (!listHtmlElement || !listHtmlElement.id) {
         console.log("Element id is undefined or null");
@@ -350,31 +361,31 @@ function setSelectedSensor(listHtmlElement) {
     // Remove prefix xyz- including the minus from the id
     elementId = elementId.substring(elementId.indexOf("-") + 1);
 
-    lastSelectedSensorListElement = document.getElementById(LIST_ID_PREFIX + elementId);
+    lastSelectedListElement = document.getElementById(LIST_ID_PREFIX + elementId);
     lastSelectedDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
 
-    // Register arrow key press event to move the selected sensor on the designer pane
-    document.addEventListener("keydown", moveSelectedSensor);
+    // Register arrow key press event to move the selected element on the designer pane
+    document.addEventListener("keydown", moveSelectedElement);
 
-    // Set background color of the selected sensor
-    lastSelectedSensorListElement.style.backgroundColor = "rgb(0, 0, 0, 0.5)";
+    // Set background color of the selected element
+    lastSelectedListElement.style.backgroundColor = "rgb(0, 0, 0, 0.5)";
 
     // Set background color of all other li elements to transparent
     Array.from(lstDesignerPlacedElements.children).forEach(
         (child) => {
-            if (child.id !== lastSelectedSensorListElement.id) {
+            if (child.id !== lastSelectedListElement.id) {
                 child.style.backgroundColor = "transparent";
             }
         }
     );
 
-    // Show the sensor details of the last selected sensor
-    showLastSelectedSensorDetail();
+    // Show the element details of the last selected element
+    showLastSelectedElementDetail();
 }
 
 
 // If the ctrl key is pressed, entry is moved by 5px instead of 1px
-function moveSelectedSensor() {
+function moveSelectedElement() {
     // Check if the ctrl key or shift is pressed
     const isModifierPressed = event.ctrlKey || event.shiftKey;
 
@@ -386,20 +397,20 @@ function moveSelectedSensor() {
 
     // Check if the user pressed the ctrl key and an arrow key
     if (isModifierPressed && (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed)) {
-        // Move the selected sensor by 5px
-        moveSelectedSensorBy(5, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
+        // Move the selected element by 5px
+        moveSelectedElementBy(5, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
     } else if (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed) {
-        // Move the selected sensor by 1px
-        moveSelectedSensorBy(1, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
+        // Move the selected element by 1px
+        moveSelectedElementBy(1, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
     }
 }
 
-function moveSelectedSensorBy(number, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed) {
-    // Get the current position of the selected sensor
+function moveSelectedElementBy(number, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed) {
+    // Get the current position of the selected element
     let currentX = parseInt(lastSelectedDesignerElement.style.left);
     let currentY = parseInt(lastSelectedDesignerElement.style.top);
 
-    // Move the selected sensor by the given number
+    // Move the selected element by the given number
     if (isArrowUpPressed) {
         currentY -= number;
     } else if (isArrowDownPressed) {
@@ -410,7 +421,7 @@ function moveSelectedSensorBy(number, isArrowUpPressed, isArrowDownPressed, isAr
         currentX += number;
     }
 
-    // Check if the sensor is out of bounds
+    // Check if the element is out of bounds
     if (currentX < 0) {
         currentX = 0;
     }
@@ -424,65 +435,79 @@ function moveSelectedSensorBy(number, isArrowUpPressed, isArrowDownPressed, isAr
         currentY = designerPane.clientHeight - lastSelectedDesignerElement.clientHeight;
     }
 
-    // Update the position of the selected sensor
-    txtSensorPositionX.value = currentX;
-    txtSensorPositionY.value = currentY;
+    // Update the position of the selected element
+    txtElementPositionX.value = currentX;
+    txtElementPositionY.value = currentY;
 
-    // Update the position of the selected sensor in the designer
+    // Update the position of the selected element in the designer
     lastSelectedDesignerElement.style.left = currentX + "px";
     lastSelectedDesignerElement.style.top = currentY + "px";
 
-    // Update the position of the selected sensor in the list
-    lastSelectedSensorListElement.setAttribute("data-sensor-position-x", currentX);
-    lastSelectedSensorListElement.setAttribute("data-sensor-position-y", currentY);
+    // Update the position of the selected element in the list
+    lastSelectedListElement.setAttribute("data-element-position-x", currentX);
+    lastSelectedListElement.setAttribute("data-element-position-y", currentY);
 
-    // Save the updated sensor
+    // Save the updated element
     saveConfig();
 }
 
-function updateSensor(calculatedId) {
-    // Update sensor in the list
+function updateElement(calculatedId) {
+    // Update element in the list
+    // TODO: diff between element type ( text, image, etc. )
     let listEntryElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
-    listEntryElement.setAttribute("data-sensor-id", cmbSensorTypeSelection.value);
-    listEntryElement.setAttribute("data-sensor-text-format", txtSensorTextFormat.value);
-    listEntryElement.setAttribute("data-sensor-position-x", txtSensorPositionX.value);
-    listEntryElement.setAttribute("data-sensor-position-y", txtSensorPositionY.value);
-    listEntryElement.innerHTML = txtSensorName.value;
+    listEntryElement.setAttribute("data-sensor-id", cmbSensorIdSelection.value);
+    listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
+    listEntryElement.setAttribute("data-element-position-x", txtElementPositionX.value);
+    listEntryElement.setAttribute("data-element-position-y", txtElementPositionY.value);
+    listEntryElement.setAttribute("data-element-font-size", txtElementFontSize.value);
+    listEntryElement.setAttribute("data-element-font-color", txtElementFontColor.value);
+    listEntryElement.setAttribute("data-element-type", cmbElementType.value);
+    listEntryElement.innerHTML = txtElementName.value;
 
-    // Update sensor in the designer
+    // Update element in the designer
     let designerElement = document.getElementById(DESIGNER_ID_PREFIX + calculatedId);
-    designerElement.title = txtSensorName.value;
-    designerElement.innerHTML = txtSensorTextFormat.value
-        .replace("{value}", cmbSensorTypeSelection.options[cmbSensorTypeSelection.selectedIndex].title)
-        .replace("{unit}", cmbSensorTypeSelection.options[cmbSensorTypeSelection.selectedIndex].getAttribute("data-unit"));
-    designerElement.style.left = txtSensorPositionX.value + "px";
-    designerElement.style.top = txtSensorPositionY.value + "px";
+    designerElement.title = txtElementName.value;
+    designerElement.innerHTML = txtElementTextFormat.value
+        .replace("{value}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].title)
+        .replace("{unit}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].getAttribute("data-unit"));
+    designerElement.style.left = txtElementPositionX.value + "px";
+    designerElement.style.top = txtElementPositionY.value + "px";
+    designerElement.style.fontSize = txtElementFontSize.value + "px";
+    designerElement.style.color = txtElementFontColor.value;
 }
 
-function addSensorToDesignerPane(elementId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY) {
-    const designerElement = document.createElement("div");
-    designerElement.id = DESIGNER_ID_PREFIX + elementId;
+function addElementToDesignerPane(elementId, elementTextFormat, sensorValue, sensorUnit, sensorName, sensorType, positionX, positionY, elementFontSize, elementFontColor) {
+    let designerElement;
+    switch (sensorType) {
+        default:
+        case "text":
+            designerElement = document.createElement("div");
+            designerElement.id = DESIGNER_ID_PREFIX + elementId;
+            designerElement.draggable = true;
+            designerElement.style.position = "absolute";
+            designerElement.style.left = positionX + "px";
+            designerElement.style.top = positionY + "px";
+            break;
+    }
+
     designerElement.title = sensorName;
-    designerElement.innerHTML = sensorTextFormat
+    designerElement.innerHTML = elementTextFormat
         .replace("{value}", sensorValue)
         .replace("{unit}", sensorUnit);
-
-    designerElement.style.position = "absolute";
-    designerElement.style.left = positionX + "px";
-    designerElement.style.top = positionY + "px";
-    designerElement.draggable = true;
+    designerElement.style.fontSize = elementFontSize + "px";
+    designerElement.style.color = elementFontColor;
 
     designerElement.addEventListener('dragstart', (event) => {
         event.dataTransfer.setData('text/plain', event.target.id);
     });
 
     designerElement.addEventListener('mousedown', (event) => {
-        setSelectedSensor(event.target);
+        setSelectedElement(event.target);
     });
 
     designerPane.appendChild(designerElement);
 
-    // Set last selected sensor to the new sensor
+    // Set last selected element to the new element
     lastSelectedDesignerElement = designerElement;
 }
 
@@ -491,39 +516,42 @@ function saveDeviceConfig() {
         alert("Please enter a name for the device.");
         return;
     }
-    if (txtNetworkAddress.value === "") {
+    if (txtDeviceNetworkAddress.value === "") {
         alert("Please enter a network address for the device.");
         return;
     }
-    if (txtSensorName.value === "") {
-        alert("Please enter a name for the sensor.");
+    if (txtElementName.value === "") {
+        alert("Please enter a name for the element.");
         return;
     }
 
-    const calculatedId = txtSensorName.value.replace(" ", "-").toLowerCase();
+    const calculatedId = txtElementName.value.replace(" ", "-").toLowerCase();
 
-    // Check if sensor is already exists, if so, update the sensor
+    // Check if element is already exists, if so, update the sensor
     if (document.getElementById(LIST_ID_PREFIX + calculatedId) !== null) {
-        updateSensor(calculatedId);
+        updateElement(calculatedId);
     } else {
-        // Add new sensor to list
-        const selectedSensor = cmbSensorTypeSelection.options[cmbSensorTypeSelection.selectedIndex];
-        const sensorTextFormat = txtSensorTextFormat.value;
+        // Add new element to list
+        const selectedSensor = cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex];
+        const elementName = txtElementName.value;
+        const elementType = cmbElementType.value;
+        const elementTextFormat = txtElementTextFormat.value;
         const sensorId = selectedSensor.value;
         const sensorValue = selectedSensor.title;
         const sensorUnit = selectedSensor.getAttribute("data-unit");
-        const sensorName = txtSensorName.value;
-        let positionX = txtSensorPositionX.value;
-        let positionY = txtSensorPositionY.value;
+        let positionX = txtElementPositionX.value;
+        let positionY = txtElementPositionY.value;
+        let elementFontSize = txtElementFontSize.value;
+        let elementFontColor = txtElementFontColor.value;
 
         // Create new li element
-        addSensorToList(calculatedId, sensorId, sensorTextFormat, positionX, positionY, sensorName);
+        addElementToList(calculatedId, sensorId, elementTextFormat, positionX, positionY, elementName, elementType, elementFontSize, elementFontColor);
 
         // Build designer element
-        addSensorToDesignerPane(calculatedId, sensorTextFormat, sensorValue, sensorUnit, sensorName, positionX, positionY);
+        addElementToDesignerPane(calculatedId, elementTextFormat, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, elementFontSize, elementFontColor);
 
         // Set the new li element as selected
-        setSelectedSensor(document.getElementById(LIST_ID_PREFIX + calculatedId));
+        setSelectedElement(document.getElementById(LIST_ID_PREFIX + calculatedId));
     }
 
     // Update the device name in list
@@ -534,41 +562,44 @@ function saveDeviceConfig() {
     saveConfig();
 }
 
-function removeSensor() {
-    if (lastSelectedSensorListElement === null) {
-        alert("Please select a sensor first.");
+function removeElement() {
+    if (lastSelectedListElement === null) {
+        alert("Please select a element first.");
         return;
     }
 
-    // Check if sensor exists in designer
+    // Check if element exists in designer
     if (lastSelectedDesignerElement === null) {
-        alert("Please select a sensor first.");
+        alert("Please select a element first.");
         return;
     }
 
-    // Remove sensor from list
-    lstDesignerPlacedElements.removeChild(lastSelectedSensorListElement);
+    // Remove element from list
+    lstDesignerPlacedElements.removeChild(lastSelectedListElement);
 
-    // Remove sensor from designer
+    // Remove element from designer
     designerPane.removeChild(lastSelectedDesignerElement);
 
-    // Select the first sensor in the list
-    setSelectedSensor(lstDesignerPlacedElements.firstChild);
+    // Select the first element in the list
+    setSelectedElement(lstDesignerPlacedElements.firstChild);
 
     // Save config
     saveConfig();
 }
 
-function onSensorListItemClick(event) {
-    setSelectedSensor(event.target);
+function onListElementClick(event) {
+    setSelectedElement(event.target);
 }
 
-function showLastSelectedSensorDetail() {
-    txtSensorName.value = lastSelectedSensorListElement.innerHTML;
-    cmbSensorTypeSelection.value = lastSelectedSensorListElement.getAttribute("data-sensor-id");
-    txtSensorTextFormat.value = lastSelectedSensorListElement.getAttribute("data-sensor-text-format");
-    txtSensorPositionX.value = lastSelectedSensorListElement.getAttribute("data-sensor-position-x");
-    txtSensorPositionY.value = lastSelectedSensorListElement.getAttribute("data-sensor-position-y");
+function showLastSelectedElementDetail() {
+    txtElementName.value = lastSelectedListElement.innerHTML;
+    cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+    txtElementTextFormat.value = lastSelectedListElement.getAttribute("data-element-text-format");
+    txtElementPositionX.value = lastSelectedListElement.getAttribute("data-element-position-x");
+    txtElementPositionY.value = lastSelectedListElement.getAttribute("data-element-position-y");
+    txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
+    txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
+    cmbElementType.value = lastSelectedListElement.getAttribute("data-element-type");
 }
 
 function dropOnParent(event) {
@@ -587,23 +618,23 @@ function dropOnParent(event) {
     htmlElement.style.left = `${x}px`;
     htmlElement.style.top = `${y}px`;
 
-    // Update sensor position attributes
-    lastSelectedSensorListElement.setAttribute("data-sensor-position-x", x);
-    lastSelectedSensorListElement.setAttribute("data-sensor-position-y", y);
+    // Update element position attributes
+    lastSelectedListElement.setAttribute("data-element-position-x", x);
+    lastSelectedListElement.setAttribute("data-element-position-y", y);
 
-    // Select the sensor in the list
-    setSelectedSensor(lastSelectedSensorListElement);
+    // Select the element in the list
+    setSelectedElement(lastSelectedListElement);
 
     // Update X and Y position in the detail pane
-    txtSensorPositionX.value = x;
-    txtSensorPositionY.value = y;
+    txtElementPositionX.value = x;
+    txtElementPositionY.value = y;
 
     saveConfig();
 }
 
 function updateLcdDesignPaneDimensions() {
-    let width = txtResolutionWidth.value;
-    let height = txtResolutionHeight.value;
+    let width = txtLcdResolutionWidth.value;
+    let height = txtLcdResolutionHeight.value;
 
     // Check if width and height are valid numbers over 0, otherwise return
     if (isNaN(width) || width <= 0 || isNaN(height) || height <= 0) {
@@ -616,7 +647,7 @@ function updateLcdDesignPaneDimensions() {
     saveConfig();
 }
 
-function onListItemDragStart(event) {
+function onListElementDragStart(event) {
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', event.target.textContent);
     draggedLiElement = event.target;
@@ -627,7 +658,7 @@ function onListItemDragOver(event) {
     event.dataTransfer.dropEffect = 'move';
 }
 
-function onListItemDrop(event) {
+function onListElementDrop(event) {
     event.preventDefault();
 
     if (event.target.tagName === 'LI') {

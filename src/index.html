@@ -45,6 +45,11 @@
                     <i class="fas fa-trash"></i>
                 </button>
 
+                <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview"
+                        style="font-size: 2em; margin-right: 10px;">
+                    <i class="fas fa-eye"></i>
+                </button>
+
                 <label id="kill-switch-input" class="kill-switch flex-item" title="Enable or disable the display">
                     <input id="main-chk-transfer-active" type="checkbox" class="kill-switch-input">
                     <i class="fas fa-power-off kill-switch-icon"></i>
@@ -63,9 +68,9 @@
                                title="Enter a simple name of your device">
                     </div>
                     <div class="flex-container">
-                        <label for="lcd-txt-network-address" style="width: 200px; margin-right: 5px">Network
+                        <label for="lcd-txt-device-network-address" style="width: 200px; margin-right: 5px">Network
                             address:</label>
-                        <input id="lcd-txt-network-address" style="width: 150px;"
+                        <input id="lcd-txt-device-network-address" style="width: 150px;"
                                title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
                     </div>
 
@@ -79,10 +84,6 @@
                     <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600"
                            style="width: 75px;">
 
-                    <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview">
-                        <i class="fas fa-eye"></i>
-                    </button>
-
                 </div>
 
                 <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px">
@@ -91,9 +92,11 @@
                 <div class="flex-container">
                     <b>Elements</b>
 
-                    <!-- TODO: add these to the li element on hover -->
-                    <button id="lcd-btn-remove-sensor" class="icon-button">
+                    <button id="lcd-btn-remove-element" class="icon-button">
                         <i class="fas fa-trash"></i>
+                    </button>
+                    <button id="lcd-btn-save-element" class="icon-button" title="Save sensor configuration">
+                        <i class="fas fa-save"></i>
                     </button>
                 </div>
 
@@ -104,33 +107,63 @@
                     </div>
 
                     <div id="lcd-sensor-entry-config" style="width: 75%">
-                        <button id="lcd-btn-save-sensor" class="icon-button" title="Save sensor configuration">
-                            <i class="fas fa-save"></i>
-                        </button>
 
                         <table>
+                            <colgroup>
+                                <col span="1" style="width: 100px">
+                                <col span="1">
+                            </colgroup>
+                            <tbody>
                             <tr>
                                 <td>Name:</td>
-                                <td><input type="text" id="lcd-txt-sensor-name" value=""></td>
-                            </tr>
-                            <tr>
-                                <td>Sensor:</td>
-                                <td><select id="lcd-cmb-sensor-type-selection"></select></td>
-                            </tr>
-                            <tr>
-                                <td>Format:</td>
-                                <td><input type="text" id="lcd-txt-sensor-text-format" value="{value} {unit}"></td>
+                                <td><input type="text" id="lcd-txt-element-name" value=""></td>
                             </tr>
                             <tr>
                                 <td>Position X:</td>
-                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-x"
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-element-position-x"
                                            value="0"></td>
                             </tr>
                             <tr>
                                 <td>Position Y:</td>
-                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-sensor-position-y"
+                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-element-position-y"
                                            value="0"></td>
                             </tr>
+                            <tr>
+                                <td>Typ:</td>
+                                <td><select id="lcd-cmb-element-type">
+                                    <option value="text" selected>Text</option>
+                                    <option value="static-image">Static image</option>
+                                    <option value="graph">Graph</option>
+                                    <option value="conditional-image">Conditional image (gauge)</option>
+                                </select></td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <table>
+                            <colgroup>
+                                <col span="1" style="width: 100px">
+                                <col span="1">
+                            </colgroup>
+                            <tbody>
+                            <tr>
+                                <td>Sensor:</td>
+                                <td><select id="lcd-cmb-sensor-id-selection"></select></td>
+                            </tr>
+                            <tr>
+                                <td>Format:</td>
+                                <td><input type="text" id="lcd-txt-element-text-format" value="{value} {unit}"></td>
+                            </tr>
+                            <tr>
+                                <td>Font size:</td>
+                                <td><input type="number" min="0" max="100" id="lcd-txt-element-font-size" value="20">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Font color:</td>
+                                <td><input type="color" id="lcd-txt-element-font-color" value="#ffffff"></td>
+                            </tr>
+                            </tbody>
                         </table>
 
                     </div>

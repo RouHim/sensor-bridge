@@ -130,6 +130,8 @@ fn remove_network_device_config(network_device_id: String) {
 fn save_app_config(id: String, name: String, address: String, lcd_config: String) {
     let mut port_config: NetPortConfig = config::read(&id);
 
+    println!("{:?}", lcd_config.as_str());
+
     port_config.name = name;
     port_config.address = address;
     port_config.lcd_config = serde_json::from_str(lcd_config.as_str()).unwrap();
@@ -259,7 +261,7 @@ fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
     }
 }
 
-/// Build the system tray handler
+///
 fn build_system_tray_handler() -> fn(&AppHandle<Wry>, SystemTrayEvent) {
     |app, event| match event {
         SystemTrayEvent::DoubleClick {
