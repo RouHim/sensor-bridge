@@ -8,12 +8,12 @@
 
     <script defer src="script.js" type="module"></script>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <link href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet"/>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
           integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossorigin="anonymous"/>
+          rel="stylesheet"/>
 </head>
 
 <body>
@@ -22,7 +22,7 @@
         <div id="master-pane">
             <h3>
                 Network Ports
-                <button id="btn-add-network-device" class="icon-button" title="Manually add network entry">
+                <button class="icon-button" id="btn-add-network-device" title="Manually add network entry">
                     <i class="fas fa-plus"></i>
                 </button>
             </h3>
@@ -34,24 +34,24 @@
         <div id="detail-pane">
             <div class="flex-container" style="justify-content: left;">
 
-                <button id="lcd-btn-save-network-device" class="icon-button" style="font-size: 2em; margin-right: 10px;"
+                <button class="icon-button" id="lcd-btn-save-network-device" style="font-size: 2em; margin-right: 10px;"
                         title="Save device configuration">
                     <i class="fas fa-save"></i>
                 </button>
 
-                <button id="lcd-btn-remove-network-device" class="icon-button"
+                <button class="icon-button" id="lcd-btn-remove-network-device"
                         style="font-size: 2em; margin-right: 10px;"
                         title="Remove device configuration">
                     <i class="fas fa-trash"></i>
                 </button>
 
-                <button id="btn-lcd-toggle-live-preview" class="icon-button" title="Open live preview"
-                        style="font-size: 2em; margin-right: 10px;">
+                <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
+                        title="Open live preview">
                     <i class="fas fa-eye"></i>
                 </button>
 
-                <label id="kill-switch-input" class="kill-switch flex-item" title="Enable or disable the display">
-                    <input id="main-chk-transfer-active" type="checkbox" class="kill-switch-input">
+                <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the display">
+                    <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
                     <i class="fas fa-power-off kill-switch-icon"></i>
                 </label>
 
@@ -76,13 +76,13 @@
 
                 </div>
 
-                <div id="lcd-config" class="flex-container">
+                <div class="flex-container" id="lcd-config">
                     <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
-                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-width" value="1024"
-                           style="width: 75px;">
+                    <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
+                           value="1024">
                     <div style="margin: 5px 10px">x</div>
-                    <input type="number" min="0" max="2147483647" id="lcd-txt-resolution-height" value="600"
-                           style="width: 75px;">
+                    <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
+                           value="600">
 
                 </div>
 
@@ -92,15 +92,15 @@
                 <div class="flex-container">
                     <b>Elements</b>
 
-                    <button id="lcd-btn-remove-element" class="icon-button">
+                    <button class="icon-button" id="lcd-btn-remove-element">
                         <i class="fas fa-trash"></i>
                     </button>
-                    <button id="lcd-btn-save-element" class="icon-button" title="Save sensor configuration">
+                    <button class="icon-button" id="lcd-btn-save-element" title="Save sensor configuration">
                         <i class="fas fa-save"></i>
                     </button>
                 </div>
 
-                <div id="lcd-elements-detail-editor" class="row-flex-container">
+                <div class="row-flex-container" id="lcd-elements-detail-editor">
                     <div style="width: 25%; margin-right: 10px; padding-right: 10px; border-right: #ccc solid 1px;">
                         <ul id="lcd-designer-placed-elements">
                         </ul>
@@ -116,22 +116,22 @@
                             <tbody>
                             <tr>
                                 <td>Name:</td>
-                                <td><input type="text" id="lcd-txt-element-name" value=""></td>
+                                <td><input id="lcd-txt-element-name" type="text" value=""></td>
                             </tr>
                             <tr>
                                 <td>Position X:</td>
-                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-element-position-x"
+                                <td><input id="lcd-txt-element-position-x" max="2147483647" min="0" type="number"
                                            value="0"></td>
                             </tr>
                             <tr>
                                 <td>Position Y:</td>
-                                <td><input type="number" min="0" max="2147483647" id="lcd-txt-element-position-y"
+                                <td><input id="lcd-txt-element-position-y" max="2147483647" min="0" type="number"
                                            value="0"></td>
                             </tr>
                             <tr>
                                 <td>Typ:</td>
                                 <td><select id="lcd-cmb-element-type">
-                                    <option value="text" selected>Text</option>
+                                    <option selected value="text">Text</option>
                                     <option value="static-image">Static image</option>
                                     <option value="graph">Graph</option>
                                     <option value="conditional-image">Conditional image (gauge)</option>
@@ -140,7 +140,7 @@
                             </tbody>
                         </table>
 
-                        <table>
+                        <table id="lcd-text-config" style="display: inherit;">
                             <colgroup>
                                 <col span="1" style="width: 100px">
                                 <col span="1">
@@ -152,16 +152,46 @@
                             </tr>
                             <tr>
                                 <td>Format:</td>
-                                <td><input type="text" id="lcd-txt-element-text-format" value="{value} {unit}"></td>
+                                <td><input id="lcd-txt-element-text-format" type="text" value="{value} {unit}"></td>
                             </tr>
                             <tr>
                                 <td>Font size:</td>
-                                <td><input type="number" min="0" max="100" id="lcd-txt-element-font-size" value="20">
+                                <td><input id="lcd-txt-element-font-size" max="100" min="0" type="number" value="20">
                                 </td>
                             </tr>
                             <tr>
                                 <td>Font color:</td>
-                                <td><input type="color" id="lcd-txt-element-font-color" value="#ffffff"></td>
+                                <td>
+                                    <input id="lcd-txt-element-font-color" type="color" value="#ffffff">
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <table id="lcd-static-image-config" style="display: none;">
+                            <colgroup>
+                                <col span="1" style="width: 100px">
+                                <col span="1">
+                            </colgroup>
+                            <tbody>
+                            <tr>
+                                <td>Image:</td>
+                                <td>
+                                    <button class="icon-button" id="lcd-btn-static-image-select">
+                                        <i class="fas fa-file-upload"></i>
+                                    </button>
+                                    <input id="lcd-txt-element-static-image-file">
+                            </tr>
+                            <tr>
+                                <td>Width:</td>
+                                <td><input id="lcd-txt-element-static-image-width" max="2147483647" min="0"
+                                           type="number"
+                                           value="0"></td>
+                            </tr>
+                            <tr>
+                                <td>Height:</td>
+                                <td><input id="lcd-txt-element-static-image-height" max="2147483647" min="0"
+                                           type="number" value="0"></td>
                             </tr>
                             </tbody>
                         </table>

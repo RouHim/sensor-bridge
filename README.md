@@ -3,12 +3,15 @@
 ## Optional runtime dependencies
 
 ### Windows
- * [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
- * [RTSS](https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html)
+
+* [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
+* [RTSS](https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html)
 
 ### Linux
- * [lm-sensors](https://github.com/lm-sensors/lm-sensors)
- * [MangoHud](https://github.com/flightlessmango/MangoHud) (Make sure to [enable logging](https://github.com/flightlessmango/MangoHud#fps-logging))
+
+* [lm-sensors](https://github.com/lm-sensors/lm-sensors)
+* [MangoHud](https://github.com/flightlessmango/MangoHud) (Make sure
+  to [enable logging](https://github.com/flightlessmango/MangoHud#fps-logging))
 
 ## Build instructions
 

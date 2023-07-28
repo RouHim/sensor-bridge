@@ -1,8 +1,8 @@
-use sensor_core::LcdConfig;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 
+use sensor_core::LcdConfig;
 use serde::Deserialize;
 use serde::Serialize;
 use uuid::Uuid;

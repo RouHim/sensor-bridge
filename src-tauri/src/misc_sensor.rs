@@ -1,6 +1,6 @@
-use crate::sensor;
-
 use sensor_core::SensorValue;
+
+use crate::sensor;
 
 pub struct SystemSensor {}
 

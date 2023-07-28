@@ -1,4 +1,5 @@
-const {invoke} = window.__TAURI__.tauri;
+const {invoke, convertFileSrc} = window.__TAURI__.tauri;
+const {open} = window.__TAURI__.dialog;
 
 const listNetPorts = document.getElementById("main-net-ports");
 
@@ -17,21 +18,30 @@ const btnSaveElement = document.getElementById("lcd-btn-save-element");
 const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 
+const layoutTextConfig = document.getElementById("lcd-text-config");
+const layoutStaticImageConfig = document.getElementById("lcd-static-image-config");
+
 const txtElementName = document.getElementById("lcd-txt-element-name");
 const cmbElementType = document.getElementById("lcd-cmb-element-type");
 const txtElementPositionX = document.getElementById("lcd-txt-element-position-x");
 const txtElementPositionY = document.getElementById("lcd-txt-element-position-y");
 const cmbSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
+
 const txtElementTextFormat = document.getElementById("lcd-txt-element-text-format");
 const txtElementFontSize = document.getElementById("lcd-txt-element-font-size");
 const txtElementFontColor = document.getElementById("lcd-txt-element-font-color");
+
+const btnElementSelectStaticImage = document.getElementById("lcd-btn-static-image-select");
+const txtElementStaticImageFile = document.getElementById("lcd-txt-element-static-image-file");
+const txtElementStaticImageWidth = document.getElementById("lcd-txt-element-static-image-width");
+const txtElementStaticImageHeight = document.getElementById("lcd-txt-element-static-image-height");
 
 let sensorValues = [];
 let lastSelectedListElement = null;
 let lastSelectedDesignerElement = null;
 
-const LIST_ID_PREFIX = "list-";
 const DESIGNER_ID_PREFIX = "designer-";
+const LIST_ID_PREFIX = "list-";
 
 let draggedLiElement;
 
@@ -50,18 +60,60 @@ window.addEventListener("DOMContentLoaded", () => {
     btnTransferActive.addEventListener("click", () => toggleSync(btnTransferActive.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
     btnRemoveElement.addEventListener("click", removeElement);
+    cmbElementType.addEventListener("change", onElementTypeChange);
+    btnElementSelectStaticImage.addEventListener("click", selectStaticImage);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
-    designerPane.addEventListener('drop', dropOnParent);
+    designerPane.addEventListener('drop', dropOnDesignerPane);
 
     // Load all devices from config
     loadDeviceConfigs();
+
     // Select first net port
     if (listNetPorts.childElementCount > 0) {
         onNetDeviceSelected(listNetPorts.firstElementChild);
     }
 });
+
+async function selectStaticImage() {
+    open({
+        multiple: false,
+        directory: false,
+        filters: [{
+            name: 'Image',
+            extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', "tga", "tiff", "ico"],
+        }]
+    }).then(
+        (selected) => {
+            if (typeof selected === "string" && selected !== "") {
+                txtElementStaticImageFile.value = selected;
+            } else {
+                console.log("No file selected");
+            }
+        }
+    )
+}
+
+function onElementTypeChange() {
+    const selectedElement = cmbElementType.options[cmbElementType.selectedIndex].value;
+    switch (selectedElement) {
+        case "text":
+            layoutTextConfig.style.display = "block";
+            layoutStaticImageConfig.style.display = "none";
+            break;
+        case "static-image":
+            layoutTextConfig.style.display = "none";
+            layoutStaticImageConfig.style.display = "block";
+            break;
+        case "graph":
+            // TODO
+            break;
+        case "conditional-image":
+            // TODO
+            break;
+    }
+}
 
 function removeDevice() {
     // Get selected net port id
@@ -169,15 +221,37 @@ function saveConfig() {
     let lcdDesignerPlacedElementsListItems = lstDesignerPlacedElements.getElementsByTagName("li");
     let lcdDesignerPlacedElementsListItemsArray = Array.from(lcdDesignerPlacedElementsListItems);
     let lcdElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
-        let elementId = listItem.getAttribute("data-sensor-id");
-        let elementType = listItem.getAttribute("data-element-type");
-        let elementName = listItem.innerText.trim();
+        // Get element attributes
+        let elementId = listItem.getAttribute("data-element-id");
         let sensorId = listItem.getAttribute("data-sensor-id");
-        let elementTextFormat = listItem.getAttribute("data-element-text-format");
+        let elementType = listItem.getAttribute("data-element-type");
+        let elementName = listItem.getAttribute("data-element-name");
         let elementX = parseInt(listItem.getAttribute("data-element-position-x"));
         let elementY = parseInt(listItem.getAttribute("data-element-position-y"));
-        let elementFontSize = parseInt(listItem.getAttribute("data-element-font-size"));
+
+        // Get text config attributes
+        let elementTextFormat = listItem.getAttribute("data-element-text-format");
         let elementFontColor = listItem.getAttribute("data-element-font-color");
+        let elementFontSize = parseInt(listItem.getAttribute("data-element-font-size"));
+
+        // Get image config attributes
+        let elementStaticImage = listItem.getAttribute("data-element-static-image");
+        let elementStaticImageWidth = parseInt(listItem.getAttribute("data-element-static-image-width"));
+        let elementStaticImageHeight = parseInt(listItem.getAttribute("data-element-static-image-height"));
+
+        // Build TextConfig object
+        let textConfig = {
+            text_format: elementTextFormat,
+            font_size: elementFontSize,
+            font_color: elementFontColor,
+        }
+
+        // Build ImageConfig object
+        let imageConfig = {
+            image_width: elementStaticImageWidth,
+            image_height: elementStaticImageHeight,
+            image_path: elementStaticImage,
+        }
 
         // Build display element
         return {
@@ -187,9 +261,8 @@ function saveConfig() {
             y: elementY,
             element_type: elementType,
             sensor_id: sensorId,
-            text_format: elementTextFormat,
-            font_size: elementFontSize,
-            font_color: elementFontColor,
+            text_config: textConfig,
+            image_config: imageConfig,
         };
     });
 
@@ -272,19 +345,20 @@ function loadLcdConfig(networkDeviceId) {
             lstDesignerPlacedElements.innerHTML = "";
 
             // Add elements to designer pane and list
-            lcdConfig.elements.forEach((element) => {
+            // iterate elements with index
+            lcdConfig.elements.forEach((element, index) => {
                 // Find sensor in sensor values list
-                let sensor = sensorValues.find((sensor) => sensor.id === element.sensor_id);
+                let sensor = sensorValues.find((sensorValue) => sensorValue.id === element.sensor_id);
 
                 // Load sensor value and unit
                 let sensorValue = sensor ? sensor.value : "";
                 let sensorUnit = sensor ? sensor.unit : "";
 
                 // Add element to list
-                addElementToList(element.id, element.sensor_id, element.text_format, element.x, element.y, element.name, element.type, element.font_size, element.font_color);
+                addElementToList(element.id, element.sensor_id, element.x, element.y, element.name, element.element_type, element.text_config, element.image_config);
 
                 // Add element to designer pane
-                addElementToDesignerPane(element.id, element.text_format, sensorValue, sensorUnit, element.name, element.type, element.x, element.y, element.font_size, element.font_color);
+                addElementToDesignerPane(index, element.id, sensorValue, sensorUnit, element.name, element.element_type, element.x, element.y, element.text_config, element.image_config);
             });
 
             // If there are elements, select the first one
@@ -299,17 +373,21 @@ function loadLcdConfig(networkDeviceId) {
     );
 }
 
-function addElementToList(elementId, sensorId, elementTextFormat, positionX, positionY, elementName, elementType, elementFontSize, elementFontColor) {
+function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig) {
     const liElement = document.createElement("li");
     liElement.id = LIST_ID_PREFIX + elementId;
-    liElement.setAttribute("data-sensor-id", elementId);
+    liElement.setAttribute("data-element-id", elementId);
     liElement.setAttribute("data-sensor-id", sensorId);
-    liElement.setAttribute("data-element-text-format", elementTextFormat);
+    liElement.setAttribute("data-element-name", elementName);
+    liElement.setAttribute("data-element-text-format", elementTextConfig.text_format);
     liElement.setAttribute("data-element-type", elementType);
     liElement.setAttribute("data-element-position-x", positionX);
     liElement.setAttribute("data-element-position-y", positionY);
-    liElement.setAttribute("data-element-font-size", elementFontSize);
-    liElement.setAttribute("data-element-font-color", elementFontColor);
+    liElement.setAttribute("data-element-font-size", elementTextConfig.font_size);
+    liElement.setAttribute("data-element-font-color", elementTextConfig.font_color.substring(0, 7));
+    liElement.setAttribute("data-element-static-image", elementImageConfig.image_path);
+    liElement.setAttribute("data-element-static-image-width", elementImageConfig.image_width);
+    liElement.setAttribute("data-element-static-image-height", elementImageConfig.image_height);
     liElement.innerHTML = elementName;
     liElement.draggable = true;
     liElement.ondragstart = onListElementDragStart;
@@ -453,49 +531,74 @@ function moveSelectedElementBy(number, isArrowUpPressed, isArrowDownPressed, isA
 
 function updateElement(calculatedId) {
     // Update element in the list
-    // TODO: diff between element type ( text, image, etc. )
     let listEntryElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
+    listEntryElement.setAttribute("data-element-id", calculatedId);
     listEntryElement.setAttribute("data-sensor-id", cmbSensorIdSelection.value);
+    listEntryElement.setAttribute("data-element-name", txtElementName.value);
     listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
     listEntryElement.setAttribute("data-element-position-x", txtElementPositionX.value);
     listEntryElement.setAttribute("data-element-position-y", txtElementPositionY.value);
     listEntryElement.setAttribute("data-element-font-size", txtElementFontSize.value);
     listEntryElement.setAttribute("data-element-font-color", txtElementFontColor.value);
+    listEntryElement.setAttribute("data-element-static-image", txtElementStaticImageFile.value);
+    listEntryElement.setAttribute("data-element-static-image-width", txtElementStaticImageWidth.value);
+    listEntryElement.setAttribute("data-element-static-image-height", txtElementStaticImageHeight.value);
     listEntryElement.setAttribute("data-element-type", cmbElementType.value);
     listEntryElement.innerHTML = txtElementName.value;
 
+
     // Update element in the designer
     let designerElement = document.getElementById(DESIGNER_ID_PREFIX + calculatedId);
-    designerElement.title = txtElementName.value;
-    designerElement.innerHTML = txtElementTextFormat.value
-        .replace("{value}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].title)
-        .replace("{unit}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].getAttribute("data-unit"));
     designerElement.style.left = txtElementPositionX.value + "px";
     designerElement.style.top = txtElementPositionY.value + "px";
-    designerElement.style.fontSize = txtElementFontSize.value + "px";
-    designerElement.style.color = txtElementFontColor.value;
+
+    switch (cmbElementType.value) {
+        default:
+        case "text":
+            designerElement.title = txtElementName.value;
+            designerElement.innerHTML = txtElementTextFormat.value
+                .replace("{value}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].title)
+                .replace("{unit}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].getAttribute("data-unit"));
+            designerElement.style.fontSize = txtElementFontSize.value + "px";
+            designerElement.style.fontFamily = "monospace";
+            designerElement.style.color = txtElementFontColor.value;
+            break;
+        case "static-image":
+            designerElement.style.width = txtElementStaticImageWidth.value + "px";
+            designerElement.style.height = txtElementStaticImageHeight.value + "px";
+            designerElement.src = toTauriAssetPath(txtElementStaticImageFile.value);
+            break;
+    }
 }
 
-function addElementToDesignerPane(elementId, elementTextFormat, sensorValue, sensorUnit, sensorName, sensorType, positionX, positionY, elementFontSize, elementFontColor) {
+function addElementToDesignerPane(zIndex, elementId, elementSensorValue, elementSensorUnit, sensorName, sensorType, positionX, positionY, elementTextConfig, elementImageConfig) {
     let designerElement;
     switch (sensorType) {
         default:
         case "text":
             designerElement = document.createElement("div");
-            designerElement.id = DESIGNER_ID_PREFIX + elementId;
-            designerElement.draggable = true;
-            designerElement.style.position = "absolute";
-            designerElement.style.left = positionX + "px";
-            designerElement.style.top = positionY + "px";
+
+            designerElement.title = sensorName;
+            designerElement.innerHTML = elementTextConfig.text_format.replace("{value}", elementSensorValue).replace("{unit}", elementSensorUnit);
+            designerElement.style.fontSize = elementTextConfig.font_size + "px";
+            designerElement.style.fontFamily = "monospace";
+            designerElement.style.color = elementTextConfig.font_color;
+            break;
+        case "static-image":
+            designerElement = document.createElement("img");
+
+            designerElement.style.width = elementImageConfig.image_width + "px";
+            designerElement.style.height = elementImageConfig.image_height + "px";
+            designerElement.src = toTauriAssetPath(elementImageConfig.image_path);
             break;
     }
 
-    designerElement.title = sensorName;
-    designerElement.innerHTML = elementTextFormat
-        .replace("{value}", sensorValue)
-        .replace("{unit}", sensorUnit);
-    designerElement.style.fontSize = elementFontSize + "px";
-    designerElement.style.color = elementFontColor;
+    designerElement.id = DESIGNER_ID_PREFIX + elementId;
+    designerElement.draggable = true;
+    designerElement.style.position = "absolute";
+    designerElement.style.left = positionX + "px";
+    designerElement.style.top = positionY + "px";
+    designerElement.style.zIndex = zIndex;
 
     designerElement.addEventListener('dragstart', (event) => {
         event.dataTransfer.setData('text/plain', event.target.id);
@@ -509,6 +612,11 @@ function addElementToDesignerPane(elementId, elementTextFormat, sensorValue, sen
 
     // Set last selected element to the new element
     lastSelectedDesignerElement = designerElement;
+}
+
+// Converts an absolute file path, to a tauri compatible path using https://tauri.app/v1/api/js/tauri/#convertfilesrc
+function toTauriAssetPath(image_path) {
+    return convertFileSrc(image_path);
 }
 
 function saveDeviceConfig() {
@@ -543,19 +651,37 @@ function saveDeviceConfig() {
         let positionY = txtElementPositionY.value;
         let elementFontSize = txtElementFontSize.value;
         let elementFontColor = txtElementFontColor.value;
+        let elementStaticImage = txtElementStaticImageFile.value;
+        let elementStaticImageWidth = txtElementStaticImageWidth.value;
+        let elementStaticImageHeight = txtElementStaticImageHeight.value;
+
+        // build text config object
+        let textConfig = {
+            text_format: elementTextFormat,
+            font_size: elementFontSize,
+            font_color: elementFontColor,
+        }
+
+        // build image config object
+        let imageConfig = {
+            image_width: elementStaticImageWidth,
+            image_height: elementStaticImageHeight,
+            image_path: elementStaticImage,
+        }
 
         // Create new li element
-        addElementToList(calculatedId, sensorId, elementTextFormat, positionX, positionY, elementName, elementType, elementFontSize, elementFontColor);
+        addElementToList(calculatedId, sensorId, positionX, positionY, elementName, elementType, textConfig, imageConfig);
 
         // Build designer element
-        addElementToDesignerPane(calculatedId, elementTextFormat, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, elementFontSize, elementFontColor);
+        const index = lstDesignerPlacedElements.childElementCount;
+        addElementToDesignerPane(index, calculatedId, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, textConfig, imageConfig);
 
         // Set the new li element as selected
         setSelectedElement(document.getElementById(LIST_ID_PREFIX + calculatedId));
     }
 
     // Update the device name in list
-    const deviceNameElement = document.getElementById(currentNetworkDeviceId);
+    let deviceNameElement = document.getElementById(currentNetworkDeviceId);
     deviceNameElement.innerText = txtDeviceName.value;
 
     // Save config
@@ -592,17 +718,26 @@ function onListElementClick(event) {
 }
 
 function showLastSelectedElementDetail() {
-    txtElementName.value = lastSelectedListElement.innerHTML;
-    cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
-    txtElementTextFormat.value = lastSelectedListElement.getAttribute("data-element-text-format");
+    // Generic
+    txtElementName.value = lastSelectedListElement.getAttribute("data-element-name");
     txtElementPositionX.value = lastSelectedListElement.getAttribute("data-element-position-x");
     txtElementPositionY.value = lastSelectedListElement.getAttribute("data-element-position-y");
+    cmbElementType.value = lastSelectedListElement.getAttribute("data-element-type");
+    onElementTypeChange();
+
+    // Text
+    txtElementTextFormat.value = lastSelectedListElement.getAttribute("data-element-text-format");
+    cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
     txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
     txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
-    cmbElementType.value = lastSelectedListElement.getAttribute("data-element-type");
+
+    // Static image
+    txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
+    txtElementStaticImageWidth.value = lastSelectedListElement.getAttribute("data-element-static-image-width");
+    txtElementStaticImageHeight.value = lastSelectedListElement.getAttribute("data-element-static-image-height");
 }
 
-function dropOnParent(event) {
+function dropOnDesignerPane(event) {
     event.preventDefault();
 
     const elementId = event.dataTransfer.getData('text/plain');
@@ -667,5 +802,25 @@ function onListElementDrop(event) {
         event.target.appendChild(draggedLiElement);
     }
 
+    // Recalculate the z-index of all elements
+    recalculateZIndex();
+
     saveConfig();
+}
+
+// Recalculates the z-index of all designer elements
+// The z-index is the index of the element in the placed list
+// The first element in the list has the lowest z-index
+function recalculateZIndex() {
+    // Find all li element in lcd-designer-placed-elements
+    const listElements = document.querySelectorAll("#lcd-designer-placed-elements li");
+    //Iterate with index and find for each the corresponding designer element
+    listElements.forEach((listElement, index) => {
+        // Find designer element
+        const id = listElement.id.replace(LIST_ID_PREFIX, DESIGNER_ID_PREFIX);
+        const designerElement = document.getElementById(id);
+
+        // Update the z-index of the designer element
+        designerElement.style.zIndex = "" + index;
+    });
 }
