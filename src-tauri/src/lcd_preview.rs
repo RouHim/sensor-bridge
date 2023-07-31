@@ -1,12 +1,12 @@
-use std::io::{Cursor, Seek, SeekFrom};
 use std::sync::Arc;
-use std::thread;
+use std::{fs, thread};
 
-use sensor_core::{LcdConfig, SensorValue};
+use rayon::prelude::*;
+use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
 use tauri::AppHandle;
 
 use crate::config::NetPortConfig;
-use crate::sensor;
+use crate::{sensor, utils};
 
 /// Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd_preview";
@@ -20,8 +20,12 @@ pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
     let network_device_id = port_config.id.clone();
     let width = port_config.lcd_config.resolution_width;
     let height = port_config.lcd_config.resolution_height;
+    let lcd_elements = port_config.lcd_config.elements.clone();
 
     thread::spawn(move || {
+        // Prepare static assets
+        prepare_assets(lcd_elements);
+
         let lcd_preview_window = tauri::WindowBuilder::new(
             &app_handle,
             WINDOW_LABEL,
@@ -40,11 +44,41 @@ pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
     });
 }
 
+/// Prepares the static assets for the lcd preview window
+fn prepare_assets(elements: Vec<LcdElement>) {
+    // Ensure data folder exists and is empty
+    fs::remove_dir_all(sensor_core::ASSET_DATA_DIR).unwrap_or_default(); // Ignore errors
+    fs::create_dir_all(sensor_core::ASSET_DATA_DIR).unwrap();
+
+    elements
+        .par_iter()
+        .filter(|element| element.element_type == ElementType::StaticImage)
+        .for_each(|element| {
+            // Render image to desired size
+            let image_config = &element.image_config;
+            let image = image::open(&image_config.image_path).unwrap();
+            let image = image.resize_exact(
+                image_config.image_width,
+                image_config.image_height,
+                image::imageops::FilterType::Lanczos3,
+            );
+
+            // Convert to png
+            let image_data = utils::rgba_to_png_raw(image.to_rgba8());
+
+            // Save to data folder
+            let target_path = format!("{}/{}", sensor_core::ASSET_DATA_DIR, element.id);
+            fs::write(target_path, image_data).unwrap();
+        });
+}
+
 /// Returns the lcd preview image for the specified com port as base64 encoded string
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to render the image
 pub fn render(static_sensor_values: &Arc<Vec<SensorValue>>, lcd_config: LcdConfig) -> String {
     let static_sensor_values = static_sensor_values.clone();
+    let lcd_config = lcd_config.clone();
+
     thread::spawn(move || {
         // Read the sensor values
         let sensor_values = sensor::read_all_sensor_values(&static_sensor_values);
@@ -52,15 +86,7 @@ pub fn render(static_sensor_values: &Arc<Vec<SensorValue>>, lcd_config: LcdConfi
         // Render the image
         let image = sensor_core::render_lcd_image(lcd_config, sensor_values);
 
-        // Create a Vec<u8> buffer to write the image to it
-        let mut buf = Vec::new();
-        let mut cursor = Cursor::new(&mut buf);
-        image
-            .write_to(&mut cursor, image::ImageOutputFormat::Png)
-            .unwrap();
-
-        // Reset the cursor to the beginning of the buffer
-        cursor.seek(SeekFrom::Start(0)).unwrap();
+        let buf = utils::rgb_to_png_raw(image);
 
         // Encode the buffer to a base64 string
         let engine = base64::engine::general_purpose::STANDARD;

@@ -12,33 +12,33 @@ rust-version = "1.57"
 tauri-build = { version = "1.4.0", features = [] }
 
 [dependencies]
-sensor-core = { git = "https://github.com/RouHim/sensor-core.git", branch = "main" }                # My own lib used for rendering and core types
-serde = { version = "1.0.175", features = ["derive"] }                                              # Serialization
-serde_json = "1.0.103"                                                                              # De/Serialize to json
-rmp-serde = "1.1.2"                                                                                 # De/Serialize to MessagePack
+sensor-core = { git = "https://github.com/RouHim/sensor-core.git" }                                                 # My own lib used for rendering and core types
+serde = { version = "1.0.175", features = ["derive"] }                                                              # Serialization
+serde_json = "1.0.103"                                                                                              # De/Serialize to json
+rmp-serde = "1.1.2"                                                                                                 # De/Serialize to MessagePack
 tauri = { version = "1.4.1", features = ["protocol-all", "dialog-all", "shell-open", "system-tray", "window-all"] } # Tauri
-systemstat = "0.2.3"                                                                                # read common system sensor values
-rayon = "1.7.0"                                                                                     # Parallel processing
-base64 = "0.21.2"                                                                                   # Base64 encoding
-message-io = { version = "0.17.0", default-features = false, features = ["tcp"] }                   # TCPSocket communication
-uuid = { version = "1.4.1", features = ["v4"] }                                                     # Generate UUID v4
-image = "0.24.6"                                                                                    # Image processing
-chrono = "0.4.26"                                                                                   # Time handling
-dirs = "5.0.1"                                                                                      # Special folder handling
-log = "0.4.19"                                                                                      # Logging
-env_logger = "0.10.0"                                                                               # Logging
-super-shell = "1.2.0"                                                                               # Privileged shell execution
+systemstat = "0.2.3"                                                                                                # read common system sensor values
+rayon = "1.7.0"                                                                                                     # Parallel processing
+base64 = "0.21.2"                                                                                                   # Base64 encoding
+message-io = { version = "0.17.0", default-features = false, features = ["tcp"] }                                   # TCPSocket communication
+uuid = { version = "1.4.1", features = ["v4"] }                                                                     # Generate UUID v4
+image = "0.24.6"                                                                                                    # Image processing
+chrono = "0.4.26"                                                                                                   # Time handling
+dirs = "5.0.1"                                                                                                      # Special folder handling
+log = "0.4.19"                                                                                                      # Logging
+env_logger = "0.10.0"                                                                                               # Logging
+super-shell = "1.2.0"                                                                                               # Privileged shell execution
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
-lm-sensors = "0.1.5"                                                                                # Read sensor values from lm-sensors
-csv = "1.2.2"                                                                                       # CSV parsing
-rev_buf_reader = "0.3.0"                                                                            # Reverse buffer reader
-dmidecode = "0.7.5"                                                                                 # Read linux system information from dmidecode
+lm-sensors = "0.1.5"                                                                                                # Read sensor values from lm-sensors
+csv = "1.2.2"                                                                                                       # CSV parsing
+rev_buf_reader = "0.3.0"                                                                                            # Reverse buffer reader
+dmidecode = "0.7.5"                                                                                                 # Read linux system information from dmidecode
 
 # Windows specific dependencies
 [target.'cfg(target_os = "windows")'.dependencies]
-wmi = "0.13.1"                                                                                      # Read sensor values from WMI
+wmi = "0.13.1"                                                                                                      # Read sensor values from WMI
 
 [features]
 # by default Tauri runs in production mode

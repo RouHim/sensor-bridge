@@ -127,7 +127,13 @@ fn remove_network_device_config(network_device_id: String) {
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-fn save_app_config(id: String, name: String, address: String, lcd_config: String) {
+fn save_app_config(
+    _app_state: State<AppState>,
+    id: String,
+    name: String,
+    address: String,
+    lcd_config: String,
+) {
     let mut port_config: NetPortConfig = config::read(&id);
 
     port_config.name = name;
@@ -209,7 +215,11 @@ fn disable_sync(app_state: State<AppState>, network_device_id: String) {
 /// If the live preview is enabled, it will be disabled and vice versa.
 //noinspection RsWrongGenericArgumentsNumber
 #[tauri::command]
-fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
+fn toggle_lcd_live_preview(
+    _app_state: State<AppState>,
+    app_handle: AppHandle,
+    network_device_id: String,
+) {
     let port_config: NetPortConfig = config::read(&network_device_id);
 
     let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);

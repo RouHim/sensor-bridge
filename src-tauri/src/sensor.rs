@@ -51,7 +51,6 @@ fn read_dynamic_sensor_values() -> Vec<SensorValue> {
     // Iterate over the vector and call each function using par_iter
     sensor_requests
         .into_iter()
-        // .par_iter()
         .flat_map(|f| f())
         .collect::<Vec<SensorValue>>()
         .iter()
