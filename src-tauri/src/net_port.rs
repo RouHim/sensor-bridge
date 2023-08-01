@@ -68,14 +68,15 @@ pub fn start_sync(
 
         // Iterate until the port_running_state_handle is set to false
         while *port_running_state_handle.lock().unwrap() {
-            // Read sensor values
             // Measure duration
             let start_time = Instant::now();
+
+            // Read sensor values
             let sensor_values = sensor::read_all_sensor_values(&static_sensor_values);
-            let lcd_config = net_port_config.lcd_config.clone();
 
             // Serialize the transport struct to bytes using messagepack
-            let data_to_send = serialize_render_data(sensor_values, lcd_config);
+            let data_to_send =
+                serialize_render_data(sensor_values, net_port_config.lcd_config.clone());
 
             // Send to actual data to the remote tcp socket
             send_tcp_data(&net_port_config, &mut net_port, data_to_send);
@@ -91,10 +92,14 @@ pub fn start_sync(
     Arc::new(handle)
 }
 
+/// Serializes the render data to bytes using messagepack
+/// and wraps it in a TransportMessage
+/// Returns the bytes to send
 fn serialize_asset_data(data: AssetData) -> Vec<u8> {
     let mut asset_data = Vec::new();
     data.serialize(&mut Serializer::new(&mut asset_data))
         .unwrap();
+
     let mut data_to_send = Vec::new();
     TransportMessage {
         transport_type: TransportType::PrepareData,
@@ -106,6 +111,7 @@ fn serialize_asset_data(data: AssetData) -> Vec<u8> {
     data_to_send
 }
 
+/// Pre-renders assets
 fn prepare_assets(lcd_config: &LcdConfig) -> AssetData {
     let image_data: HashMap<String, Vec<u8>> = lcd_config
         .elements
@@ -134,12 +140,13 @@ fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, Vec<u
     (element_id.to_string(), image_data)
 }
 
+/// Sends the data to the remote tcp socket
 fn send_tcp_data(
     net_port_config: &NetPortConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
     data_to_send: Vec<u8>,
 ) {
-    // Write data to tcp socket
+    // Log data to send
     let data_len = utils::pretty_bytes(data_to_send.len());
     info!(
         "Sending data {} {} to '{}'...",
@@ -203,7 +210,7 @@ fn wait(start_time: Instant) {
         .checked_sub(processing_duration)
         .unwrap_or_else(|| {
             error!("Warning: Processing duration is longer than the update interval");
-            Duration::from_millis(0)
+            PUSH_RATE
         });
     thread::sleep(time_to_wait);
 }
