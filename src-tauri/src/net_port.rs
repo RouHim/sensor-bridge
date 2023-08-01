@@ -33,9 +33,10 @@ fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<
 
     info!("Connecting to device {}({})", net_port_config.name, address);
 
+    // Blocks until the connection is established
     handler
         .network()
-        .connect(Transport::FramedTcp, address)
+        .connect_sync(Transport::FramedTcp, address)
         .unwrap()
         .0
 }
@@ -73,8 +74,10 @@ pub fn start_sync(
             let sensor_values = sensor::read_all_sensor_values(&static_sensor_values);
             let lcd_config = net_port_config.lcd_config.clone();
 
+            // Serialize the transport struct to bytes using messagepack
             let data_to_send = serialize_render_data(sensor_values, lcd_config);
 
+            // Send to actual data to the remote tcp socket
             send_tcp_data(&net_port_config, &mut net_port, data_to_send);
 
             // Wait for the next iteration
