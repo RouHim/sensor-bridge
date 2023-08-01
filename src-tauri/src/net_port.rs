@@ -125,7 +125,7 @@ fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, Vec<u
         image::imageops::FilterType::Lanczos3,
     );
     // save as png
-    let image_data = utils::rgba_to_png_raw(image.to_rgba8());
+    let image_data = utils::rgba_to_png_bytes(image.to_rgba8());
 
     // Build response entry
     (element_id.to_string(), image_data)

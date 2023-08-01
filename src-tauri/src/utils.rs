@@ -1,4 +1,4 @@
-use std::io::{Cursor, Seek, SeekFrom};
+use std::io::Cursor;
 
 use image::{ImageBuffer, Rgba, RgbaImage};
 
@@ -18,7 +18,7 @@ pub fn pretty_bytes(value: usize) -> (f64, String) {
 }
 
 /// Convert an rgb image to a png buffer
-pub fn rgb_to_jpeg_data(image: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
+pub fn rgb_to_jpeg_bytes(image: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
     image
@@ -28,15 +28,11 @@ pub fn rgb_to_jpeg_data(image: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
 }
 
 /// Convert rgba an image to a png buffer
-pub fn rgba_to_png_raw(image: RgbaImage) -> Vec<u8> {
-    // Create a Vec<u8> buffer to write the image to it
+pub fn rgba_to_png_bytes(image: RgbaImage) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
     image
         .write_to(&mut cursor, image::ImageOutputFormat::Png)
         .unwrap();
-
-    // Reset the cursor to the beginning of the buffer
-    cursor.seek(SeekFrom::Start(0)).unwrap();
     buf
 }

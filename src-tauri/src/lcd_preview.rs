@@ -67,7 +67,7 @@ fn prepare_assets(elements: Vec<LcdElement>) {
             );
 
             // Convert to png
-            let image_data = utils::rgba_to_png_raw(image.to_rgba8());
+            let image_data = utils::rgba_to_png_bytes(image.to_rgba8());
 
             // Save to data folder
             let target_path = format!("{}/{}", sensor_core::ASSET_DATA_DIR, element.id);
@@ -89,7 +89,7 @@ pub fn render(static_sensor_values: &Arc<Vec<SensorValue>>, lcd_config: LcdConfi
         // Render the image
         let image = sensor_core::render_lcd_image(lcd_config, sensor_values);
 
-        let buf = utils::rgb_to_jpeg_data(image);
+        let buf = utils::rgb_to_jpeg_bytes(image);
 
         // Encode the buffer to a base64 string
         let engine = base64::engine::general_purpose::STANDARD;
