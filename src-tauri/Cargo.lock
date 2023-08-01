@@ -1808,9 +1808,9 @@ dependencies = [
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09fc20d2ca12cb9f044c93e3bd6d32d523e6e2ec3db4f7b2939cd99026ecd3f0"
+checksum = "57bcfdad1b858c2db7c38303a6d2ad4dfaf5eb53dfeb0910128b2c26d6158503"
 
 [[package]]
 name = "lm-sensors"
@@ -3028,12 +3028,13 @@ dependencies = [
 [[package]]
 name = "sensor-core"
 version = "0.1.0"
-source = "git+https://github.com/RouHim/sensor-core.git#ae3f06392e21bc2dd4beb010412f4f436a076f05"
+source = "git+https://github.com/RouHim/sensor-core.git#7ef33282bdb0b6135eb71a91d98487c4d1b5b074"
 dependencies = [
  "base64 0.21.2",
  "env_logger",
  "image",
  "imageproc",
+ "lazy_static",
  "log",
  "rusttype",
  "serde",
@@ -3503,9 +3504,9 @@ dependencies = [
 
 [[package]]
 name = "target-lexicon"
-version = "0.12.10"
+version = "0.12.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d2faeef5759ab89935255b1a4cd98e0baf99d1085e37d36599c625dac49ae8e"
+checksum = "9d0e916b1148c8e263850e1ebcbd046f333e0683c724876bb0da63ea4373dc8a"
 
 [[package]]
 name = "tauri"

@@ -1,6 +1,6 @@
+use log::info;
 use std::sync::Arc;
 use std::{fs, thread};
-use log::info;
 
 use rayon::prelude::*;
 use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
@@ -89,13 +89,13 @@ pub fn render(static_sensor_values: &Arc<Vec<SensorValue>>, lcd_config: LcdConfi
         // Render the image
         let image = sensor_core::render_lcd_image(lcd_config, sensor_values);
 
-        let buf = utils::rgb_to_png_raw(image);
+        let buf = utils::rgb_to_jpeg_data(image);
 
         // Encode the buffer to a base64 string
         let engine = base64::engine::general_purpose::STANDARD;
 
         // Return the base64 string
-        base64::Engine::encode(&engine, &buf)
+        base64::Engine::encode(&engine, buf)
     })
     .join()
     .unwrap()

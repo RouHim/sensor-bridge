@@ -24,7 +24,7 @@
         invoke('get_lcd_preview_image', {networkDeviceId: currentNetworkDeviceId}).then(
             (preview_image) => {
                 const img = document.getElementById("lcd-preview-image");
-                img.src = "data:image/png;base64," + preview_image;
+                img.src = "data:image/jpeg;base64," + preview_image;
             }
         );
     }

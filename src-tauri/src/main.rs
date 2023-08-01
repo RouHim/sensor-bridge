@@ -9,9 +9,9 @@ use std::thread;
 
 use sensor_core::SensorValue;
 use super_shell::RootShell;
+use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
-use tauri::State;
 
 use crate::config::{AppConfig, NetPortConfig};
 

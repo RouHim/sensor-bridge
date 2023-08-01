@@ -1,5 +1,6 @@
-use image::{RgbImage, RgbaImage};
 use std::io::{Cursor, Seek, SeekFrom};
+
+use image::{ImageBuffer, Rgba, RgbaImage};
 
 /// Pretty print bytes, e.g. 534 MB
 /// Returns a tuple of (value, unit)
@@ -17,16 +18,12 @@ pub fn pretty_bytes(value: usize) -> (f64, String) {
 }
 
 /// Convert an rgb image to a png buffer
-pub fn rgb_to_png_raw(image: RgbImage) -> Vec<u8> {
-    // Create a Vec<u8> buffer to write the image to it
+pub fn rgb_to_jpeg_data(image: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
     image
-        .write_to(&mut cursor, image::ImageOutputFormat::Png)
+        .write_to(&mut cursor, image::ImageOutputFormat::Jpeg(100))
         .unwrap();
-
-    // Reset the cursor to the beginning of the buffer
-    cursor.seek(SeekFrom::Start(0)).unwrap();
     buf
 }
 
