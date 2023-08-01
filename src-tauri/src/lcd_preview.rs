@@ -67,7 +67,7 @@ fn prepare_assets(elements: Vec<LcdElement>) {
             );
 
             // Convert to png
-            let image_data = utils::rgba_to_png_bytes(image.to_rgba8());
+            let image_data = utils::rgba_to_png_bytes(image);
 
             // Save to data folder
             let target_path = format!("{}/{}", sensor_core::ASSET_DATA_DIR, element.id);

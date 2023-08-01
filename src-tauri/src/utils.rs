@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use image::{ImageBuffer, Rgba, RgbaImage};
+use image::{DynamicImage, ImageBuffer, Rgba};
 
 /// Pretty print bytes, e.g. 534 MB
 /// Returns a tuple of (value, unit)
@@ -28,7 +28,7 @@ pub fn rgb_to_jpeg_bytes(image: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
 }
 
 /// Convert rgba an image to a png buffer
-pub fn rgba_to_png_bytes(image: RgbaImage) -> Vec<u8> {
+pub fn rgba_to_png_bytes(image: DynamicImage) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
     image

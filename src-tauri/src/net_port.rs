@@ -61,9 +61,9 @@ pub fn start_sync(
         let data_to_send = serialize_asset_data(asset_data);
         send_tcp_data(&net_port_config, &mut net_port, data_to_send);
 
-        // Wait 10 seconds for the assets to be loaded
-        info!("Waiting for assets to be loaded...");
-        thread::sleep(Duration::from_secs(10));
+        // Wait 1 seconds for the assets to be loaded
+        info!("Waiting 1s for assets to be loaded...");
+        thread::sleep(Duration::from_secs(1));
 
         // Iterate until the port_running_state_handle is set to false
         while *port_running_state_handle.lock().unwrap() {
@@ -124,8 +124,8 @@ fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, Vec<u
         image_config.image_height,
         image::imageops::FilterType::Lanczos3,
     );
-    // save as png
-    let image_data = utils::rgba_to_png_bytes(image.to_rgba8());
+    // convert to png
+    let image_data = utils::rgba_to_png_bytes(image);
 
     // Build response entry
     (element_id.to_string(), image_data)
