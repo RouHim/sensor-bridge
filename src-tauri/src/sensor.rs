@@ -20,8 +20,11 @@ pub fn read_all_sensor_values(static_sensor_values: &Arc<Vec<SensorValue>>) -> V
         // Measurement that it took to read all sensors
         let start = std::time::Instant::now();
 
-        let sensor_values: Vec<SensorValue> =
+        let mut sensor_values: Vec<SensorValue> =
             [static_sensor_values, read_dynamic_sensor_values()].concat();
+
+        // Sort sensors by label
+        sensor_values.sort_by(|a, b| a.label.cmp(&b.label));
 
         debug!(
             "Reading all sensors took {:?}",
@@ -57,6 +60,7 @@ fn read_dynamic_sensor_values() -> Vec<SensorValue> {
         .for_each(|sensor_value| {
             sensor_values.push(sensor_value.clone());
         });
+
     sensor_values
 }
 
