@@ -12,6 +12,10 @@ html, body {
     width: 100%;
 }
 
+#master-pane{
+    margin-top: 10px;
+}
+
 .row-flex-container {
     display: flex;
     flex-direction: row;
@@ -22,6 +26,13 @@ html, body {
     text-align: center;
 }
 
+.center-horizontal{
+    text-align: center;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
 .flex-container {
     display: flex;
     align-items: center;
@@ -29,21 +40,6 @@ html, body {
 
 .flex-item {
     margin: 0 5px;
-}
-
-#master-pane, #detail-pane {
-    padding: 5px;
-}
-
-#master-pane {
-    width: 20%;
-    height: 100%;
-}
-
-#detail-pane {
-    width: 80%;
-    height: 100%;
-    border-left: 1px solid var(--text);
 }
 
 .row {

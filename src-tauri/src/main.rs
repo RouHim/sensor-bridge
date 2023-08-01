@@ -9,9 +9,9 @@ use std::thread;
 
 use sensor_core::SensorValue;
 use super_shell::RootShell;
-use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
+use tauri::State;
 
 use crate::config::{AppConfig, NetPortConfig};
 
@@ -215,25 +215,17 @@ fn disable_sync(app_state: State<AppState>, network_device_id: String) {
 /// If the live preview is enabled, it will be disabled and vice versa.
 //noinspection RsWrongGenericArgumentsNumber
 #[tauri::command]
-fn toggle_lcd_live_preview(
-    _app_state: State<AppState>,
-    app_handle: AppHandle,
-    network_device_id: String,
-) {
+fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
     let port_config: NetPortConfig = config::read(&network_device_id);
 
-    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    // If the window is still present, close it
+    let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    if let Some(window) = existing_window {
+        window.close().unwrap();
+    }
 
-    if let Some(window) = maybe_window {
-        // If the window is visible, hide it and stop the sync thread
-        if window.is_visible().unwrap() {
-            window.close().unwrap();
-        } else {
-            window.show().unwrap();
-        }
-    } else {
-        lcd_preview::show(app_handle, &port_config);
-    };
+    // Open a new lcd preview window
+    lcd_preview::show(app_handle, &port_config);
 }
 
 /// Returns the lcd preview image for the specified com port as base64 encoded string

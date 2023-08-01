@@ -1,7 +1,7 @@
 const {invoke, convertFileSrc} = window.__TAURI__.tauri;
 const {open} = window.__TAURI__.dialog;
 
-const listNetPorts = document.getElementById("main-net-ports");
+const cmbNetworkPorts = document.getElementById("main-network-ports-select");
 
 const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
 const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
@@ -48,6 +48,11 @@ let draggedLiElement;
 let currentNetworkDeviceId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
+    // Register on network device selected onNetDeviceSelected(liElement)
+    cmbNetworkPorts.addEventListener("change", (event) => {
+        onNetDeviceSelected(event.target.options[event.target.selectedIndex]);
+    });
+
     // Register event for display resolution
     txtLcdResolutionWidth.addEventListener("input", updateLcdDesignPaneDimensions);
     txtLcdResolutionHeight.addEventListener("input", updateLcdDesignPaneDimensions);
@@ -71,8 +76,8 @@ window.addEventListener("DOMContentLoaded", () => {
     loadDeviceConfigs();
 
     // Select first net port
-    if (listNetPorts.childElementCount > 0) {
-        onNetDeviceSelected(listNetPorts.firstElementChild);
+    if (cmbNetworkPorts.options.length > 0) {
+        onNetDeviceSelected(cmbNetworkPorts.options[0]);
     }
 });
 
@@ -125,14 +130,15 @@ function removeDevice() {
     }
 
     // Remove net port from list
-    listNetPorts.removeChild(document.getElementById(networkDeviceId));
+    let toRemove = document.getElementById(networkDeviceId);
+    cmbNetworkPorts.removeChild(toRemove);
 
     // Remove net port from backend
     invoke('remove_network_device_config', {networkDeviceId: networkDeviceId});
 
     // If is at least one net port, select the first one
-    if (listNetPorts.childElementCount > 0) {
-        onNetDeviceSelected(listNetPorts.firstElementChild);
+    if (cmbNetworkPorts.options.length > 0) {
+        onNetDeviceSelected(cmbNetworkPorts.options[0]);
     } else {
         clearForm();
     }
@@ -167,8 +173,8 @@ function loadDeviceConfigs() {
         // Map config to JSON
         appConfig = JSON.parse(appConfig);
 
-        // Clear net port list
-        listNetPorts.innerHTML = "";
+        // Clear net port combobox
+        cmbNetworkPorts.innerHTML = "";
 
         // Add net ports to list
         let networkDevices = appConfig.network_devices;
@@ -185,22 +191,21 @@ function loadDeviceConfigs() {
         }
 
         // Select first net port
-        if (listNetPorts.childElementCount > 0) {
-            onNetDeviceSelected(listNetPorts.firstElementChild);
+        if (cmbNetworkPorts.options.length > 0) {
+            onNetDeviceSelected(cmbNetworkPorts.options[0]);
         }
     });
 }
 
 function addNetworkDeviceToList(id, name) {
-    // Create new net port li element
-    const liElement = document.createElement("li");
-    liElement.id = id;
-    liElement.innerText = name;
-    liElement.classList.add("net-port-item");
-    liElement.addEventListener("click", () => onNetDeviceSelected(liElement));
+    // Create new net port
+    let netPortElement = document.createElement("option");
+    netPortElement.id = id;
+    netPortElement.value = id;
+    netPortElement.innerText = name;
 
-    // Add to net port list
-    listNetPorts.appendChild(liElement);
+    // Add to net port combo box
+    cmbNetworkPorts.appendChild(netPortElement);
 }
 
 function saveConfig() {
@@ -298,11 +303,8 @@ function onNetDeviceSelected(element) {
             // Set active sync state
             btnTransferActive.checked = portConfig.active;
 
-            // Set as selected net port in list
-            listNetPorts.querySelectorAll("li").forEach((liElement) => {
-                liElement.classList.remove("selected");
-            });
-            element.classList.add("selected");
+            // Set as selected net port combobox
+            cmbNetworkPorts.value = networkDeviceId;
 
             // Load sensor values
             loadSensorValues();

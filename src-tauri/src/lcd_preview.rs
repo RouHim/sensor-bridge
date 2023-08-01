@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::{fs, thread};
+use log::info;
 
 use rayon::prelude::*;
 use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
@@ -21,6 +22,8 @@ pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
     let width = port_config.lcd_config.resolution_width;
     let height = port_config.lcd_config.resolution_height;
     let lcd_elements = port_config.lcd_config.elements.clone();
+
+    info!("Showing lcd preview for {}", port_config.name);
 
     thread::spawn(move || {
         // Prepare static assets
