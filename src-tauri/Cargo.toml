@@ -28,6 +28,7 @@ dirs = "5.0.1"                                                                  
 log = "0.4.19"                                                                                                      # Logging
 env_logger = "0.10.0"                                                                                               # Logging
 super-shell = "1.2.0"                                                                                               # Privileged shell execution
+dns-lookup = "2.0.2"                                                                                                # DNS lookup
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]

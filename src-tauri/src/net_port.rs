@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::net::IpAddr;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -29,7 +31,13 @@ pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
 
 /// Establishes a tcp connection to the specified address
 fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<()>) -> Endpoint {
-    let address = format!("{}:{NETWORK_PORT}", net_port_config.address);
+    let ip = resolve_hostname(net_port_config);
+
+    if ip.is_none() {
+        error!("Could not resolve hostname {}", net_port_config.address);
+    }
+
+    let address = format!("{}:{NETWORK_PORT}", ip.unwrap());
 
     info!("Connecting to device {}({})", net_port_config.name, address);
 
@@ -39,6 +47,30 @@ fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<
         .connect_sync(Transport::FramedTcp, address)
         .unwrap()
         .0
+}
+
+/// Resolves the name of the device to an ip address
+fn resolve_hostname(net_port_config: &NetPortConfig) -> Option<String> {
+    let target = &net_port_config.address;
+
+    // Check if target string is an valid ip address
+    if IpAddr::from_str(target).is_ok() {
+        return Some(target.to_string());
+    }
+
+    // Otherwise we most likely have a hostname, try to resolve the hostname
+    // and get the first ipv4 address
+    return match dns_lookup::lookup_host(target).ok() {
+        Some(ips) => ips
+            .iter()
+            .filter(|ip| ip.is_ipv4())
+            .map(|ip| ip.to_string())
+            .next(),
+        None => {
+            error!("Could not resolve hostname {}", target);
+            None
+        }
+    };
 }
 
 /// Starts a new thread that writes to the remote tcp socket.
