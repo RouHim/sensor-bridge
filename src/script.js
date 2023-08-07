@@ -20,6 +20,8 @@ const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-e
 
 const layoutTextConfig = document.getElementById("lcd-text-config");
 const layoutStaticImageConfig = document.getElementById("lcd-static-image-config");
+const layoutGraphConfig = document.getElementById("lcd-graph-config");
+const layoutConditionalImageConfig = document.getElementById("lcd-conditional-image-config");
 
 const txtElementName = document.getElementById("lcd-txt-element-name");
 const cmbElementType = document.getElementById("lcd-cmb-element-type");
@@ -36,6 +38,16 @@ const txtElementStaticImageFile = document.getElementById("lcd-txt-element-stati
 const txtElementStaticImageWidth = document.getElementById("lcd-txt-element-static-image-width");
 const txtElementStaticImageHeight = document.getElementById("lcd-txt-element-static-image-height");
 
+const cmbNumberSensorIdSelection = document.getElementById("lcd-cmb-number-sensor-id-selection");
+const txtElementGraphWidth = document.getElementById("lcd-graph-width");
+const txtElementGraphHeight = document.getElementById("lcd-graph-height");
+const cmbElementGraphType = document.getElementById("lcd-graph-type");
+const txtElementGraphColor = document.getElementById("lcd-graph-color");
+const txtElementGraphStrokeWidth = document.getElementById("lcd-graph-stroke-width");
+const txtElementGraphBackgroundColor = document.getElementById("lcd-graph-background-color");
+const txtElementGraphBorderColor = document.getElementById("lcd-graph-border-color");
+
+
 let sensorValues = [];
 let lastSelectedListElement = null;
 let lastSelectedDesignerElement = null;
@@ -48,6 +60,14 @@ let draggedLiElement;
 let currentNetworkDeviceId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
+    // Configure color picker
+    window.Coloris && (Coloris({
+        theme: 'large',
+        themeMode: 'dark',
+        alpha: true,
+        forceAlpha: true,
+    }));
+
     // Register on network device selected onNetDeviceSelected(liElement)
     cmbNetworkPorts.addEventListener("change", (event) => {
         onNetDeviceSelected(event.target.options[event.target.selectedIndex]);
@@ -101,21 +121,24 @@ async function selectStaticImage() {
 }
 
 function onElementTypeChange() {
+    layoutTextConfig.style.display = "none";
+    layoutStaticImageConfig.style.display = "none";
+    layoutGraphConfig.style.display = "none";
+    layoutConditionalImageConfig.style.display = "none";
+
     const selectedElement = cmbElementType.options[cmbElementType.selectedIndex].value;
     switch (selectedElement) {
         case "text":
             layoutTextConfig.style.display = "block";
-            layoutStaticImageConfig.style.display = "none";
             break;
         case "static-image":
-            layoutTextConfig.style.display = "none";
             layoutStaticImageConfig.style.display = "block";
             break;
         case "graph":
-            // TODO
+            layoutGraphConfig.style.display = "block";
             break;
         case "conditional-image":
-            // TODO
+            layoutConditionalImageConfig.style.display = "block";
             break;
     }
 }
@@ -208,6 +231,56 @@ function addNetworkDeviceToList(id, name) {
     cmbNetworkPorts.appendChild(netPortElement);
 }
 
+function getGraphConfig(listItem) {
+    // Get graph config attributes
+    const elementGraphWidth = parseInt(listItem.getAttribute("data-element-graph-width"));
+    const elementGraphHeight = parseInt(listItem.getAttribute("data-element-graph-height"));
+    const elementGraphType = listItem.getAttribute("data-element-graph-type");
+    const elementGraphColor = listItem.getAttribute("data-element-graph-color");
+    const elementGraphStrokeWidth = parseInt(listItem.getAttribute("data-element-graph-stroke-width"));
+    const elementGraphBackgroundColor = listItem.getAttribute("data-element-graph-background-color");
+    const elementGraphBorderColor = listItem.getAttribute("data-element-graph-border-color");
+
+    // Build GraphConfig object
+    return {
+        width: elementGraphWidth,
+        height: elementGraphHeight,
+        graph_type: elementGraphType,
+        graph_color: elementGraphColor,
+        graph_stroke_width: elementGraphStrokeWidth,
+        background_color: elementGraphBackgroundColor,
+        border_color: elementGraphBorderColor,
+        sensor_values: [],
+    };
+}
+
+function getImageConfig(listItem) {
+    // Get image config attributes
+    const elementStaticImage = listItem.getAttribute("data-element-static-image");
+    const elementStaticImageWidth = parseInt(listItem.getAttribute("data-element-static-image-width"));
+    const elementStaticImageHeight = parseInt(listItem.getAttribute("data-element-static-image-height"));
+
+    // Build ImageConfig object
+    return {
+        image_width: elementStaticImageWidth,
+        image_height: elementStaticImageHeight,
+        image_path: elementStaticImage,
+    };
+}
+
+function getTextConfig(listItem) {
+    // Get text config attributes
+    const elementTextFormat = listItem.getAttribute("data-element-text-format");
+    const elementFontColor = listItem.getAttribute("data-element-font-color");
+    const elementFontSize = parseInt(listItem.getAttribute("data-element-font-size"));
+    // Build TextConfig object
+    return {
+        text_format: elementTextFormat,
+        font_size: elementFontSize,
+        font_color: elementFontColor,
+    };
+}
+
 function saveConfig() {
     // If net port id is empty, return
     if (currentNetworkDeviceId === "") {
@@ -215,48 +288,28 @@ function saveConfig() {
     }
 
     // Get device name and network address
-    let deviceName = txtDeviceName.value;
-    let deviceAddress = txtDeviceNetworkAddress.value;
+    const deviceName = txtDeviceName.value;
+    const deviceAddress = txtDeviceNetworkAddress.value;
 
     // Get LCD Resolution Height and cast to integer
-    let lcdResolutionWidth = txtLcdResolutionWidth.value;
-    let lcdResolutionHeight = txtLcdResolutionHeight.value;
+    const lcdResolutionWidth = txtLcdResolutionWidth.value;
+    const lcdResolutionHeight = txtLcdResolutionHeight.value;
 
     // Find all list items of lcd-designer-placed-elements extract sensors and save them to the lcd config
-    let lcdDesignerPlacedElementsListItems = lstDesignerPlacedElements.getElementsByTagName("li");
-    let lcdDesignerPlacedElementsListItemsArray = Array.from(lcdDesignerPlacedElementsListItems);
-    let lcdElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
+    const lcdDesignerPlacedElementsListItems = lstDesignerPlacedElements.getElementsByTagName("li");
+    const lcdDesignerPlacedElementsListItemsArray = Array.from(lcdDesignerPlacedElementsListItems);
+    const lcdElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
         // Get element attributes
-        let elementId = listItem.getAttribute("data-element-id");
-        let sensorId = listItem.getAttribute("data-sensor-id");
-        let elementType = listItem.getAttribute("data-element-type");
-        let elementName = listItem.getAttribute("data-element-name");
-        let elementX = parseInt(listItem.getAttribute("data-element-position-x"));
-        let elementY = parseInt(listItem.getAttribute("data-element-position-y"));
+        const elementId = listItem.getAttribute("data-element-id");
+        const sensorId = listItem.getAttribute("data-sensor-id");
+        const elementType = listItem.getAttribute("data-element-type");
+        const elementName = listItem.getAttribute("data-element-name");
+        const elementX = parseInt(listItem.getAttribute("data-element-position-x"));
+        const elementY = parseInt(listItem.getAttribute("data-element-position-y"));
 
-        // Get text config attributes
-        let elementTextFormat = listItem.getAttribute("data-element-text-format");
-        let elementFontColor = listItem.getAttribute("data-element-font-color");
-        let elementFontSize = parseInt(listItem.getAttribute("data-element-font-size"));
-
-        // Get image config attributes
-        let elementStaticImage = listItem.getAttribute("data-element-static-image");
-        let elementStaticImageWidth = parseInt(listItem.getAttribute("data-element-static-image-width"));
-        let elementStaticImageHeight = parseInt(listItem.getAttribute("data-element-static-image-height"));
-
-        // Build TextConfig object
-        let textConfig = {
-            text_format: elementTextFormat,
-            font_size: elementFontSize,
-            font_color: elementFontColor,
-        }
-
-        // Build ImageConfig object
-        let imageConfig = {
-            image_width: elementStaticImageWidth,
-            image_height: elementStaticImageHeight,
-            image_path: elementStaticImage,
-        }
+        const textConfig = getTextConfig(listItem);
+        const imageConfig = getImageConfig(listItem);
+        const graphConfig = getGraphConfig(listItem);
 
         // Build display element
         return {
@@ -268,12 +321,12 @@ function saveConfig() {
             sensor_id: sensorId,
             text_config: textConfig,
             image_config: imageConfig,
+            graph_config: graphConfig,
         };
     });
 
-
     // Build lcd config object, with integers
-    let lcdConfig = {
+    const lcdConfig = {
         resolution_width: parseInt(lcdResolutionWidth),
         resolution_height: parseInt(lcdResolutionHeight),
         elements: lcdElements,
@@ -357,10 +410,10 @@ function loadLcdConfig(networkDeviceId) {
                 let sensorUnit = sensor ? sensor.unit : "";
 
                 // Add element to list
-                addElementToList(element.id, element.sensor_id, element.x, element.y, element.name, element.element_type, element.text_config, element.image_config);
+                addElementToList(element.id, element.sensor_id, element.x, element.y, element.name, element.element_type, element.text_config, element.image_config, element.graph_config);
 
                 // Add element to designer pane
-                addElementToDesignerPane(index, element.id, sensorValue, sensorUnit, element.name, element.element_type, element.x, element.y, element.text_config, element.image_config);
+                addElementToDesignerPane(index, element.id, sensorValue, sensorUnit, element.name, element.element_type, element.x, element.y, element.text_config, element.image_config, element.graph_config);
             });
 
             // If there are elements, select the first one
@@ -375,27 +428,43 @@ function loadLcdConfig(networkDeviceId) {
     );
 }
 
-function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig) {
+function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig, elementGraphConfig) {
     const liElement = document.createElement("li");
+
+    // Element config
     liElement.id = LIST_ID_PREFIX + elementId;
     liElement.setAttribute("data-element-id", elementId);
     liElement.setAttribute("data-sensor-id", sensorId);
     liElement.setAttribute("data-element-name", elementName);
-    liElement.setAttribute("data-element-text-format", elementTextConfig.text_format);
     liElement.setAttribute("data-element-type", elementType);
     liElement.setAttribute("data-element-position-x", positionX);
     liElement.setAttribute("data-element-position-y", positionY);
+
+    // Text config
+    liElement.setAttribute("data-element-text-format", elementTextConfig.text_format);
     liElement.setAttribute("data-element-font-size", elementTextConfig.font_size);
-    liElement.setAttribute("data-element-font-color", elementTextConfig.font_color.substring(0, 7));
+    liElement.setAttribute("data-element-font-color", elementTextConfig.font_color);
+
+    // Image config
     liElement.setAttribute("data-element-static-image", elementImageConfig.image_path);
     liElement.setAttribute("data-element-static-image-width", elementImageConfig.image_width);
     liElement.setAttribute("data-element-static-image-height", elementImageConfig.image_height);
+
+    // Graph config
+    liElement.setAttribute("data-element-graph-width", elementGraphConfig.width);
+    liElement.setAttribute("data-element-graph-height", elementGraphConfig.height);
+    liElement.setAttribute("data-element-graph-type", elementGraphConfig.graph_type);
+    liElement.setAttribute("data-element-graph-color", elementGraphConfig.graph_color);
+    liElement.setAttribute("data-element-graph-stroke-width", elementGraphConfig.graph_stroke_width);
+    liElement.setAttribute("data-element-graph-background-color", elementGraphConfig.background_color);
+    liElement.setAttribute("data-element-graph-border-color", elementGraphConfig.border_color);
+
+    // Build li element
     liElement.innerHTML = elementName;
     liElement.draggable = true;
     liElement.ondragstart = onListElementDragStart;
     liElement.ondragover = onListItemDragOver;
     liElement.ondrop = onListElementDrop;
-
 
     // Add element to the list#
     lstDesignerPlacedElements.innerHTML += liElement.outerHTML;
@@ -425,6 +494,12 @@ function loadSensorValues() {
                 (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
             ).join("");
 
+            // Filter out only number sensors and add them to cmbNumberSensorIdSelection
+            cmbNumberSensorIdSelection.innerHTML = sensorValues.filter(
+                (sensorValue) => sensorValue.sensor_type === "number"
+            ).map(
+                (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
+            ).join("");
         }
     );
 }
@@ -534,20 +609,42 @@ function moveSelectedElementBy(number, isArrowUpPressed, isArrowDownPressed, isA
 function updateElement(calculatedId) {
     // Update element in the list
     let listEntryElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
+
+    // Get sensor id
+    // If the element type is a graph, the sensor id is the number sensor id
+    let sensorId = cmbSensorIdSelection.value;
+    if (cmbElementType.value === "graph") {
+        sensorId = cmbNumberSensorIdSelection.value;
+    }
+
+    // Update element config
     listEntryElement.setAttribute("data-element-id", calculatedId);
-    listEntryElement.setAttribute("data-sensor-id", cmbSensorIdSelection.value);
+    listEntryElement.setAttribute("data-sensor-id", sensorId);
     listEntryElement.setAttribute("data-element-name", txtElementName.value);
-    listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
     listEntryElement.setAttribute("data-element-position-x", txtElementPositionX.value);
+    listEntryElement.setAttribute("data-element-type", cmbElementType.value);
+
+    // Text config
     listEntryElement.setAttribute("data-element-position-y", txtElementPositionY.value);
     listEntryElement.setAttribute("data-element-font-size", txtElementFontSize.value);
     listEntryElement.setAttribute("data-element-font-color", txtElementFontColor.value);
+
+    // Image config
+    listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
     listEntryElement.setAttribute("data-element-static-image", txtElementStaticImageFile.value);
     listEntryElement.setAttribute("data-element-static-image-width", txtElementStaticImageWidth.value);
     listEntryElement.setAttribute("data-element-static-image-height", txtElementStaticImageHeight.value);
-    listEntryElement.setAttribute("data-element-type", cmbElementType.value);
-    listEntryElement.innerHTML = txtElementName.value;
 
+    // Graph config
+    listEntryElement.setAttribute("data-element-graph-width", txtElementGraphWidth.value);
+    listEntryElement.setAttribute("data-element-graph-height", txtElementGraphHeight.value);
+    listEntryElement.setAttribute("data-element-graph-type", cmbElementGraphType.value);
+    listEntryElement.setAttribute("data-element-graph-color", txtElementGraphColor.value);
+    listEntryElement.setAttribute("data-element-graph-stroke-width", txtElementGraphStrokeWidth.value);
+    listEntryElement.setAttribute("data-element-graph-background-color", txtElementGraphBackgroundColor.value);
+    listEntryElement.setAttribute("data-element-graph-border-color", txtElementGraphBorderColor.value);
+
+    listEntryElement.innerHTML = txtElementName.value;
 
     // Update element in the designer
     let designerElement = document.getElementById(DESIGNER_ID_PREFIX + calculatedId);
@@ -570,10 +667,22 @@ function updateElement(calculatedId) {
             designerElement.style.height = txtElementStaticImageHeight.value + "px";
             designerElement.src = toTauriAssetPath(txtElementStaticImageFile.value);
             break;
+        case "graph":
+            designerElement.style.width = txtElementGraphWidth.value + "px";
+            designerElement.style.height = txtElementGraphHeight.value + "px";
+            invoke('get_graph_preview_image', {
+                networkDeviceId: currentNetworkDeviceId,
+                sensorId: sensorId,
+                graphConfig: getGraphConfig(listEntryElement)
+            })
+                .then(response => {
+                    designerElement.src = "data:image/png;base64," + response;
+                })
+            break;
     }
 }
 
-function addElementToDesignerPane(zIndex, elementId, elementSensorValue, elementSensorUnit, sensorName, sensorType, positionX, positionY, elementTextConfig, elementImageConfig) {
+function addElementToDesignerPane(zIndex, elementId, elementSensorValue, elementSensorUnit, sensorName, sensorType, positionX, positionY, elementTextConfig, elementImageConfig, elementGraphConfig) {
     let designerElement;
     switch (sensorType) {
         default:
@@ -593,6 +702,19 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
             designerElement.style.height = elementImageConfig.image_height + "px";
             designerElement.src = toTauriAssetPath(elementImageConfig.image_path);
             break;
+        case "graph":
+            designerElement = document.createElement("img");
+
+            designerElement.style.width = elementGraphConfig.width + "px";
+            designerElement.style.height = elementGraphConfig.height + "px";
+            invoke('get_graph_preview_image', {
+                networkDeviceId: currentNetworkDeviceId,
+                sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
+                graphConfig: getGraphConfig(lastSelectedListElement)
+            })
+                .then(response => {
+                    designerElement.src = "data:image/png;base64," + response;
+                })
     }
 
     designerElement.id = DESIGNER_ID_PREFIX + elementId;
@@ -641,21 +763,41 @@ function saveDeviceConfig() {
     if (document.getElementById(LIST_ID_PREFIX + calculatedId) !== null) {
         updateElement(calculatedId);
     } else {
-        // Add new element to list
-        const selectedSensor = cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex];
+        // If selected element type is text use cmbSensorIdSelection
+        // If selected element type is static-image use cmbSensorIdSelection
+        // If selected element type is graph use cmbNumberSensorIdSelection
+        let selectedSensor = cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex];
+        if (cmbElementType.value === "graph") {
+            selectedSensor = cmbNumberSensorIdSelection.options[cmbNumberSensorIdSelection.selectedIndex];
+        }
+
+        // Read generic element values
         const elementName = txtElementName.value;
         const elementType = cmbElementType.value;
-        const elementTextFormat = txtElementTextFormat.value;
         const sensorId = selectedSensor.value;
         const sensorValue = selectedSensor.title;
         const sensorUnit = selectedSensor.getAttribute("data-unit");
-        let positionX = txtElementPositionX.value;
-        let positionY = txtElementPositionY.value;
-        let elementFontSize = txtElementFontSize.value;
-        let elementFontColor = txtElementFontColor.value;
-        let elementStaticImage = txtElementStaticImageFile.value;
-        let elementStaticImageWidth = txtElementStaticImageWidth.value;
-        let elementStaticImageHeight = txtElementStaticImageHeight.value;
+        const positionX = txtElementPositionX.value;
+        const positionY = txtElementPositionY.value;
+
+        // Read text config
+        const elementTextFormat = txtElementTextFormat.value;
+        const elementFontSize = txtElementFontSize.value;
+        const elementFontColor = txtElementFontColor.value;
+
+        // Read image config
+        const elementStaticImage = txtElementStaticImageFile.value;
+        const elementStaticImageWidth = txtElementStaticImageWidth.value;
+        const elementStaticImageHeight = txtElementStaticImageHeight.value;
+
+        // Read graph config
+        const elementGraphWidth = txtElementGraphWidth.value;
+        const elementGraphHeight = txtElementGraphHeight.value;
+        const elementGraphType = cmbElementGraphType.value;
+        const elementGraphColor = txtElementGraphColor.value;
+        const elementGraphStrokeWidth = txtElementGraphStrokeWidth.value;
+        const elementGraphBackgroundColor = txtElementGraphBackgroundColor.value;
+        const elementGraphBorderColor = txtElementGraphBorderColor.value;
 
         // build text config object
         let textConfig = {
@@ -671,12 +813,23 @@ function saveDeviceConfig() {
             image_path: elementStaticImage,
         }
 
+        // build graph config object
+        let graphConfig = {
+            width: elementGraphWidth,
+            height: elementGraphHeight,
+            graph_type: elementGraphType,
+            graph_color: elementGraphColor,
+            graph_stroke_width: elementGraphStrokeWidth,
+            background_color: elementGraphBackgroundColor,
+            border_color: elementGraphBorderColor,
+        }
+
         // Create new li element
-        addElementToList(calculatedId, sensorId, positionX, positionY, elementName, elementType, textConfig, imageConfig);
+        addElementToList(calculatedId, sensorId, positionX, positionY, elementName, elementType, textConfig, imageConfig, graphConfig);
 
         // Build designer element
         const index = lstDesignerPlacedElements.childElementCount;
-        addElementToDesignerPane(index, calculatedId, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, textConfig, imageConfig);
+        addElementToDesignerPane(index, calculatedId, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, textConfig, imageConfig, graphConfig);
 
         // Set the new li element as selected
         setSelectedElement(document.getElementById(LIST_ID_PREFIX + calculatedId));
@@ -732,6 +885,16 @@ function showLastSelectedElementDetail() {
     cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
     txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
     txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
+
+    // Graph
+    cmbNumberSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+    txtElementGraphWidth.value = lastSelectedListElement.getAttribute("data-element-graph-width");
+    txtElementGraphHeight.value = lastSelectedListElement.getAttribute("data-element-graph-height");
+    cmbElementGraphType.value = lastSelectedListElement.getAttribute("data-element-graph-type");
+    txtElementGraphColor.value = lastSelectedListElement.getAttribute("data-element-graph-color");
+    txtElementGraphStrokeWidth.value = lastSelectedListElement.getAttribute("data-element-graph-stroke-width");
+    txtElementGraphBackgroundColor.value = lastSelectedListElement.getAttribute("data-element-graph-background-color");
+    txtElementGraphBorderColor.value = lastSelectedListElement.getAttribute("data-element-graph-border-color");
 
     // Static image
     txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");

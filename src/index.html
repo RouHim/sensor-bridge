@@ -6,14 +6,16 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>SensorBridge</title>
 
+    <link href="libs/water-css-dark/dark.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="libs/coloris/coloris.min.css"/>
+    <script src="libs/coloris/coloris.min.js">
+    </script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
     <script defer src="script.js" type="module"></script>
-
-    <link href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet"/>
-
-    <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          rel="stylesheet"/>
 </head>
 
 <body>
@@ -153,7 +155,7 @@
                         <tr>
                             <td>Font color:</td>
                             <td>
-                                <input id="lcd-txt-element-font-color" type="color" value="#ffffff">
+                                <input id="lcd-txt-element-font-color" type="text" value="#ffffffff" data-coloris>
                             </td>
                         </tr>
                         </tbody>
@@ -177,15 +179,74 @@
                             <td>Width:</td>
                             <td><input id="lcd-txt-element-static-image-width" max="2147483647" min="0"
                                        type="number"
-                                       value="0"></td>
+                                       value="100"></td>
                         </tr>
                         <tr>
                             <td>Height:</td>
                             <td><input id="lcd-txt-element-static-image-height" max="2147483647" min="0"
-                                       type="number" value="0"></td>
+                                       type="number" value="100"></td>
                         </tr>
                         </tbody>
                     </table>
+
+                    <table id="lcd-graph-config" style="display: none;">
+                        <colgroup>
+                            <col span="1" style="width: 200px">
+                            <col span="1">
+                        </colgroup>
+                        <tbody>
+                        <tr>
+                            <td>Sensor:</td>
+                            <td><select id="lcd-cmb-number-sensor-id-selection"></select></td>
+                        </tr>
+                        <tr>
+                            <td>Graph width:</td>
+                            <td><input id="lcd-graph-width" max="2147483647" min="0" type="number"
+                                       value="200"></td>
+                        </tr>
+                        <tr>
+                            <td>Graph height:</td>
+                            <td><input id="lcd-graph-height" max="2147483647" min="0" type="number"
+                                       value="50"></td>
+                        </tr>
+                        <tr>
+                            <td>Graph type:</td>
+                            <td><select id="lcd-graph-type">
+                                <option selected value="line">Line</option>
+                                <option value="line-fill">Line filled</option>
+                            </select></td>
+                        </tr>
+                        <tr>
+                            <td>Graph color:</td>
+                            <td>
+                                <input id="lcd-graph-color" type="text" value="#000000ff" data-coloris>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Graph stroke width:</td>
+                            <td><input id="lcd-graph-stroke-width" max="2147483647" min="0" type="number"
+                                       value="1"></td>
+                        </tr>
+                        <tr>
+                            <td>Graph background color:</td>
+                            <td>
+                                <input id="lcd-graph-background-color" type="text" value="#00000000" data-coloris>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Graph border color:</td>
+                            <td>
+                                <input id="lcd-graph-border-color" type="text" value="#ffffff00" data-coloris>
+                            </td>
+                        </tr>
+
+                        </tbody>
+                    </table>
+
+                    <table id="lcd-conditional-image-config" style="display: none;">
+                        <!--TODO-->
+                    </table>
+
 
                 </div>
 

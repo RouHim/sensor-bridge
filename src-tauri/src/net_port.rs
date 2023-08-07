@@ -23,14 +23,18 @@ const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
 
 /// Opens a tcp socket to the specified address
-pub fn open(net_port_config: &NetPortConfig) -> (NodeHandler<()>, Endpoint) {
+pub fn open(net_port_config: &NetPortConfig) -> Option<(NodeHandler<()>, Endpoint)> {
     let (handler, _listener) = message_io::node::split::<()>();
     let tcp_endpoint = connect_to_tcp_socket(net_port_config, &handler);
-    (handler, tcp_endpoint)
+
+    tcp_endpoint.map(|endpoint| (handler, endpoint))
 }
 
 /// Establishes a tcp connection to the specified address
-fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<()>) -> Endpoint {
+fn connect_to_tcp_socket(
+    net_port_config: &NetPortConfig,
+    handler: &NodeHandler<()>,
+) -> Option<Endpoint> {
     let ip = resolve_hostname(net_port_config);
 
     if ip.is_none() {
@@ -39,14 +43,30 @@ fn connect_to_tcp_socket(net_port_config: &NetPortConfig, handler: &NodeHandler<
 
     let address = format!("{}:{NETWORK_PORT}", ip.unwrap());
 
-    info!("Connecting to device {}({})", net_port_config.name, address);
+    info!(
+        "Connecting to device {}({})",
+        net_port_config.name, &address
+    );
 
     // Blocks until the connection is established
-    handler
+    let endpoint = handler
         .network()
-        .connect_sync(Transport::FramedTcp, address)
-        .unwrap()
-        .0
+        .connect_sync(Transport::FramedTcp, &address);
+
+    // If not ok, print error and return none
+    match endpoint {
+        Ok(endpoint) => {
+            info!("Connected to device {}({})", net_port_config.name, &address);
+            Some(endpoint.0)
+        }
+        Err(_err) => {
+            error!(
+                "Could not connect to device {}({})",
+                net_port_config.name, &address
+            );
+            None
+        }
+    }
 }
 
 /// Resolves the name of the device to an ip address
@@ -78,16 +98,25 @@ fn resolve_hostname(net_port_config: &NetPortConfig) -> Option<String> {
 /// The thread will be stopped when the port_running_state_handle is set to false.
 /// The thread will be joined when the handle is dropped.
 pub fn start_sync(
+    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
     net_port_config: NetPortConfig,
     port_running_state_handle: Arc<Mutex<bool>>,
 ) -> Arc<thread::JoinHandle<()>> {
     let static_sensor_values = static_sensor_values.clone();
+    let sensor_value_history = sensor_value_history.clone();
 
     // Start new thread that writes to the remote tcp socket
     let handle = thread::spawn(move || {
-        // Open the named network port
-        let mut net_port = open(&net_port_config);
+        // Try to open the named network port
+        let mut net_port = match open(&net_port_config) {
+            Some((handler, endpoint)) => (handler, endpoint),
+            None => {
+                // Set the port_running_state_handle to false
+                *port_running_state_handle.lock().unwrap() = false;
+                return;
+            }
+        };
 
         // Prepare asset data
         let asset_data = prepare_assets(&net_port_config.lcd_config);
@@ -104,11 +133,11 @@ pub fn start_sync(
             let start_time = Instant::now();
 
             // Read sensor values
-            let sensor_values = sensor::read_all_sensor_values(&static_sensor_values);
+            sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
 
             // Serialize the transport struct to bytes using messagepack
             let data_to_send =
-                serialize_render_data(sensor_values, net_port_config.lcd_config.clone());
+                serialize_render_data(&sensor_value_history, net_port_config.lcd_config.clone());
 
             // Send to actual data to the remote tcp socket
             send_tcp_data(&net_port_config, &mut net_port, data_to_send);
@@ -198,11 +227,22 @@ fn send_tcp_data(
         }
         SendStatus::ResourceNotFound => {
             warn!(" Not found --> Reconnecting");
-            *net_port = open(net_port_config);
+            // ignore errors
+            *net_port = match open(net_port_config) {
+                Some((handler, endpoint)) => (handler, endpoint),
+                None => {
+                    return;
+                }
+            };
         }
         SendStatus::ResourceNotAvailable => {
             warn!(" Not available --> Reconnecting");
-            *net_port = open(net_port_config);
+            *net_port = match open(net_port_config) {
+                Some((handler, endpoint)) => (handler, endpoint),
+                None => {
+                    return;
+                }
+            }
         }
     }
 }
@@ -210,12 +250,15 @@ fn send_tcp_data(
 /// Serializes the sensor values and lcd config to a transport message.
 /// The transport message is then serialized to a byte vector.
 /// The byte vector is then sent to the remote tcp socket.
-fn serialize_render_data(sensor_values: Vec<SensorValue>, lcd_config: LcdConfig) -> Vec<u8> {
+fn serialize_render_data(
+    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    lcd_config: LcdConfig,
+) -> Vec<u8> {
     // Serialize data to render
     let mut data_to_render = Vec::new();
     RenderData {
         lcd_config,
-        sensor_values,
+        sensor_value_history: sensor_value_history.lock().unwrap().clone(),
     }
     .serialize(&mut Serializer::new(&mut data_to_render))
     .unwrap();

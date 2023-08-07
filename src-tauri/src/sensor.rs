@@ -8,6 +8,7 @@ use super_shell::RootShell;
 use crate::linux_dmidecode_sensors::DmiDecodeSensors;
 use crate::{
     linux_lm_sensors, linux_system_sensors, misc_sensor, windows_libre_hardware_monitor_sensor,
+    SENSOR_VALUE_HISTORY_SIZE,
 };
 use crate::{linux_mangohud, system_stat_sensor};
 
@@ -15,10 +16,13 @@ pub trait SensorProvider {
     fn get_name(&self) -> String;
 }
 
-pub fn read_all_sensor_values(static_sensor_values: &Arc<Vec<SensorValue>>) -> Vec<SensorValue> {
+pub fn read_all_sensor_values(
+    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    static_sensor_values: &Arc<Vec<SensorValue>>,
+) -> Vec<SensorValue> {
     let static_sensor_values = static_sensor_values.iter().cloned().collect();
 
-    thread::spawn(move || {
+    let collected_sensor_values = thread::spawn(move || {
         // Measurement that it took to read all sensors
         let start = std::time::Instant::now();
 
@@ -36,7 +40,17 @@ pub fn read_all_sensor_values(static_sensor_values: &Arc<Vec<SensorValue>>) -> V
         sensor_values
     })
     .join()
-    .unwrap()
+    .unwrap();
+
+    // Insert the collected sensor values at the beginning of the history
+    // and remove the last element if the history is too long
+    let mut sensor_value_history = sensor_value_history.lock().unwrap();
+    sensor_value_history.insert(0, collected_sensor_values.clone());
+    while sensor_value_history.len() > SENSOR_VALUE_HISTORY_SIZE {
+        sensor_value_history.pop();
+    }
+
+    collected_sensor_values
 }
 
 /// Reads the dynamic sensor values

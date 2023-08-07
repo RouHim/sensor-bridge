@@ -4,10 +4,11 @@
 )]
 
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
-use sensor_core::SensorValue;
+use sensor_core::{graph_renderer, GraphConfig, SensorValue};
 use super_shell::RootShell;
 use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
@@ -32,6 +33,7 @@ pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
     pub root_shell: Arc<Mutex<Option<RootShell>>>,
     pub static_sensor_values: Arc<Vec<SensorValue>>,
+    pub sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
 }
 
 pub struct ThreadHandle {
@@ -41,6 +43,9 @@ pub struct ThreadHandle {
 
 /// Name of the default window
 const WINDOW_NAME: &str = "main";
+
+// Number of elements to be stored in the sensor value history
+pub const SENSOR_VALUE_HISTORY_SIZE: usize = 2500;
 
 fn main() {
     // Initialize the logger
@@ -55,6 +60,9 @@ fn main() {
     // Read the static sensor values
     let static_sensor_values = Arc::new(sensor::read_static_sensor_values(&root_shell));
 
+    // Create sensor history vector
+    let sensor_value_history = Arc::new(Mutex::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
+
     // Load the config for all ports
     // If the port is active, start a sync thread
     // And report the handle to the app state
@@ -63,7 +71,11 @@ fn main() {
         .values()
         .filter(|net_config| net_config.active)
         .for_each(|net_config| {
-            let thread_handle = start_port_thread(&static_sensor_values, net_config.clone());
+            let thread_handle = start_port_thread(
+                &sensor_value_history,
+                &static_sensor_values,
+                net_config.clone(),
+            );
             app_state_network_handles
                 .lock()
                 .unwrap()
@@ -78,6 +90,7 @@ fn main() {
             port_handle: app_state_network_handles,
             root_shell: root_shell.clone(),
             static_sensor_values,
+            sensor_value_history,
         })
         .invoke_handler(tauri::generate_handler![
             get_sensor_values,
@@ -90,6 +103,7 @@ fn main() {
             disable_sync,
             toggle_lcd_live_preview,
             get_lcd_preview_image,
+            get_graph_preview_image,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -98,7 +112,10 @@ fn main() {
 
 #[tauri::command]
 fn get_sensor_values(app_state: State<AppState>) -> String {
-    let sensor_values = sensor::read_all_sensor_values(&app_state.static_sensor_values);
+    let sensor_values = sensor::read_all_sensor_values(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+    );
     serde_json::to_string(&sensor_values).unwrap()
 }
 
@@ -154,7 +171,11 @@ fn enable_sync(app_state: State<AppState>, network_device_id: String) {
 
     // Start the sync for the port and hand
     // This creates a new thread and returns a handle to it
-    let thread_handle = start_port_thread(&app_state.static_sensor_values, port_config);
+    let thread_handle = start_port_thread(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+        port_config,
+    );
 
     // Add the port handle to the app state
     app_state
@@ -167,11 +188,13 @@ fn enable_sync(app_state: State<AppState>, network_device_id: String) {
 /// Starts the sync thread for the specified port
 /// Returns a handle to the thread
 fn start_port_thread(
+    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
     port_config: NetPortConfig,
 ) -> ThreadHandle {
     let port_running_state_handle = Arc::new(Mutex::new(true));
     let port_handle = net_port::start_sync(
+        sensor_value_history,
         static_sensor_values,
         port_config,
         port_running_state_handle.clone(),
@@ -239,7 +262,6 @@ fn get_lcd_preview_image(
 ) -> String {
     let port_config: NetPortConfig = config::read(&network_device_id);
     let lcd_config = port_config.lcd_config;
-    let static_sensor_values = &app_state.static_sensor_values;
 
     // If the window is not visible, return an empty string
     let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
@@ -249,7 +271,37 @@ fn get_lcd_preview_image(
         }
     }
 
-    lcd_preview::render(static_sensor_values, lcd_config)
+    lcd_preview::render(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+        lcd_config,
+    )
+}
+
+#[tauri::command]
+fn get_graph_preview_image(
+    app_state: State<AppState>,
+    network_device_id: String,
+    sensor_id: &str,
+    mut graph_config: GraphConfig,
+) -> String {
+    let port_config: NetPortConfig = config::read(&network_device_id);
+    let _lcd_config = port_config.lcd_config;
+
+    sensor::read_all_sensor_values(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+    );
+
+    // Read and prepare sensor values
+    graph_config.sensor_values = sensor_core::extract_value_sequence(
+        app_state.sensor_value_history.lock().unwrap().deref(),
+        sensor_id,
+    );
+
+    let graph_data = graph_renderer::render(graph_config);
+    let engine = base64::engine::general_purpose::STANDARD;
+    base64::Engine::encode(&engine, graph_data)
 }
 
 /// Handle tauri window events

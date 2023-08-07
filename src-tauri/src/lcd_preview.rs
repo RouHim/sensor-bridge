@@ -1,5 +1,6 @@
 use log::info;
-use std::sync::Arc;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 
 use rayon::prelude::*;
@@ -78,16 +79,22 @@ fn prepare_assets(elements: Vec<LcdElement>) {
 /// Returns the lcd preview image for the specified com port as base64 encoded string
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to render the image
-pub fn render(static_sensor_values: &Arc<Vec<SensorValue>>, lcd_config: LcdConfig) -> String {
+pub fn render(
+    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    static_sensor_values: &Arc<Vec<SensorValue>>,
+    lcd_config: LcdConfig,
+) -> String {
     let static_sensor_values = static_sensor_values.clone();
+    let sensor_value_history = sensor_value_history.clone();
     let lcd_config = lcd_config.clone();
 
     thread::spawn(move || {
         // Read the sensor values
-        let sensor_values = sensor::read_all_sensor_values(&static_sensor_values);
+        sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
 
         // Render the image
-        let image = sensor_core::render_lcd_image(lcd_config, sensor_values);
+        let image =
+            sensor_core::render_lcd_image(lcd_config, sensor_value_history.lock().unwrap().deref());
 
         let buf = utils::rgb_to_jpeg_bytes(image);
 

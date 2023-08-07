@@ -62,7 +62,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
     let mut network_bytes: HashMap<String, (u64, u64)> = HashMap::new();
 
     for (iface_name, iface_data) in &network {
-        let net_data = system_stat.network_stats(&iface_name);
+        let net_data = system_stat.network_stats(iface_name);
         if net_data.is_err() {
             continue;
         }
@@ -273,7 +273,7 @@ fn get_memory_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
         },
         SensorValue {
             id: "memory_used_percentage".to_string(),
-            value: format!("{:.2}", mem_used as f64 / mem_total as f64 * 100.0),
+            value: format!("{:.2}", mem_used / mem_total * 100.0),
             label: "Used memory percentage".to_string(),
             unit: "%".to_string(),
             sensor_type: "percentage".to_string(),
