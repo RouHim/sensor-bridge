@@ -5,12 +5,10 @@ use std::path::PathBuf;
 
 use image::ImageFormat;
 use rayon::prelude::*;
-use rmp_serde::Serializer;
 use sensor_core::{
     is_image, ConditionalImageConfig, ElementType, LcdConfig, LcdElement,
     PrepareConditionalImageData, TransportMessage, TransportType,
 };
-use serde::Serialize;
 
 /// Unpacks the zip file to the .cache folder of the system for the current sensor_id.
 /// Cleans up the folder after unpacking.
@@ -178,18 +176,10 @@ fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
 /// and wraps it in a struct
 /// Returns the bytes to send
 pub fn serialize_preparation_data(data: PrepareConditionalImageData) -> Vec<u8> {
-    let mut asset_data = Vec::new();
-    data.serialize(&mut Serializer::new(&mut asset_data))
-        .unwrap();
-
-    let mut data_to_send = Vec::new();
     let transport_message = TransportMessage {
         transport_type: TransportType::PrepareConditionalImage,
-        data: asset_data,
+        data: bincode::serialize(&data).unwrap(),
     };
-    transport_message
-        .serialize(&mut Serializer::new(&mut data_to_send))
-        .unwrap();
 
-    data_to_send
+    bincode::serialize(&transport_message).unwrap()
 }

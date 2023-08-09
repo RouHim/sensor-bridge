@@ -7,9 +7,7 @@ use std::time::{Duration, Instant};
 use log::{debug, error, info, warn};
 use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
-use rmp_serde::Serializer;
 use sensor_core::{LcdConfig, RenderData, SensorValue, TransportMessage, TransportType};
-use serde::Serialize;
 
 use crate::config::NetPortConfig;
 use crate::{conditional_image, sensor, static_image, utils};
@@ -129,11 +127,12 @@ pub fn start_sync(
             let start_time = Instant::now();
 
             // Read sensor values
-            sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
+            let last_sensor_values =
+                sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
 
             // Serialize the transport struct to bytes using messagepack
             let data_to_send =
-                serialize_render_data(&sensor_value_history, net_port_config.lcd_config.clone());
+                serialize_render_data(net_port_config.lcd_config.clone(), last_sensor_values);
 
             // Send to actual data to the remote tcp socket
             send_tcp_data(&net_port_config, &mut net_port, data_to_send);
@@ -218,29 +217,21 @@ fn send_tcp_data(
 /// Serializes the sensor values and lcd config to a transport message.
 /// The transport message is then serialized to a byte vector.
 /// The byte vector is then sent to the remote tcp socket.
-fn serialize_render_data(
-    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
-    lcd_config: LcdConfig,
-) -> Vec<u8> {
+fn serialize_render_data(lcd_config: LcdConfig, last_sensor_values: Vec<SensorValue>) -> Vec<u8> {
     // Serialize data to render
-    let mut data_to_render = Vec::new();
-    RenderData {
+    let render_data = RenderData {
         lcd_config,
-        sensor_value_history: sensor_value_history.lock().unwrap().clone(),
-    }
-    .serialize(&mut Serializer::new(&mut data_to_render))
-    .unwrap();
+        sensor_values: last_sensor_values,
+    };
+    let render_data = bincode::serialize(&render_data).unwrap();
 
     // Serialize transport message
-    let mut data_to_send = Vec::new();
-    TransportMessage {
+    let transport_message = TransportMessage {
         transport_type: TransportType::RenderImage,
-        data: data_to_render,
-    }
-    .serialize(&mut Serializer::new(&mut data_to_send))
-    .unwrap();
+        data: render_data,
+    };
 
-    data_to_send
+    bincode::serialize(&transport_message).unwrap()
 }
 
 /// Waits for the remaining time of the update interval

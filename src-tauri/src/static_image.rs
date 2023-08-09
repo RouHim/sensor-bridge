@@ -2,12 +2,10 @@ use std::collections::HashMap;
 use std::fs;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use rmp_serde::Serializer;
 use sensor_core::{
     ElementType, ImageConfig, LcdConfig, LcdElement, PrepareStaticImageData, TransportMessage,
     TransportType,
 };
-use serde::Serialize;
 
 use crate::utils;
 
@@ -51,22 +49,12 @@ pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareStaticImageData {
 /// Serializes the render data to bytes using messagepack
 /// and wraps it in a TransportMessage
 /// Returns the bytes to send
-pub fn serialize(data: PrepareStaticImageData) -> Vec<u8> {
-    let mut asset_data = Vec::new();
-    data.serialize(&mut Serializer::new(&mut asset_data))
-        .unwrap();
-
-    let mut data_to_send = Vec::new();
+pub fn serialize(static_image_data: PrepareStaticImageData) -> Vec<u8> {
     let transport_message = TransportMessage {
         transport_type: TransportType::PrepareStaticImage,
-        data: asset_data,
+        data: bincode::serialize(&static_image_data).unwrap(),
     };
-
-    transport_message
-        .serialize(&mut Serializer::new(&mut data_to_send))
-        .unwrap();
-
-    data_to_send
+    bincode::serialize(&transport_message).unwrap()
 }
 
 /// Reads each image into memory, scales it to the desired resolution, and returns it

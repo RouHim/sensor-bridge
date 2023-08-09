@@ -50,7 +50,7 @@ pub struct ThreadHandle {
 const WINDOW_NAME: &str = "main";
 
 // Number of elements to be stored in the sensor value history
-pub const SENSOR_VALUE_HISTORY_SIZE: usize = 2500;
+pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
 
 fn main() {
     // Initialize the logger
