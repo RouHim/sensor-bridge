@@ -127,7 +127,7 @@
                                 <option selected value="text">Text</option>
                                 <option value="static-image">Static image</option>
                                 <option value="graph">Graph</option>
-                                <option value="conditional-image">Conditional image (gauge)</option>
+                                <option value="conditional-image">Conditional image (Gauge)</option>
                             </select></td>
                         </tr>
                         </tbody>
@@ -244,7 +244,51 @@
                     </table>
 
                     <table id="lcd-conditional-image-config" style="display: none;">
-                        <!--TODO-->
+                        <colgroup>
+                            <col span="1" style="width: 200px">
+                            <col span="1">
+                        </colgroup>
+                        <tbody>
+                        <tr>
+                            <td>Sensor:</td>
+                            <td><select id="lcd-cmb-conditional-image-sensor-id-selection"></select></td>
+                        </tr>
+                        <tr>
+                            <td>Image Package:</td>
+                            <td>
+                                <button class="icon-button" id="lcd-btn-conditional-image-select">
+                                    <i class="fas fa-file-upload"></i>
+                                </button>
+                                <button class="icon-button" id="lcd-btn-conditional-image-info">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <input id="lcd-txt-element-conditional-image-images-path">
+                            </td>
+                        </tr>
+                        <tr id="lcd-conditional-image-min-value-row">
+                            <td>Min sensor value:</td>
+                            <td><input id="lcd-txt-element-conditional-image-min-value" max="2147483647" min="0"
+                                       type="number"
+                                       value="0"></td>
+                        </tr>
+                        <tr id="lcd-conditional-image-max-value-row">
+                            <td>Max sensor value:</td>
+                            <td><input id="lcd-txt-element-conditional-image-max-value" max="2147483647" min="0"
+                                       type="number"
+                                       value="100"></td>
+                        </tr>
+                        <tr>
+                            <td>Image width:</td>
+                            <td><input id="lcd-txt-element-conditional-image-width" max="2147483647" min="0"
+                                       type="number"
+                                       value="100"></td>
+                        </tr>
+                        <tr>
+                            <td>Image height:</td>
+                            <td><input id="lcd-txt-element-conditional-image-height" max="2147483647" min="0"
+                                       type="number" value="100"></td>
+                        </tr>
+                        </tbody>
                     </table>
 
 

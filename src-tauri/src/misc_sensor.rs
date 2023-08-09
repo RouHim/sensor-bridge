@@ -1,4 +1,4 @@
-use sensor_core::SensorValue;
+use sensor_core::{SensorType, SensorValue};
 
 use crate::sensor;
 
@@ -24,6 +24,6 @@ fn get_system_time() -> Vec<SensorValue> {
         value: time,
         unit: "".to_string(),
         label: "System time".to_string(),
-        sensor_type: "text".to_string(),
+        sensor_type: SensorType::Text,
     }]
 }

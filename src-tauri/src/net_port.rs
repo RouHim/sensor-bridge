@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -8,16 +7,12 @@ use std::time::{Duration, Instant};
 use log::{debug, error, info, warn};
 use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
-use rayon::prelude::*;
 use rmp_serde::Serializer;
-use sensor_core::{
-    AssetData, ElementType, ImageConfig, LcdConfig, RenderData, SensorValue, TransportMessage,
-    TransportType,
-};
+use sensor_core::{LcdConfig, RenderData, SensorValue, TransportMessage, TransportType};
 use serde::Serialize;
 
 use crate::config::NetPortConfig;
-use crate::{sensor, utils};
+use crate::{conditional_image, sensor, static_image, utils};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
@@ -118,10 +113,11 @@ pub fn start_sync(
             }
         };
 
-        // Prepare asset data
-        let asset_data = prepare_assets(&net_port_config.lcd_config);
-        let data_to_send = serialize_asset_data(asset_data);
-        send_tcp_data(&net_port_config, &mut net_port, data_to_send);
+        // Prepare static image data
+        prepare_static_image_data_on_display(&net_port_config, &mut net_port);
+
+        // Prepare conditional image data
+        prepare_conditional_image_data_on_display(&net_port_config, &mut net_port);
 
         // Wait 1 seconds for the assets to be loaded
         info!("Waiting 1s for assets to be loaded...");
@@ -153,52 +149,24 @@ pub fn start_sync(
     Arc::new(handle)
 }
 
-/// Serializes the render data to bytes using messagepack
-/// and wraps it in a TransportMessage
-/// Returns the bytes to send
-fn serialize_asset_data(data: AssetData) -> Vec<u8> {
-    let mut asset_data = Vec::new();
-    data.serialize(&mut Serializer::new(&mut asset_data))
-        .unwrap();
-
-    let mut data_to_send = Vec::new();
-    TransportMessage {
-        transport_type: TransportType::PrepareData,
-        data: asset_data,
-    }
-    .serialize(&mut Serializer::new(&mut data_to_send))
-    .unwrap();
-
-    data_to_send
+/// Prepares the render data for the remote tcp socket
+fn prepare_static_image_data_on_display(
+    net_port_config: &NetPortConfig,
+    net_port: &mut (NodeHandler<()>, Endpoint),
+) {
+    let static_image_data = static_image::prepare_images(&net_port_config.lcd_config);
+    let data_to_send = static_image::serialize(static_image_data);
+    send_tcp_data(net_port_config, net_port, data_to_send);
 }
 
-/// Pre-renders assets
-fn prepare_assets(lcd_config: &LcdConfig) -> AssetData {
-    let image_data: HashMap<String, Vec<u8>> = lcd_config
-        .elements
-        .par_iter()
-        .filter(|element| element.element_type == ElementType::StaticImage)
-        .map(|element| prepare_image(&element.id, &element.image_config))
-        .collect();
-
-    AssetData {
-        asset_data: image_data,
-    }
-}
-
-/// Reads each image into memory, scales it to the desired resolution, and returns it
-fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, Vec<u8>) {
-    let image = image::open(&image_config.image_path).unwrap();
-    let image = image.resize_exact(
-        image_config.image_width,
-        image_config.image_height,
-        image::imageops::FilterType::Lanczos3,
-    );
-    // convert to png
-    let image_data = utils::rgba_to_png_bytes(image);
-
-    // Build response entry
-    (element_id.to_string(), image_data)
+/// Prepares the conditional image data and sends it to the remote tcp socket
+fn prepare_conditional_image_data_on_display(
+    net_port_config: &NetPortConfig,
+    net_port: &mut (NodeHandler<()>, Endpoint),
+) {
+    let conditional_image_data = conditional_image::prepare_images(&net_port_config.lcd_config);
+    let data_to_send = conditional_image::serialize_preparation_data(conditional_image_data);
+    send_tcp_data(net_port_config, net_port, data_to_send);
 }
 
 /// Sends the data to the remote tcp socket

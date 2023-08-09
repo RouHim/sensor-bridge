@@ -1,6 +1,9 @@
 #[cfg(target_os = "windows")]
 use std::collections::HashMap;
 
+#[cfg(target_os = "windows")]
+use sensor_core::SensorType;
+
 use sensor_core::SensorValue;
 
 #[cfg(target_os = "windows")]
@@ -103,25 +106,25 @@ fn to_sensor_value(
 }
 
 #[cfg(target_os = "windows")]
-fn match_sensor_type(sensor_type: &str) -> (String, String) {
+fn match_sensor_type(sensor_type: &str) -> (SensorType, String) {
     let (sensor_type, unit) = match sensor_type {
-        "Temperature" => ("number", "°C"),
-        "Throughput" => ("number", "B/s"),
-        "Load" => ("number", "%"),
-        "Data" => ("number", "B"),
-        "Power" => ("number", "W"),
-        "SmallData" => ("number", "B"),
-        "Clock" => ("number", "MHz"),
-        "Voltage" => ("number", "V"),
-        "Energy" => ("number", "mWh"),
-        "Control" => ("number", "RPM"),
-        "Level" => ("number", "%"),
-        "Factor" => ("number", ""),
-        "Current" => ("number", "A"),
-        _ => ("text", ""),
+        "Temperature" => (SensorType::Number, "°C"),
+        "Throughput" => (SensorType::Number, "B/s"),
+        "Load" => (SensorType::Number, "%"),
+        "Data" => (SensorType::Number, "B"),
+        "Power" => (SensorType::Number, "W"),
+        "SmallData" => (SensorType::Number, "B"),
+        "Clock" => (SensorType::Number, "MHz"),
+        "Voltage" => (SensorType::Number, "V"),
+        "Energy" => (SensorType::Number, "mWh"),
+        "Control" => (SensorType::Number, "RPM"),
+        "Level" => (SensorType::Number, "%"),
+        "Factor" => (SensorType::Number, ""),
+        "Current" => (SensorType::Number, "A"),
+        _ => (SensorType::Text, ""),
     };
 
-    (sensor_type.to_string(), unit.to_string())
+    (sensor_type, unit.to_string())
 }
 
 #[cfg(target_os = "windows")]

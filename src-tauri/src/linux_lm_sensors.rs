@@ -1,6 +1,6 @@
 #[cfg(target_os = "linux")]
 use lm_sensors::prelude::*;
-use sensor_core::SensorValue;
+use sensor_core::{SensorType, SensorValue};
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
@@ -48,7 +48,7 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
                     value: sensor_value.to_string(),
                     unit: sensor_unit,
                     label: sensor_label,
-                    sensor_type: "number".to_string(),
+                    sensor_type: SensorType::Number,
                 });
             }
         }

@@ -108,7 +108,7 @@ pub fn read_from_app_config() -> AppConfig {
 /// The config file is located in the systems config directory.
 /// The file name is config.json.
 fn get_config_path() -> String {
-    let app_config_path = dirs::config_dir().unwrap().join("sensor-bridge");
+    let app_config_path = sensor_core::get_config_dir();
 
     if !app_config_path.exists() {
         let _ = fs::create_dir_all(&app_config_path);

@@ -7,7 +7,7 @@ use std::thread;
 use std::time::Duration;
 
 use rayon::prelude::*;
-use sensor_core::SensorValue;
+use sensor_core::{SensorType, SensorValue};
 use systemstat::platform::PlatformImpl;
 use systemstat::IpAddr::{V4, V6};
 use systemstat::{Platform, System};
@@ -87,7 +87,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
                     value: ipv4.to_string(),
                     unit: "".to_string(),
                     label: format!("{} IP", iface_name),
-                    sensor_type: "text".to_string(),
+                    sensor_type: SensorType::Text,
                 });
             } else if let V6(ipv6) = net_address {
                 sensor_values.push(SensorValue {
@@ -95,7 +95,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
                     value: ipv6.to_string(),
                     unit: "".to_string(),
                     label: format!("{} IP", iface_name),
-                    sensor_type: "text".to_string(),
+                    sensor_type: SensorType::Text,
                 });
             }
         }
@@ -134,7 +134,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
             value: format!("{:.2}", dl_rate),
             unit: format!("{dl_rate_format}/s"),
             label: format!("{iface_name} download rate"),
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         });
 
         sensor_values.push(SensorValue {
@@ -142,7 +142,7 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
             value: format!("{:.2}", ul_rate),
             unit: format!("{ul_rate_format}/s"),
             label: format!("{iface_name} upload rate"),
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         });
     }
 
@@ -173,7 +173,7 @@ fn get_total_delayed_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
                 value: format!("{:.2}", total_cpu_load),
                 label: format!("CPU {} load", i),
                 unit: "%".to_string(),
-                sensor_type: "percentage".to_string(),
+                sensor_type: SensorType::Number,
             }
         })
         .collect();
@@ -184,7 +184,7 @@ fn get_total_delayed_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
         value: format!("{:.2}", total_cpu_load),
         unit: "%".to_string(),
         label: "Total CPU load".to_string(),
-        sensor_type: "percentage".to_string(),
+        sensor_type: SensorType::Number,
     });
 
     sensor_values
@@ -202,7 +202,7 @@ fn get_cpu_temp_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
         value: format!("{:.2}", cpu_temp.unwrap()),
         label: "CPU package temperature".to_string(),
         unit: "°C".to_string(),
-        sensor_type: "temperature".to_string(),
+        sensor_type: SensorType::Number,
     }]
 }
 
@@ -226,7 +226,7 @@ fn get_uptime_sensor(system_stat: &PlatformImpl) -> Vec<SensorValue> {
         ),
         label: "System uptime".to_string(),
         unit: "".to_string(),
-        sensor_type: "text".to_string(),
+        sensor_type: SensorType::Text,
     }]
 }
 
@@ -255,28 +255,28 @@ fn get_memory_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
             value: format!("{:.2}", mem_total),
             label: "Total memory".to_string(),
             unit: mem_total_unit,
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         },
         SensorValue {
             id: "memory_used".to_string(),
             value: format!("{:.2}", mem_used),
             label: "Used memory".to_string(),
             unit: mem_used_unit,
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         },
         SensorValue {
             id: "memory_free".to_string(),
             value: format!("{:.2}", mem_free),
             label: "Free memory".to_string(),
             unit: mem_free_unit,
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         },
         SensorValue {
             id: "memory_used_percentage".to_string(),
             value: format!("{:.2}", mem_used / mem_total * 100.0),
             label: "Used memory percentage".to_string(),
             unit: "%".to_string(),
-            sensor_type: "percentage".to_string(),
+            sensor_type: SensorType::Number,
         },
     ]
 }
@@ -326,14 +326,14 @@ fn get_disk_rw_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
                     value: format!("{:.2}", read),
                     label: format!("Disk {} read", disk.1.name),
                     unit: format!("{}/s", read_unit),
-                    sensor_type: "number".to_string(),
+                    sensor_type: SensorType::Number,
                 },
                 SensorValue {
                     id: format!("disk_write_{}", disk.1.name),
                     value: format!("{:.2}", write),
                     label: format!("Disk {} write", disk.1.name),
                     unit: format!("{}/s", write_unit),
-                    sensor_type: "number".to_string(),
+                    sensor_type: SensorType::Number,
                 },
             ]
         })

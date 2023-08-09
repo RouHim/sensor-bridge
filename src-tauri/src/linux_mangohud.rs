@@ -5,7 +5,7 @@ use std::io::BufRead;
 
 #[cfg(target_os = "linux")]
 use log::{debug, info, warn};
-use sensor_core::SensorValue;
+use sensor_core::{SensorType, SensorValue};
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
@@ -56,7 +56,7 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
                 value: format!("{:.2}", value),
                 unit,
                 label: format!("MangoHUD {}", header.replace('_', " ")),
-                sensor_type: "number".to_string(),
+                sensor_type: SensorType::Number,
             }
         })
         .collect()

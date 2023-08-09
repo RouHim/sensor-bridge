@@ -3,12 +3,15 @@
     windows_subsystem = "windows"
 )]
 
+use log::error;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::thread;
+use std::{fs, thread};
 
-use sensor_core::{graph_renderer, GraphConfig, SensorValue};
+use sensor_core::{
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig, SensorValue,
+};
 use super_shell::RootShell;
 use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
@@ -16,6 +19,7 @@ use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 use crate::config::{AppConfig, NetPortConfig};
 
+mod conditional_image;
 mod config;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
@@ -25,6 +29,7 @@ mod linux_system_sensors;
 mod misc_sensor;
 mod net_port;
 mod sensor;
+mod static_image;
 mod system_stat_sensor;
 mod utils;
 mod windows_libre_hardware_monitor_sensor;
@@ -50,6 +55,9 @@ pub const SENSOR_VALUE_HISTORY_SIZE: usize = 2500;
 fn main() {
     // Initialize the logger
     env_logger::init();
+
+    // Cleanup cache dir
+    fs::remove_dir_all(sensor_core::get_cache_base_dir()).unwrap_or_default();
 
     // Request root shell
     let root_shell = Arc::new(Mutex::new(RootShell::new()));
@@ -104,6 +112,7 @@ fn main() {
             toggle_lcd_live_preview,
             get_lcd_preview_image,
             get_graph_preview_image,
+            get_conditional_image_preview_image,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -281,13 +290,9 @@ fn get_lcd_preview_image(
 #[tauri::command]
 fn get_graph_preview_image(
     app_state: State<AppState>,
-    network_device_id: String,
     sensor_id: &str,
     mut graph_config: GraphConfig,
 ) -> String {
-    let port_config: NetPortConfig = config::read(&network_device_id);
-    let _lcd_config = port_config.lcd_config;
-
     sensor::read_all_sensor_values(
         &app_state.sensor_value_history,
         &app_state.static_sensor_values,
@@ -300,6 +305,47 @@ fn get_graph_preview_image(
     );
 
     let graph_data = graph_renderer::render(graph_config);
+    let engine = base64::engine::general_purpose::STANDARD;
+    base64::Engine::encode(&engine, graph_data)
+}
+
+#[tauri::command]
+fn get_conditional_image_preview_image(
+    app_state: State<AppState>,
+    element_id: &str,
+    sensor_id: &str,
+    mut conditional_image_config: ConditionalImageConfig,
+) -> String {
+    let sensor_values = sensor::read_all_sensor_values(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+    );
+
+    // Filter sensor values for provided sensor id
+    let sensor_value = sensor_values
+        .iter()
+        .find(|sensor_value| sensor_value.id == sensor_id)
+        .unwrap();
+
+    conditional_image_config.sensor_value = sensor_value.value.clone();
+
+    // Extract zip to local cache folder
+
+    conditional_image_config.images_path =
+        conditional_image::prepare_element(element_id, &conditional_image_config);
+
+    let graph_data: Vec<u8> = match conditional_image_renderer::render(
+        element_id,
+        &sensor_value.sensor_type,
+        conditional_image_config,
+    ) {
+        Some(data) => data,
+        None => {
+            error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {}", sensor_value.value);
+            return String::new();
+        }
+    };
+
     let engine = base64::engine::general_purpose::STANDARD;
     base64::Engine::encode(&engine, graph_data)
 }

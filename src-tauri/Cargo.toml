@@ -24,11 +24,12 @@ message-io = { version = "0.17.0", default-features = false, features = ["tcp"] 
 uuid = { version = "1.4.1", features = ["v4"] }                                                                     # Generate UUID v4
 image = "0.24.6"                                                                                                    # Image processing
 chrono = "0.4.26"                                                                                                   # Time handling
-dirs = "5.0.1"                                                                                                      # Special folder handling
+#dirs = "5.0.1"                                                                                                      # Special folder handling
 log = "0.4.19"                                                                                                      # Logging
 env_logger = "0.10.0"                                                                                               # Logging
 super-shell = "1.2.0"                                                                                               # Privileged shell execution
 dns-lookup = "2.0.2"                                                                                                # DNS lookup
+zip-extract = "0.1.2"                                                                                               # Zip file handling
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]

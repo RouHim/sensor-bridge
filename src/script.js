@@ -1,14 +1,17 @@
 const {invoke, convertFileSrc} = window.__TAURI__.tauri;
 const {open} = window.__TAURI__.dialog;
 
+// Network port selection
 const cmbNetworkPorts = document.getElementById("main-network-ports-select");
 
+// Main buttons
 const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
 const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
 const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
 const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
 const btnTransferActive = document.getElementById("main-chk-transfer-active");
 
+// LCD designer
 const txtDeviceName = document.getElementById("lcd-txt-device-name");
 const txtDeviceNetworkAddress = document.getElementById("lcd-txt-device-network-address");
 const txtLcdResolutionWidth = document.getElementById("lcd-txt-resolution-width");
@@ -18,26 +21,31 @@ const btnSaveElement = document.getElementById("lcd-btn-save-element");
 const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 
+// Config panes
 const layoutTextConfig = document.getElementById("lcd-text-config");
 const layoutStaticImageConfig = document.getElementById("lcd-static-image-config");
 const layoutGraphConfig = document.getElementById("lcd-graph-config");
 const layoutConditionalImageConfig = document.getElementById("lcd-conditional-image-config");
 
+// Generic element
 const txtElementName = document.getElementById("lcd-txt-element-name");
 const cmbElementType = document.getElementById("lcd-cmb-element-type");
 const txtElementPositionX = document.getElementById("lcd-txt-element-position-x");
 const txtElementPositionY = document.getElementById("lcd-txt-element-position-y");
 const cmbSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
 
+// Text
 const txtElementTextFormat = document.getElementById("lcd-txt-element-text-format");
 const txtElementFontSize = document.getElementById("lcd-txt-element-font-size");
 const txtElementFontColor = document.getElementById("lcd-txt-element-font-color");
 
+// Static image
 const btnElementSelectStaticImage = document.getElementById("lcd-btn-static-image-select");
 const txtElementStaticImageFile = document.getElementById("lcd-txt-element-static-image-file");
 const txtElementStaticImageWidth = document.getElementById("lcd-txt-element-static-image-width");
 const txtElementStaticImageHeight = document.getElementById("lcd-txt-element-static-image-height");
 
+// Graph
 const cmbNumberSensorIdSelection = document.getElementById("lcd-cmb-number-sensor-id-selection");
 const txtElementGraphWidth = document.getElementById("lcd-graph-width");
 const txtElementGraphHeight = document.getElementById("lcd-graph-height");
@@ -46,18 +54,27 @@ const txtElementGraphColor = document.getElementById("lcd-graph-color");
 const txtElementGraphStrokeWidth = document.getElementById("lcd-graph-stroke-width");
 const txtElementGraphBackgroundColor = document.getElementById("lcd-graph-background-color");
 const txtElementGraphBorderColor = document.getElementById("lcd-graph-border-color");
+const btnElementConditionalImageInfo = document.getElementById("lcd-btn-conditional-image-info");
 
+// Conditional image
+const cmbConditionalImageSensorIdSelection = document.getElementById("lcd-cmb-conditional-image-sensor-id-selection");
+const btnElementSelectConditionalImage = document.getElementById("lcd-btn-conditional-image-select");
+const txtElementConditionalImageImagesPath = document.getElementById("lcd-txt-element-conditional-image-images-path");
+const txtElementConditionalImageMinValue = document.getElementById("lcd-txt-element-conditional-image-min-value");
+const txtElementConditionalImageMaxValue = document.getElementById("lcd-txt-element-conditional-image-max-value");
+const txtElementConditionalImageWidth = document.getElementById("lcd-txt-element-conditional-image-width");
+const txtElementConditionalImageHeight = document.getElementById("lcd-txt-element-conditional-image-height");
 
+// Global variables
 let sensorValues = [];
 let lastSelectedListElement = null;
 let lastSelectedDesignerElement = null;
+let draggedLiElement;
+let currentNetworkDeviceId = null;
 
+// Global constants
 const DESIGNER_ID_PREFIX = "designer-";
 const LIST_ID_PREFIX = "list-";
-
-let draggedLiElement;
-
-let currentNetworkDeviceId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
     // Configure color picker
@@ -87,6 +104,8 @@ window.addEventListener("DOMContentLoaded", () => {
     btnRemoveElement.addEventListener("click", removeElement);
     cmbElementType.addEventListener("change", onElementTypeChange);
     btnElementSelectStaticImage.addEventListener("click", selectStaticImage);
+    btnElementConditionalImageInfo.addEventListener("click", () => showConditionalImageInfo());
+    btnElementSelectConditionalImage.addEventListener("click", selectConditionalImage);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
@@ -101,6 +120,20 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+/// Show an info dialog which explains how to use conditional image upload
+function showConditionalImageInfo() {
+    alert(
+        "To upload a conditional image, you need to create a zip file which contains all images you want to use.\n\n" +
+        "The images must be named like this: '{sensor_value}.{extension}'.\n" +
+        "Example: '20.png' or '20.0.jpg' or 'enabled.gif or 'Full.bmp'\n\n" +
+        "The sensor value can be a number or text representing the current state of a sensor value. " +
+        "If the sensor value is a number, the image with the closest value will be used. " +
+        "If the sensor value is text, the image with the most similar text will be used.\n\n" +
+        "The extension can be any image extension like 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tga', 'tiff', 'ico'.\n\n" +
+        "The zip file must contain at least one image."
+    )
+}
+
 async function selectStaticImage() {
     open({
         multiple: false,
@@ -113,6 +146,25 @@ async function selectStaticImage() {
         (selected) => {
             if (typeof selected === "string" && selected !== "") {
                 txtElementStaticImageFile.value = selected;
+            } else {
+                console.log("No file selected");
+            }
+        }
+    )
+}
+
+async function selectConditionalImage() {
+    open({
+        multiple: false,
+        directory: false,
+        filters: [{
+            name: 'Select conditional image package',
+            extensions: ["zip"],
+        }]
+    }).then(
+        (selected) => {
+            if (selected !== "") {
+                txtElementConditionalImageImagesPath.value = selected;
             } else {
                 console.log("No file selected");
             }
@@ -241,7 +293,7 @@ function getGraphConfig(listItem) {
     const elementGraphBackgroundColor = listItem.getAttribute("data-element-graph-background-color");
     const elementGraphBorderColor = listItem.getAttribute("data-element-graph-border-color");
 
-    // Build GraphConfig object
+    // Build GraphConfig struct
     return {
         width: elementGraphWidth,
         height: elementGraphHeight,
@@ -254,6 +306,27 @@ function getGraphConfig(listItem) {
     };
 }
 
+function getConditionalImageConfig(listItem) {
+    // Get conditional image config attributes
+    const sensorId = listItem.getAttribute("data-sensor-id");
+    const elementConditionalImageImagesPath = listItem.getAttribute("data-element-conditional-image-images-path");
+    const elementConditionalImageWidth = parseInt(listItem.getAttribute("data-element-conditional-image-width"));
+    const elementConditionalImageHeight = parseInt(listItem.getAttribute("data-element-conditional-image-height"));
+    const elementConditionalImageMinValue = parseInt(listItem.getAttribute("data-element-conditional-image-min-value"));
+    const elementConditionalImageMaxValue = parseInt(listItem.getAttribute("data-element-conditional-image-max-value"));
+
+    // Build ConditionalImageConfig struct
+    return {
+        sensor_id: sensorId,
+        sensor_value: "",
+        images_path: elementConditionalImageImagesPath,
+        min_sensor_value: elementConditionalImageMinValue,
+        max_sensor_value: elementConditionalImageMaxValue,
+        width: elementConditionalImageWidth,
+        height: elementConditionalImageHeight,
+    };
+}
+
 function getImageConfig(listItem) {
     // Get image config attributes
     const elementStaticImage = listItem.getAttribute("data-element-static-image");
@@ -262,8 +335,8 @@ function getImageConfig(listItem) {
 
     // Build ImageConfig object
     return {
-        image_width: elementStaticImageWidth,
-        image_height: elementStaticImageHeight,
+        width: elementStaticImageWidth,
+        height: elementStaticImageHeight,
         image_path: elementStaticImage,
     };
 }
@@ -310,8 +383,9 @@ function saveConfig() {
         const textConfig = getTextConfig(listItem);
         const imageConfig = getImageConfig(listItem);
         const graphConfig = getGraphConfig(listItem);
+        const conditionalImageConfig = getConditionalImageConfig(listItem);
 
-        // Build display element
+        // Build lcd element
         return {
             id: elementId,
             name: elementName,
@@ -322,6 +396,7 @@ function saveConfig() {
             text_config: textConfig,
             image_config: imageConfig,
             graph_config: graphConfig,
+            conditional_image_config: conditionalImageConfig,
         };
     });
 
@@ -410,10 +485,10 @@ function loadLcdConfig(networkDeviceId) {
                 let sensorUnit = sensor ? sensor.unit : "";
 
                 // Add element to list
-                addElementToList(element.id, element.sensor_id, element.x, element.y, element.name, element.element_type, element.text_config, element.image_config, element.graph_config);
+                addElementToList(element.id, element.sensor_id, element.x, element.y, element.name, element.element_type, element.text_config, element.image_config, element.graph_config, element.conditional_image_config);
 
                 // Add element to designer pane
-                addElementToDesignerPane(index, element.id, sensorValue, sensorUnit, element.name, element.element_type, element.x, element.y, element.text_config, element.image_config, element.graph_config);
+                addElementToDesignerPane(index, element.id, sensorValue, sensorUnit, element.name, element.element_type, element.x, element.y, element.text_config, element.image_config, element.graph_config, element.conditional_image_config);
             });
 
             // If there are elements, select the first one
@@ -428,7 +503,7 @@ function loadLcdConfig(networkDeviceId) {
     );
 }
 
-function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig, elementGraphConfig) {
+function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig, elementGraphConfig, elementConditionalImageConfig) {
     const liElement = document.createElement("li");
 
     // Element config
@@ -447,8 +522,8 @@ function addElementToList(elementId, sensorId, positionX, positionY, elementName
 
     // Image config
     liElement.setAttribute("data-element-static-image", elementImageConfig.image_path);
-    liElement.setAttribute("data-element-static-image-width", elementImageConfig.image_width);
-    liElement.setAttribute("data-element-static-image-height", elementImageConfig.image_height);
+    liElement.setAttribute("data-element-static-image-width", elementImageConfig.width);
+    liElement.setAttribute("data-element-static-image-height", elementImageConfig.height);
 
     // Graph config
     liElement.setAttribute("data-element-graph-width", elementGraphConfig.width);
@@ -458,6 +533,13 @@ function addElementToList(elementId, sensorId, positionX, positionY, elementName
     liElement.setAttribute("data-element-graph-stroke-width", elementGraphConfig.graph_stroke_width);
     liElement.setAttribute("data-element-graph-background-color", elementGraphConfig.background_color);
     liElement.setAttribute("data-element-graph-border-color", elementGraphConfig.border_color);
+
+    // Conditional image config
+    liElement.setAttribute("data-element-conditional-image-images-path", elementConditionalImageConfig.images_path);
+    liElement.setAttribute("data-element-conditional-image-min-value", elementConditionalImageConfig.min_sensor_value);
+    liElement.setAttribute("data-element-conditional-image-max-value", elementConditionalImageConfig.max_sensor_value);
+    liElement.setAttribute("data-element-conditional-image-width", elementConditionalImageConfig.width);
+    liElement.setAttribute("data-element-conditional-image-height", elementConditionalImageConfig.height);
 
     // Build li element
     liElement.innerHTML = elementName;
@@ -491,6 +573,11 @@ function loadSensorValues() {
 
             // Add sensor values to the sensor value combo box
             cmbSensorIdSelection.innerHTML = sensorValues.map(
+                (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
+            ).join("");
+
+            // Add sensor values to cmbConditionalImageSensorIdSelection
+            cmbConditionalImageSensorIdSelection.innerHTML = sensorValues.map(
                 (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
             ).join("");
 
@@ -612,9 +699,12 @@ function updateElement(calculatedId) {
 
     // Get sensor id
     // If the element type is a graph, the sensor id is the number sensor id
+    // If the element type is a conditional image, the sensor id is the conditional image sensor id
     let sensorId = cmbSensorIdSelection.value;
     if (cmbElementType.value === "graph") {
         sensorId = cmbNumberSensorIdSelection.value;
+    } else if (cmbElementType.value === "conditional-image") {
+        sensorId = cmbConditionalImageSensorIdSelection.value;
     }
 
     // Update element config
@@ -644,6 +734,13 @@ function updateElement(calculatedId) {
     listEntryElement.setAttribute("data-element-graph-background-color", txtElementGraphBackgroundColor.value);
     listEntryElement.setAttribute("data-element-graph-border-color", txtElementGraphBorderColor.value);
 
+    // Conditional image config
+    listEntryElement.setAttribute("data-element-conditional-image-images-path", txtElementConditionalImageImagesPath.value);
+    listEntryElement.setAttribute("data-element-conditional-image-min-value", txtElementConditionalImageMinValue.value);
+    listEntryElement.setAttribute("data-element-conditional-image-max-value", txtElementConditionalImageMaxValue.value);
+    listEntryElement.setAttribute("data-element-conditional-image-width", txtElementConditionalImageWidth.value);
+    listEntryElement.setAttribute("data-element-conditional-image-height", txtElementConditionalImageHeight.value);
+
     listEntryElement.innerHTML = txtElementName.value;
 
     // Update element in the designer
@@ -671,9 +768,20 @@ function updateElement(calculatedId) {
             designerElement.style.width = txtElementGraphWidth.value + "px";
             designerElement.style.height = txtElementGraphHeight.value + "px";
             invoke('get_graph_preview_image', {
-                networkDeviceId: currentNetworkDeviceId,
                 sensorId: sensorId,
                 graphConfig: getGraphConfig(listEntryElement)
+            })
+                .then(response => {
+                    designerElement.src = "data:image/png;base64," + response;
+                })
+            break;
+        case "conditional-image":
+            designerElement.style.width = txtElementConditionalImageWidth.value + "px";
+            designerElement.style.height = txtElementConditionalImageHeight.value + "px";
+            invoke('get_conditional_image_preview_image', {
+                elementId: calculatedId,
+                sensorId: sensorId,
+                conditionalImageConfig: getConditionalImageConfig(listEntryElement)
             })
                 .then(response => {
                     designerElement.src = "data:image/png;base64," + response;
@@ -682,7 +790,7 @@ function updateElement(calculatedId) {
     }
 }
 
-function addElementToDesignerPane(zIndex, elementId, elementSensorValue, elementSensorUnit, sensorName, sensorType, positionX, positionY, elementTextConfig, elementImageConfig, elementGraphConfig) {
+function addElementToDesignerPane(zIndex, elementId, elementSensorValue, elementSensorUnit, sensorName, sensorType, positionX, positionY, elementTextConfig, elementImageConfig, elementGraphConfig, elementConditionalImageConfig) {
     let designerElement;
     switch (sensorType) {
         default:
@@ -698,8 +806,8 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
         case "static-image":
             designerElement = document.createElement("img");
 
-            designerElement.style.width = elementImageConfig.image_width + "px";
-            designerElement.style.height = elementImageConfig.image_height + "px";
+            designerElement.style.width = elementImageConfig.width + "px";
+            designerElement.style.height = elementImageConfig.height + "px";
             designerElement.src = toTauriAssetPath(elementImageConfig.image_path);
             break;
         case "graph":
@@ -711,10 +819,23 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
                 networkDeviceId: currentNetworkDeviceId,
                 sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
                 graphConfig: getGraphConfig(lastSelectedListElement)
+            }).then(response => {
+                designerElement.src = "data:image/png;base64," + response;
             })
-                .then(response => {
-                    designerElement.src = "data:image/png;base64," + response;
-                })
+            break;
+        case "conditional-image":
+            designerElement = document.createElement("img");
+
+            designerElement.style.width = elementConditionalImageConfig.width + "px";
+            designerElement.style.height = elementConditionalImageConfig.height + "px";
+            invoke('get_conditional_image_preview_image', {
+                elementId: elementId,
+                sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
+                conditionalImageConfig: getConditionalImageConfig(lastSelectedListElement),
+            }).then(response => {
+                designerElement.src = "data:image/png;base64," + response;
+            })
+            break;
     }
 
     designerElement.id = DESIGNER_ID_PREFIX + elementId;
@@ -766,9 +887,12 @@ function saveDeviceConfig() {
         // If selected element type is text use cmbSensorIdSelection
         // If selected element type is static-image use cmbSensorIdSelection
         // If selected element type is graph use cmbNumberSensorIdSelection
+        // If selected element type is conditional-image use cmbConditionalImageSensorIdSelection
         let selectedSensor = cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex];
         if (cmbElementType.value === "graph") {
             selectedSensor = cmbNumberSensorIdSelection.options[cmbNumberSensorIdSelection.selectedIndex];
+        } else if (cmbElementType.value === "conditional-image") {
+            selectedSensor = cmbConditionalImageSensorIdSelection.options[cmbConditionalImageSensorIdSelection.selectedIndex];
         }
 
         // Read generic element values
@@ -799,6 +923,13 @@ function saveDeviceConfig() {
         const elementGraphBackgroundColor = txtElementGraphBackgroundColor.value;
         const elementGraphBorderColor = txtElementGraphBorderColor.value;
 
+        // Read conditional image config
+        const elementConditionalImageImagesPath = txtElementConditionalImageImagesPath.value;
+        const elementConditionalImageMinValue = txtElementConditionalImageMinValue.value;
+        const elementConditionalImageMaxValue = txtElementConditionalImageMaxValue.value;
+        const elementConditionalImageWidth = txtElementConditionalImageWidth.value;
+        const elementConditionalImageHeight = txtElementConditionalImageHeight.value;
+
         // build text config object
         let textConfig = {
             text_format: elementTextFormat,
@@ -808,8 +939,8 @@ function saveDeviceConfig() {
 
         // build image config object
         let imageConfig = {
-            image_width: elementStaticImageWidth,
-            image_height: elementStaticImageHeight,
+            width: elementStaticImageWidth,
+            height: elementStaticImageHeight,
             image_path: elementStaticImage,
         }
 
@@ -824,12 +955,21 @@ function saveDeviceConfig() {
             border_color: elementGraphBorderColor,
         }
 
+        // build conditional image config object
+        let conditionalImageConfig = {
+            images_path: elementConditionalImageImagesPath,
+            min_sensor_value: elementConditionalImageMinValue,
+            max_sensor_value: elementConditionalImageMaxValue,
+            width: elementConditionalImageWidth,
+            height: elementConditionalImageHeight,
+        }
+
         // Create new li element
-        addElementToList(calculatedId, sensorId, positionX, positionY, elementName, elementType, textConfig, imageConfig, graphConfig);
+        addElementToList(calculatedId, sensorId, positionX, positionY, elementName, elementType, textConfig, imageConfig, graphConfig, conditionalImageConfig);
 
         // Build designer element
         const index = lstDesignerPlacedElements.childElementCount;
-        addElementToDesignerPane(index, calculatedId, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, textConfig, imageConfig, graphConfig);
+        addElementToDesignerPane(index, calculatedId, sensorValue, sensorUnit, elementName, elementType, positionX, positionY, textConfig, imageConfig, graphConfig, conditionalImageConfig);
 
         // Set the new li element as selected
         setSelectedElement(document.getElementById(LIST_ID_PREFIX + calculatedId));
@@ -886,6 +1026,11 @@ function showLastSelectedElementDetail() {
     txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
     txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
 
+    // Static image
+    txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
+    txtElementStaticImageWidth.value = lastSelectedListElement.getAttribute("data-element-static-image-width");
+    txtElementStaticImageHeight.value = lastSelectedListElement.getAttribute("data-element-static-image-height");
+
     // Graph
     cmbNumberSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
     txtElementGraphWidth.value = lastSelectedListElement.getAttribute("data-element-graph-width");
@@ -896,10 +1041,13 @@ function showLastSelectedElementDetail() {
     txtElementGraphBackgroundColor.value = lastSelectedListElement.getAttribute("data-element-graph-background-color");
     txtElementGraphBorderColor.value = lastSelectedListElement.getAttribute("data-element-graph-border-color");
 
-    // Static image
-    txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
-    txtElementStaticImageWidth.value = lastSelectedListElement.getAttribute("data-element-static-image-width");
-    txtElementStaticImageHeight.value = lastSelectedListElement.getAttribute("data-element-static-image-height");
+    // Conditional image
+    cmbConditionalImageSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+    txtElementConditionalImageImagesPath.value = lastSelectedListElement.getAttribute("data-element-conditional-image-images-path");
+    txtElementConditionalImageMinValue.value = lastSelectedListElement.getAttribute("data-element-conditional-image-min-value");
+    txtElementConditionalImageMaxValue.value = lastSelectedListElement.getAttribute("data-element-conditional-image-max-value");
+    txtElementConditionalImageWidth.value = lastSelectedListElement.getAttribute("data-element-conditional-image-width");
+    txtElementConditionalImageHeight.value = lastSelectedListElement.getAttribute("data-element-conditional-image-height");
 }
 
 function dropOnDesignerPane(event) {

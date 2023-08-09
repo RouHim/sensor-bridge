@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use dmidecode::{BaseBoard, Bios, EntryPoint, Structure};
 #[cfg(target_os = "linux")]
 use log::info;
-use sensor_core::SensorValue;
+use sensor_core::{SensorType, SensorValue};
 use super_shell::RootShell;
 
 pub struct DmiDecodeSensors {
@@ -74,21 +74,21 @@ fn parse_base_board(main_board: BaseBoard) -> Vec<SensorValue> {
             value: manufacturer.to_string(),
             unit: "".to_string(),
             label: "Mainboard Manufacturer".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: "main_board_product_name".to_string(),
             value: product_name.to_string(),
             unit: "".to_string(),
             label: "Mainboard Product Name".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: "main_board_version".to_string(),
             value: version.to_string(),
             unit: "".to_string(),
             label: "Mainboard Version".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
     ]
 }
@@ -113,35 +113,35 @@ fn parse_bios(bios: Bios) -> Vec<SensorValue> {
             value: bios_vendor.to_string(),
             unit: "".to_string(),
             label: "BIOS Vendor".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: "bios_version".to_string(),
             value: bios_version.to_string(),
             unit: "".to_string(),
             label: "BIOS Version".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: "bios_release_date".to_string(),
             value: bios_release_date.to_string(),
             unit: "".to_string(),
             label: "BIOS Release Date".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: "bios_revision".to_string(),
             value: bios_revision,
             unit: "".to_string(),
             label: "BIOS Revision".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: "firmware_revision".to_string(),
             value: firmware_revision,
             unit: "".to_string(),
             label: "Firmware Revision".to_string(),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
     ]
 }
@@ -165,21 +165,21 @@ fn parse_memory_device(memory_device: dmidecode::MemoryDevice) -> Vec<SensorValu
             value: format!("{memory_type}-{memory_speed} {form_factor} "),
             unit: "".to_string(),
             label: format!("{manufacturer} {memory_part_number} {device_location} Memory type"),
-            sensor_type: "text".to_string(),
+            sensor_type: SensorType::Text,
         },
         SensorValue {
             id: format!("memory_device_{device_location}_memory_speed"),
             value: memory_speed.to_string(),
             unit: "".to_string(),
             label: format!("{manufacturer} {memory_part_number} {device_location} Memory speed"),
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         },
         SensorValue {
             id: format!("memory_device_{device_location}_memory_voltage"),
             value: format!("{memory_voltage}"),
             unit: "V".to_string(),
             label: format!("{manufacturer} {memory_part_number} {device_location} Memory voltage"),
-            sensor_type: "number".to_string(),
+            sensor_type: SensorType::Number,
         },
     ]
 }

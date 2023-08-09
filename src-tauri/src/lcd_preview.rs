@@ -1,14 +1,14 @@
-use log::info;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
-use std::{fs, thread};
+use std::thread;
 
+use log::info;
 use rayon::prelude::*;
 use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
 use tauri::AppHandle;
 
 use crate::config::NetPortConfig;
-use crate::{sensor, utils};
+use crate::{conditional_image, sensor, static_image, utils};
 
 /// Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd_preview";
@@ -51,28 +51,19 @@ pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
 /// Prepares the static assets for the lcd preview window
 fn prepare_assets(elements: Vec<LcdElement>) {
     // Ensure data folder exists and is empty
-    fs::remove_dir_all(sensor_core::ASSET_DATA_DIR).unwrap_or_default(); // Ignore errors
-    fs::create_dir_all(sensor_core::ASSET_DATA_DIR).unwrap();
 
     elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .for_each(|element| {
-            // Render image to desired size
-            let image_config = &element.image_config;
-            let image = image::open(&image_config.image_path).unwrap();
-            let image = image.resize_exact(
-                image_config.image_width,
-                image_config.image_height,
-                image::imageops::FilterType::Lanczos3,
-            );
+            static_image::prepare(element);
+        });
 
-            // Convert to png
-            let image_data = utils::rgba_to_png_bytes(image);
-
-            // Save to data folder
-            let target_path = format!("{}/{}", sensor_core::ASSET_DATA_DIR, element.id);
-            fs::write(target_path, image_data).unwrap();
+    elements
+        .par_iter()
+        .filter(|element| element.element_type == ElementType::ConditionalImage)
+        .for_each(|element| {
+            conditional_image::prepare_element(&element.id, &element.conditional_image_config);
         });
 }
 
