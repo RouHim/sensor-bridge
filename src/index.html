@@ -199,6 +199,18 @@
                             <td>Sensor:</td>
                             <td><select id="lcd-cmb-number-sensor-id-selection"></select></td>
                         </tr>
+                        <tr title="If not set manually, the upper and lower graph bounds are automatically calculated from the sensor values." style="display: none;">
+                            <td>Min. sensor value:</td>
+                            <td><input id="lcd-txt-element-graph-min-value" max="2147483647" min="0" type="number"
+                                       value="">
+                            </td>
+                        </tr>
+                        <tr title="If not set manually, the upper and lower graph bounds are automatically calculated from the sensor values." style="display: none">
+                            <td>Max. sensor value:</td>
+                            <td><input id="lcd-txt-element-graph-max-value" max="2147483647" min="0" type="number"
+                                       value="">
+                            </td>
+                        </tr>
                         <tr>
                             <td>Graph width:</td>
                             <td><input id="lcd-graph-width" max="2147483647" min="0" type="number"
@@ -266,13 +278,13 @@
                             </td>
                         </tr>
                         <tr id="lcd-conditional-image-min-value-row">
-                            <td>Min sensor value:</td>
+                            <td>Min. sensor value:</td>
                             <td><input id="lcd-txt-element-conditional-image-min-value" max="2147483647" min="0"
                                        type="number"
                                        value="0"></td>
                         </tr>
                         <tr id="lcd-conditional-image-max-value-row">
-                            <td>Max sensor value:</td>
+                            <td>Max. sensor value:</td>
                             <td><input id="lcd-txt-element-conditional-image-max-value" max="2147483647" min="0"
                                        type="number"
                                        value="100"></td>

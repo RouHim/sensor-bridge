@@ -47,6 +47,8 @@ const txtElementStaticImageHeight = document.getElementById("lcd-txt-element-sta
 
 // Graph
 const cmbNumberSensorIdSelection = document.getElementById("lcd-cmb-number-sensor-id-selection");
+const txtElementGraphMinValue = document.getElementById("lcd-txt-element-graph-min-value");
+const txtElementGraphMaxValue = document.getElementById("lcd-txt-element-graph-max-value");
 const txtElementGraphWidth = document.getElementById("lcd-graph-width");
 const txtElementGraphHeight = document.getElementById("lcd-graph-height");
 const cmbElementGraphType = document.getElementById("lcd-graph-type");
@@ -285,6 +287,8 @@ function addNetworkDeviceToList(id, name) {
 
 function getGraphConfig(listItem) {
     // Get graph config attributes
+    const elementGraphMinSensorValue = parseInt(listItem.getAttribute("data-element-graph-min-sensor-value"));
+    const elementGraphMaxSensorValue = parseInt(listItem.getAttribute("data-element-graph-max-sensor-value"));
     const elementGraphWidth = parseInt(listItem.getAttribute("data-element-graph-width"));
     const elementGraphHeight = parseInt(listItem.getAttribute("data-element-graph-height"));
     const elementGraphType = listItem.getAttribute("data-element-graph-type");
@@ -295,6 +299,8 @@ function getGraphConfig(listItem) {
 
     // Build GraphConfig struct
     return {
+        min_sensor_value: elementGraphMinSensorValue,
+        max_sensor_value: elementGraphMaxSensorValue,
         width: elementGraphWidth,
         height: elementGraphHeight,
         graph_type: elementGraphType,
@@ -526,6 +532,8 @@ function addElementToList(elementId, sensorId, positionX, positionY, elementName
     liElement.setAttribute("data-element-static-image-height", elementImageConfig.height);
 
     // Graph config
+    liElement.setAttribute("data-element-graph-min-value", elementGraphConfig.min_sensor_value);
+    liElement.setAttribute("data-element-graph-max-value", elementGraphConfig.max_sensor_value);
     liElement.setAttribute("data-element-graph-width", elementGraphConfig.width);
     liElement.setAttribute("data-element-graph-height", elementGraphConfig.height);
     liElement.setAttribute("data-element-graph-type", elementGraphConfig.graph_type);
@@ -726,6 +734,8 @@ function updateElement(calculatedId) {
     listEntryElement.setAttribute("data-element-static-image-height", txtElementStaticImageHeight.value);
 
     // Graph config
+    listEntryElement.setAttribute("data-element-graph-min-value", txtElementGraphMinValue.value);
+    listEntryElement.setAttribute("data-element-graph-max-value", txtElementGraphMaxValue.value);
     listEntryElement.setAttribute("data-element-graph-width", txtElementGraphWidth.value);
     listEntryElement.setAttribute("data-element-graph-height", txtElementGraphHeight.value);
     listEntryElement.setAttribute("data-element-graph-type", cmbElementGraphType.value);
@@ -915,6 +925,8 @@ function saveDeviceConfig() {
         const elementStaticImageHeight = txtElementStaticImageHeight.value;
 
         // Read graph config
+        const elementGraphMinSensorValue = txtElementGraphMinValue.value;
+        const elementGraphMaxSensorValue = txtElementGraphMaxValue.value;
         const elementGraphWidth = txtElementGraphWidth.value;
         const elementGraphHeight = txtElementGraphHeight.value;
         const elementGraphType = cmbElementGraphType.value;
@@ -946,6 +958,8 @@ function saveDeviceConfig() {
 
         // build graph config object
         let graphConfig = {
+            min_sensor_value: elementGraphMinSensorValue,
+            max_sensor_value: elementGraphMaxSensorValue,
             width: elementGraphWidth,
             height: elementGraphHeight,
             graph_type: elementGraphType,
@@ -1033,6 +1047,8 @@ function showLastSelectedElementDetail() {
 
     // Graph
     cmbNumberSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+    txtElementGraphMinValue.value = lastSelectedListElement.getAttribute("data-element-graph-min-value");
+    txtElementGraphMaxValue.value = lastSelectedListElement.getAttribute("data-element-graph-max-value");
     txtElementGraphWidth.value = lastSelectedListElement.getAttribute("data-element-graph-width");
     txtElementGraphHeight.value = lastSelectedListElement.getAttribute("data-element-graph-height");
     cmbElementGraphType.value = lastSelectedListElement.getAttribute("data-element-graph-type");

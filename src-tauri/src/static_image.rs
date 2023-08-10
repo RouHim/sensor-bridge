@@ -9,6 +9,8 @@ use sensor_core::{
 
 use crate::utils;
 
+/// Pre-renders static images and saves them into the cache folder.
+/// Thus they can be loaded without modification from filesystem in the render loop.
 pub fn prepare(element: &LcdElement) {
     // Pre-Render image to desired size
     let image_config = &element.image_config;

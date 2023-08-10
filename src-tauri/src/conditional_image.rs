@@ -97,6 +97,7 @@ pub fn prepare_element(
     cache_folder_path.to_str().unwrap().to_string()
 }
 
+/// Finds all images in the given folder and its subfolders.
 fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
     let mut found_files: Vec<String> = vec![];
 
@@ -125,7 +126,7 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
     found_files
 }
 
-/// Pre-renders conditional images and returns the data to send
+/// Pre-renders conditional images and returns the data to send.
 pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareConditionalImageData {
     let conditional_image_elements: Vec<&LcdElement> = lcd_config
         .elements
@@ -149,8 +150,8 @@ pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareConditionalImageData {
     }
 }
 
-/// Collects conditional image data for the specified element
-/// Returns a hashmap with the image name as key and the image data as value
+/// Collects conditional image data for the specified element.
+/// Returns a hashmap with the image name as key and the image data as value.
 fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
     let mut image_series: HashMap<String, Vec<u8>> = HashMap::new();
 
@@ -173,8 +174,8 @@ fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
 }
 
 /// Serializes the render data to bytes using messagepack
-/// and wraps it in a struct
-/// Returns the bytes to send
+/// and wraps it in a struct.
+/// Returns the bytes to send.
 pub fn serialize_preparation_data(data: PrepareConditionalImageData) -> Vec<u8> {
     let transport_message = TransportMessage {
         transport_type: TransportType::PrepareConditionalImage,
