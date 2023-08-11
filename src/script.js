@@ -287,8 +287,8 @@ function addNetworkDeviceToList(id, name) {
 
 function getGraphConfig(listItem) {
     // Get graph config attributes
-    const elementGraphMinSensorValue = parseInt(listItem.getAttribute("data-element-graph-min-sensor-value"));
-    const elementGraphMaxSensorValue = parseInt(listItem.getAttribute("data-element-graph-max-sensor-value"));
+    const elementGraphMinSensorValue = parseFloat(listItem.getAttribute("data-element-graph-min-sensor-value"));
+    const elementGraphMaxSensorValue = parseFloat(listItem.getAttribute("data-element-graph-max-sensor-value"));
     const elementGraphWidth = parseInt(listItem.getAttribute("data-element-graph-width"));
     const elementGraphHeight = parseInt(listItem.getAttribute("data-element-graph-height"));
     const elementGraphType = listItem.getAttribute("data-element-graph-type");
@@ -333,7 +333,7 @@ function getConditionalImageConfig(listItem) {
     };
 }
 
-function getImageConfig(listItem) {
+function getStaticImageConfig(listItem) {
     // Get image config attributes
     const elementStaticImage = listItem.getAttribute("data-element-static-image");
     const elementStaticImageWidth = parseInt(listItem.getAttribute("data-element-static-image-width"));
@@ -387,7 +387,7 @@ function saveConfig() {
         const elementY = parseInt(listItem.getAttribute("data-element-position-y"));
 
         const textConfig = getTextConfig(listItem);
-        const imageConfig = getImageConfig(listItem);
+        const imageConfig = getStaticImageConfig(listItem);
         const graphConfig = getGraphConfig(listItem);
         const conditionalImageConfig = getConditionalImageConfig(listItem);
 

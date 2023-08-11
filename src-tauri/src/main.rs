@@ -155,7 +155,6 @@ fn remove_network_device_config(network_device_id: String) {
 /// If the address config does not exist, it will be created.
 #[tauri::command]
 fn save_app_config(
-    _app_state: State<AppState>,
     id: String,
     name: String,
     address: String,
@@ -304,7 +303,7 @@ fn get_graph_preview_image(
         sensor_id,
     );
 
-    let graph_data = graph_renderer::render(graph_config);
+    let graph_data = graph_renderer::render(&graph_config);
     let engine = base64::engine::general_purpose::STANDARD;
     base64::Engine::encode(&engine, graph_data)
 }
