@@ -158,7 +158,7 @@ jobs:
 
       - name: Install clang windows
         if: matrix.platform == 'windows-latest'
-        run: choco install -y visualstudio2022buildtools visualstudio2022-workload-nativedesktop
+        run: choco install -y visualstudio2022-workload-nativedesktop
 
       - name: Install clang linux
         if: matrix.platform == 'ubuntu-20.04'
