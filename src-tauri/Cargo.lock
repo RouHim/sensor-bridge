@@ -3231,6 +3231,7 @@ dependencies = [
 [[package]]
 name = "sensor-core"
 version = "0.1.0"
+source = "git+https://github.com/RouHim/sensor-core?branch=main#6941afa707eccc633849988b8eedad90993234f4"
 dependencies = [
  "base64 0.21.2",
  "dirs",

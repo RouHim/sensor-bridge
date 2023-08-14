@@ -134,7 +134,7 @@ jobs:
         run: cd src-tauri && cargo test
 
   compile:
-    name: Compiles the application
+    name: Compile application
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
