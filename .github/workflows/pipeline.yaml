@@ -1,0 +1,306 @@
+name: CI/CD
+on:
+  push:
+  pull_request:
+    types:
+      - opened
+  workflow_dispatch: # allow manual execution
+
+jobs:
+
+  check-repo:
+    name: Check git repository
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+  check-code-style:
+    name: Check code style
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+
+      - uses: Swatinem/rust-cache@v2 # use /rust/cargo caching
+        with:
+          workspaces: "src-tauri -> target"
+          cache-on-failure: true # upload cache even if there are errors in this step
+
+      - name: Check the code style
+        run: cd src-tauri && cargo fmt --all -- --check
+
+  check-code:
+    name: Check rust code
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install tauri dependencies
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install clang linux
+        run: sudo apt update && sudo apt install -y clang
+
+      - name: Install lm sensors dependencies
+        run: sudo apt update && sudo apt install -y libsensors4-dev
+
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2 # use /rust/cargo caching
+        with:
+          workspaces: "src-tauri -> target"
+          cache-on-failure: true # upload cache even if there are errors in this step
+
+      - name: Verify code
+        run: cd src-tauri && cargo clippy
+
+  check-unused-dependencies:
+    name: Check for unused deps
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: install dependencies
+        run:  sudo apt update  && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install clang linux
+        run:  sudo apt update && sudo apt install -y clang
+
+      - name: Install lm sensors dependencies
+        run: sudo apt update && sudo apt install -y libsensors4-dev
+
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@v2 # use /rust/cargo caching
+        with:
+          workspaces: "src-tauri -> target"
+          cache-on-failure: true # upload cache even if there are errors in this step
+
+      - name: Install cargo-udeps
+        run: cargo install cargo-udeps --locked
+
+      - name: Analyze dependencies
+        run: cd src-tauri && cargo update && cargo +nightly udeps
+
+  test:
+    name: Run application tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install tauri dependencies
+        run:  sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install clang linux
+        run: sudo apt update && sudo apt install -y clang
+
+      - name: Install lm sensors dependencies
+        run: sudo apt update && sudo apt install -y libsensors4-dev
+
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2 # use /rust/cargo caching
+        with:
+          workspaces: "src-tauri -> target"
+          cache-on-failure: true # upload cache even if there are errors in this step
+
+      - name: Test code
+        run: cd src-tauri && cargo test
+
+  compile:
+    name: Compile application
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ ubuntu-20.04, windows-latest ]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install tauri dependencies
+        if: matrix.platform == 'ubuntu-20.04'
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install clang windows
+        if: matrix.platform == 'windows-latest'
+        run: choco install -y visualstudio2022-workload-nativedesktop
+
+      - name: Install clang linux
+        if: matrix.platform == 'ubuntu-20.04'
+        run: sudo apt update && sudo apt install -y clang
+
+      - name: Install lm sensors dependencies
+        if: matrix.platform == 'ubuntu-20.04'
+        run: sudo apt update && sudo apt install -y libsensors4-dev
+
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2 # use /rust/cargo caching
+        with:
+          workspaces: "src-tauri -> target"
+          cache-on-failure: true # upload cache even if there are errors in this step
+
+      - name: Install Tauri-CLI
+        run: cargo install tauri-cli
+
+      - name: Compile application
+        run: cd src-tauri && cargo tauri build --ci --bundles none
+
+  create-release:
+    name: Release artifacts
+    needs: [ check-repo, check-code-style, check-code, test, compile ]
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install Dependencies
+        run: |
+          npm install -g \
+             semantic-release  \
+            @semantic-release/git  \
+            @semantic-release/gitlab  \
+            @semantic-release/changelog  \
+            @semantic-release/exec \
+            @semantic-release/commit-analyzer \
+            conventional-changelog-conventionalcommits
+
+      - name: Generate Semantic Release Notes and Create Release
+        id: semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: npx semantic-release
+
+      - name: Delete old releases
+        uses: dev-drprasad/delete-older-releases@v0.2.1
+        with:
+          keep_latest: 5
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  bundle-and-upload:
+    needs: [ create-release ]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ ubuntu-20.04, windows-latest ]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2 # use /rust/cargo caching
+        with:
+          workspaces: "src-tauri -> target"
+          cache-on-failure: true # upload cache even if there are errors in this step
+
+      - name: Detect latest github release
+        id: get_latest_release
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const response = await github.repos.getLatestRelease({
+              owner: 'rouhim',
+              repo: 'sensor-bridge'
+            })
+            return response.data.tag_name.replace('v', '')
+
+      - name: Print the detected version of the previous step
+        run: echo "The detected version is ${{ steps.get_latest_release.outputs.data }}"
+
+      - name: Set release version
+        run: |
+          cargo install sd
+          cd src-tauri
+          sd --preview '0.0.0' '${{ steps.get_latest_release.outputs.data }}' tauri.conf.json
+          sd '0.0.0' '${{ steps.get_latest_release.outputs.data }}' tauri.conf.json
+          echo "Tauri version is now: ${{ steps.get_latest_release.outputs.data }}"
+
+      - name: Install Tauri dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-20.04'
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install clang windows
+        if: matrix.platform == 'windows-latest'
+        run:  choco install -y choco install -y visualstudio2022-workload-nativedesktop
+
+      - name: Install clang linux
+        if: matrix.platform == 'ubuntu-20.04'
+        run: sudo apt update && sudo apt install -y clang
+
+      - name: Install lm sensors dependencies
+        if: matrix.platform == 'ubuntu-20.04'
+        run: sudo apt update && sudo apt install -y libsensors4-dev
+
+      - name: Install Tauri-CLI
+        run: cargo install tauri-cli
+
+      - name: Build the app
+        #        env:
+        #          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+        #          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        run: cargo tauri build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: |
+            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_amd64.AppImage
+            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_amd64.AppImage.tar.gz
+            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_amd64.AppImage.tar.gz.sig
+            src-tauri/target/release/bundle/msi/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_x64_en-US.msi
+            src-tauri/target/release/bundle/msi/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_x64_en-US.msi.zip
+            src-tauri/target/release/bundle/msi/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_x64_en-US.msi.zip.sig
