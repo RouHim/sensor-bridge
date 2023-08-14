@@ -10,7 +10,7 @@ jobs:
 
   check-repo:
     name: Check git repository
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -26,7 +26,7 @@ jobs:
 
   check-code-style:
     name: Check code style
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -48,7 +48,7 @@ jobs:
 
   check-code:
     name: Check rust code
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -79,7 +79,7 @@ jobs:
 
   check-unused-dependencies:
     name: Check for unused deps
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -112,7 +112,7 @@ jobs:
 
   test:
     name: Run application tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -188,7 +188,7 @@ jobs:
   create-release:
     name: Release artifacts
     needs: [ check-repo, check-code-style, check-code, test, compile ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
