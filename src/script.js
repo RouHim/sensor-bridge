@@ -617,14 +617,14 @@ function setSelectedElement(listHtmlElement) {
     // Register arrow key press event to move the selected element on the designer pane
     document.addEventListener("keydown", moveSelectedElement);
 
-    // Set background color of the selected element
-    lastSelectedListElement.style.backgroundColor = "rgb(0, 0, 0, 0.5)";
+    // Set background color of the selected element to --background
+    lastSelectedListElement.style.backgroundColor = "var(--selection)";
 
     // Set background color of all other li elements to transparent
     Array.from(lstDesignerPlacedElements.children).forEach(
         (child) => {
             if (child.id !== lastSelectedListElement.id) {
-                child.style.backgroundColor = "transparent";
+                child.style.backgroundColor = "var(--background)";
             }
         }
     );
@@ -874,17 +874,136 @@ function toTauriAssetPath(image_path) {
     return convertFileSrc(image_path);
 }
 
-function saveDeviceConfig() {
+function validateUi() {
+    // Device config
     if (txtDeviceName.value === "") {
         alert("Please enter a name for the device.");
-        return;
+        return false;
     }
     if (txtDeviceNetworkAddress.value === "") {
         alert("Please enter a network address for the device.");
-        return;
+        return false;
     }
+    // resolution
+    if (txtLcdResolutionWidth.value === "") {
+        alert("Please enter a resolution width for the device.");
+        return false;
+    }
+    if (txtLcdResolutionHeight.value === "") {
+        alert("Please enter a resolution height for the device.");
+        return false;
+    }
+
+    // Element config
     if (txtElementName.value === "") {
         alert("Please enter a name for the element.");
+        return false;
+    }
+    if (txtElementPositionX.value === "" || isNaN(txtElementPositionX.value)) {
+        alert("Please enter a position X for the element.");
+        return false;
+    }
+    if (txtElementPositionY.value === "" || isNaN(txtElementPositionY.value)) {
+        alert("Please enter a position Y for the element.");
+        return false;
+    }
+
+    // Text config
+    if (cmbElementType.value === "text") {
+        if (txtElementFontSize.value === "" || isNaN(txtElementFontSize.value)) {
+            alert("Please enter a font size for the text element.");
+            return false;
+        }
+        if (!/^#[0-9A-F]{8}$/i.test(txtElementFontColor.value)) {
+            alert("Please enter a valid font color for the text element.");
+            return false;
+        }
+    }
+
+    // Static image
+    if (cmbElementType.value === "static-image") {
+        if (txtElementStaticImageFile.value === "") {
+            alert("Please select a static image for the static image element.");
+            return false;
+        }
+        // ensure txtElementStaticImageWidth and txtElementStaticImageHeight are numbers
+        if (txtElementStaticImageWidth.value === "" || isNaN(txtElementStaticImageWidth.value)) {
+            alert("Please enter a width for the static image element.");
+            return false;
+        }
+        if (txtElementStaticImageHeight.value === "" || isNaN(txtElementStaticImageHeight.value)) {
+            alert("Please enter a height for the static image element.");
+            return false;
+        }
+    }
+
+    // graph
+    if (cmbElementType.value === "graph") {
+        if (txtElementGraphWidth.value === "" || isNaN(txtElementGraphWidth.value)) {
+            alert("Please enter a width for the graph element.");
+            return false;
+        }
+        if (txtElementGraphHeight.value === "" || isNaN(txtElementGraphHeight.value)) {
+            alert("Please enter a height for the graph element.");
+            return false;
+        }
+        if (cmbElementGraphType.value === "") {
+            alert("Please select a type for the graph element.");
+            return false;
+        }
+        if (!/^#[0-9A-F]{8}$/i.test(txtElementGraphColor.value)) {
+            alert("Please enter a valid color for the graph element.");
+            return false;
+        }
+        if (txtElementGraphStrokeWidth.value === "" || isNaN(txtElementGraphStrokeWidth.value)) {
+            alert("Please enter a stroke width for the graph element.");
+            return false;
+        }
+        if (!/^#[0-9A-F]{8}$/i.test(txtElementGraphBackgroundColor.value)) {
+            alert("Please enter a valid background color for the graph element.");
+            return false;
+        }
+        if (!/^#[0-9A-F]{8}$/i.test(txtElementGraphBorderColor.value)) {
+            alert("Please enter a valid border color for the graph element.");
+            return false;
+        }
+
+    }
+
+    // conditional image
+    if (cmbElementType.value === "conditional-image") {
+        if (cmbConditionalImageSensorIdSelection.value === "") {
+            alert("Please select a sensor for the conditional image element.");
+            return false;
+        }
+        if (txtElementConditionalImageImagesPath.value === "") {
+            alert("Please enter a path for the conditional image element.");
+            return false;
+        }
+        if (txtElementConditionalImageMinValue.value === "" || isNaN(txtElementConditionalImageMinValue.value)) {
+            alert("Please enter a minimum value for the conditional image element.");
+            return false;
+        }
+        if (txtElementConditionalImageMaxValue.value === "" || isNaN(txtElementConditionalImageMaxValue.value)) {
+            alert("Please enter a maximum value for the conditional image element.");
+            return false;
+        }
+        if (txtElementConditionalImageWidth.value === "" || isNaN(txtElementConditionalImageWidth.value)) {
+            alert("Please enter a width for the conditional image element.");
+            return false;
+        }
+        if (txtElementConditionalImageHeight.value === "" || isNaN(txtElementConditionalImageHeight.value)) {
+            alert("Please enter a height for the conditional image element.");
+            return false;
+        }
+    }
+
+
+    return true;
+}
+
+function saveDeviceConfig() {
+    if (!validateUi()) {
         return;
     }
 
@@ -1039,6 +1158,7 @@ function showLastSelectedElementDetail() {
     cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
     txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
     txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
+    txtElementFontColor.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Static image
     txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
@@ -1053,9 +1173,12 @@ function showLastSelectedElementDetail() {
     txtElementGraphHeight.value = lastSelectedListElement.getAttribute("data-element-graph-height");
     cmbElementGraphType.value = lastSelectedListElement.getAttribute("data-element-graph-type");
     txtElementGraphColor.value = lastSelectedListElement.getAttribute("data-element-graph-color");
+    txtElementGraphColor.dispatchEvent(new Event('input', { bubbles: true }));
     txtElementGraphStrokeWidth.value = lastSelectedListElement.getAttribute("data-element-graph-stroke-width");
     txtElementGraphBackgroundColor.value = lastSelectedListElement.getAttribute("data-element-graph-background-color");
+    txtElementGraphBackgroundColor.dispatchEvent(new Event('input', { bubbles: true }));
     txtElementGraphBorderColor.value = lastSelectedListElement.getAttribute("data-element-graph-border-color");
+    txtElementGraphBorderColor.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Conditional image
     cmbConditionalImageSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");

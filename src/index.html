@@ -23,7 +23,7 @@
 </head>
 
 <body>
-<div id="base-container" class="row-flex-container">
+<div id="base-container">
     <div id="master-pane">
 
         <div class="flex-container center-horizontal">
@@ -31,7 +31,7 @@
             <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
             </select>
 
-            <button class="icon-button" id="btn-add-network-device" title="Add a new network device">
+            <button class="icon-button" id="btn-add-network-device" title="Add a new network device" style="font-size: 2em;">
                 <i data-feather="plus"></i>
             </button>
 
@@ -62,32 +62,29 @@
 
         <div id="lcd-panel" style="display: block;">
 
-            <div id="device-config">
-                <div class="flex-container">
-                    <label for="lcd-txt-device-name" style="width: 200px; margin-right: 5px">Device name:</label>
-                    <input id="lcd-txt-device-name" style="width: 150px;"
-                           title="Enter a simple name of your device">
-                </div>
-                <div class="flex-container">
-                    <label for="lcd-txt-device-network-address" style="width: 200px; margin-right: 5px">Network
-                        address:</label>
-                    <input id="lcd-txt-device-network-address" style="width: 150px;"
-                           title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
-                </div>
+            <div id="device-config" class="flex-container center-horizontal">
+                <label for="lcd-txt-device-name" style="margin-right: 5px">Device name:</label>
+                <input id="lcd-txt-device-name" style="width: 150px;" title="Enter a simple name of your device">
 
+                <label for="lcd-txt-device-network-address" style="margin-left: 25px; margin-right: 5px;">Network
+                    address:</label>
+                <input id="lcd-txt-device-network-address" style="width: 150px;"
+                       title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
+
+                <div class="flex-container" id="lcd-config" style="margin-left: 25px">
+                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
+                    <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
+                           value="1024">
+                    <div style="margin-left: 5px; margin-right: 5px">x</div>
+                    <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
+                           value="600">
+
+                </div>
             </div>
 
-            <div class="flex-container" id="lcd-config">
-                <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
-                <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
-                       value="1024">
-                <div style="margin: 5px 10px">x</div>
-                <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
-                       value="600">
-
-            </div>
-
-            <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px">
+            <div class="center-horizontal">
+                <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px;">
+                </div>
             </div>
 
             <hr>
