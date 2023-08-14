@@ -23,14 +23,7 @@
     * On
       Windows: [Enable the "C++ Clang tools for Windows" component in the Visual Studio Installer](https://www.wikihow.com/Install-Clang-on-Windows)
     * On Linux: `sudo apt install clang` or `sudo pacman -S clang` or `sudo dnf install clang`
-
-### Build
-
-For building the project, run the following command in the root directory of the project:
-
-```bash
-cargo tauri build
-```
+* lm-sensors dev on linux: `sudo apt install libsensors4-dev` or `sudo pacman -S lm_sensors` or `sudo dnf install lm_sensors` 
 
 ### Run
 
@@ -40,11 +33,10 @@ For running the project, run the following command in the root directory of the 
 cargo tauri dev
 ```
 
-### Build for production
+### Build
 
-For building the project for production, run the following command in the root directory of the project:
+For building the project, run the following command in the root directory of the project:
 
 ```bash
-cargo tauri build --release
+cargo tauri build
 ```
-
