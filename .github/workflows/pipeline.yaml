@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install tauri dependencies
-        run: sudo apt update && sudo apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang linux
         run: sudo apt update && sudo apt install -y clang
@@ -85,7 +85,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: install dependencies
-        run:  sudo apt update  && sudo apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+        run:  sudo apt update  && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang linux
         run:  sudo apt update && sudo apt install -y clang
@@ -118,7 +118,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install tauri dependencies
-        run:  sudo apt update && sudo apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+        run:  sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang linux
         run: sudo apt update && sudo apt install -y clang
@@ -154,7 +154,7 @@ jobs:
 
       - name: Install tauri dependencies
         if: matrix.platform == 'ubuntu-20.04'
-        run: sudo apt update && sudo apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang windows
         if: matrix.platform == 'windows-latest'
@@ -270,11 +270,11 @@ jobs:
 
       - name: Install Tauri dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-20.04'
-        run: sudo apt update && sudo apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang windows
         if: matrix.platform == 'windows-latest'
-        run:  choco install -y choco install -y visualstudio2022buildtools visualstudio2022-workload-nativedesktop
+        run:  choco install -y choco install -y visualstudio2022-workload-nativedesktop
 
       - name: Install clang linux
         if: matrix.platform == 'ubuntu-20.04'
