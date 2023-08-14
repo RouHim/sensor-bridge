@@ -150,15 +150,27 @@ jobs:
 
   compile:
     name: Compile application
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ ubuntu-20.04, windows-latest ]
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Install tauri dependencies
+        if: matrix.platform == 'ubuntu-20.04'
         run: |
           sudo apt update
           sudo apt install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+
+      - name: Install clang windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          choco install -y llvm
+          choco install -y clang
 
       - name: Install clang linux
         run: |
@@ -274,8 +286,8 @@ jobs:
       - name: Install clang windows
         if: matrix.platform == 'windows-latest'
         run: |
-          choco install llvm
-          choco install clang
+          choco install -y llvm
+          choco install -y clang
 
       - name: Install clang linux
         if: matrix.platform == 'ubuntu-20.04'
