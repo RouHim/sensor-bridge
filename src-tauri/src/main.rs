@@ -154,12 +154,7 @@ fn remove_network_device_config(network_device_id: String) {
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-fn save_app_config(
-    id: String,
-    name: String,
-    address: String,
-    lcd_config: String,
-) {
+fn save_app_config(id: String, name: String, address: String, lcd_config: String) {
     let mut port_config: NetPortConfig = config::read(&id);
 
     port_config.name = name;

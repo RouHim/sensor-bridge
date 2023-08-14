@@ -6,14 +6,18 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>SensorBridge</title>
 
+    <!-- Water css dark stylesheet -->
     <link href="libs/water-css-dark/dark.css" rel="stylesheet">
 
+    <!-- Coloris Color Picker -->
     <link rel="stylesheet" href="libs/coloris/coloris.min.css"/>
     <script src="libs/coloris/coloris.min.js">
     </script>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet"/>
+    <!--Feather icons-->
+    <script src="libs/feather-icons/feather.min.js"></script>
 
+    <!-- My extensions -->
     <script defer src="script.js" type="module"></script>
     <link href="style.css" rel="stylesheet"/>
 </head>
@@ -28,28 +32,28 @@
             </select>
 
             <button class="icon-button" id="btn-add-network-device" title="Add a new network device">
-                <i class="fas fa-plus"></i>
+                <i data-feather="plus"></i>
             </button>
 
             <button class="icon-button" id="lcd-btn-save-network-device" style="font-size: 2em; margin-right: 10px;"
                     title="Save device configuration">
-                <i class="fas fa-save"></i>
+                <i data-feather="save"></i>
             </button>
 
             <button class="icon-button" id="lcd-btn-remove-network-device"
                     style="font-size: 2em; margin-right: 10px;"
                     title="Remove device configuration">
-                <i class="fas fa-trash"></i>
+                <i data-feather="trash"></i>
             </button>
 
             <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
                     title="Open live preview">
-                <i class="fas fa-eye"></i>
+                <i data-feather="monitor"></i>
             </button>
 
             <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the display">
                 <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
-                <i class="fas fa-power-off kill-switch-icon"></i>
+                <i data-feather="power" class="kill-switch-icon"></i>
             </label>
 
         </div>
@@ -86,7 +90,9 @@
             <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px">
             </div>
 
-            <div class="row-flex-container" id="lcd-elements-detail-editor">
+            <hr>
+
+            <div id="lcd-elements-detail-editor" class="row-flex-container">
                 <div style="width: 25%; margin-right: 10px; padding-right: 10px; border-right: #ccc solid 1px;">
                     <ul id="lcd-designer-placed-elements">
                     </ul>
@@ -95,10 +101,10 @@
                 <div id="lcd-sensor-entry-config" style="width: 75%">
 
                     <button class="icon-button" id="lcd-btn-remove-element">
-                        <i class="fas fa-trash"></i>
+                        <i data-feather="trash"></i>
                     </button>
                     <button class="icon-button" id="lcd-btn-save-element" title="Save sensor configuration">
-                        <i class="fas fa-save"></i>
+                        <i data-feather="save"></i>
                     </button>
 
                     <table>
@@ -171,7 +177,7 @@
                             <td>Image:</td>
                             <td>
                                 <button class="icon-button" id="lcd-btn-static-image-select">
-                                    <i class="fas fa-file-upload"></i>
+                                    <i data-feather="folder"></i>
                                 </button>
                                 <input id="lcd-txt-element-static-image-file">
                         </tr>
@@ -269,10 +275,10 @@
                             <td>Image Package:</td>
                             <td>
                                 <button class="icon-button" id="lcd-btn-conditional-image-select">
-                                    <i class="fas fa-file-upload"></i>
+                                    <i data-feather="folder"></i>
                                 </button>
                                 <button class="icon-button" id="lcd-btn-conditional-image-info">
-                                    <i class="fas fa-info-circle"></i>
+                                    <i data-feather="info"></i>
                                 </button>
                                 <input id="lcd-txt-element-conditional-image-images-path">
                             </td>
@@ -311,6 +317,8 @@
 
     </div>
 </div>
-
+<script>
+    feather.replace()
+</script>
 </body>
 </html>

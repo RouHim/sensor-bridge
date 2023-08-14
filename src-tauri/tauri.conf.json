@@ -51,7 +51,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.github.rouhim",
+      "identifier": "com.github.rouhim.sensorbridge",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -70,7 +70,7 @@
       }
     },
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost"
+      "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost"
     },
     "updater": {
       "active": false
