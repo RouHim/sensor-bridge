@@ -1,3 +1,10 @@
+## [0.1.7](https://github.com/RouHim/sensor-bridge/compare/v0.1.6...v0.1.7) (2023-08-15)
+
+
+### Bug Fixes
+
+* **pipeline:** fix upload to release ([bfae863](https://github.com/RouHim/sensor-bridge/commit/bfae8636cddc2e3385806a3e83979edb3313c850))
+
 ## [0.1.6](https://github.com/RouHim/sensor-bridge/compare/v0.1.5...v0.1.6) (2023-08-15)
 
 
