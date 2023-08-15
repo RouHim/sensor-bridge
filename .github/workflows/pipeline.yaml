@@ -245,7 +245,7 @@ jobs:
           workspaces: "src-tauri -> target"
           cache-on-failure: true # upload cache even if there are errors in this step
 
-      - name: Detect latest github release
+      - name: Detect latest github release - linux
         if: matrix.platform == 'ubuntu-20.04'
         shell: bash
         run: |
@@ -255,7 +255,7 @@ jobs:
           echo "Latest release is $LATEST_RELEASE"
           echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
 
-      - name: Detect latest github release
+      - name: Detect latest github release - windows
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
@@ -265,16 +265,16 @@ jobs:
           Write-Host "Latest release is $LATEST_RELEASE"
           Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$LATEST_RELEASE"
 
-      - name: Use the version
-        run: echo "The latest release version is $VERSION"
+      - name: Print the version
+        run: echo "The latest release version is ${{ env.VERSION }}"
 
       - name: Set release version
         run: |
           cargo install sd
           cd src-tauri
-          sd --preview '0.0.0' '${{ steps.get_latest_release.outputs.data }}' tauri.conf.json
-          sd '0.0.0' '${{ steps.get_latest_release.outputs.data }}' tauri.conf.json
-          echo "Tauri version is now: ${{ steps.get_latest_release.outputs.data }}"
+          sd --preview '0.0.0' '${{ env.VERSION }}' tauri.conf.json
+          sd '0.0.0' '${{ env.VERSION }}' tauri.conf.json
+          echo "Tauri version is now: ${{ env.VERSION }}"
 
       - name: Install Tauri dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-20.04'
@@ -306,9 +306,9 @@ jobs:
         with:
           name: artifacts
           path: |
-            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_amd64.AppImage
-            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_amd64.AppImage.tar.gz
-            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_amd64.AppImage.tar.gz.sig
-            src-tauri/target/release/bundle/msi/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_x64_en-US.msi
-            src-tauri/target/release/bundle/msi/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_x64_en-US.msi.zip
-            src-tauri/target/release/bundle/msi/sensor-bridge_${{ steps.get_latest_release.outputs.data }}_x64_en-US.msi.zip.sig
+            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage
+            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
+            src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
+            src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
+            src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
+            src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
