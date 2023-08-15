@@ -301,14 +301,28 @@ jobs:
         #          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         run: cargo tauri build
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+      - name: Upload Artifacts
+        uses: actions/upload-release-asset@v1
         with:
-          name: artifacts
-          path: |
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: |
             src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage
             src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
             src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
             src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
             src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
             src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
+          asset_name: |
+            sensor-bridge_${{ env.VERSION }}_amd64.AppImage
+            sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
+            sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
+            sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
+            sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
+            sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
+          asset_content_type: |
+            application/octet-stream
+            application/octet-stream
+            application/octet-stream
+            application/octet-stream
+            application/octet-stream
+            application/octet-stream
