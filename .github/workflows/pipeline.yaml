@@ -85,10 +85,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: install dependencies
-        run:  sudo apt update  && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+        run: sudo apt update  && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang linux
-        run:  sudo apt update && sudo apt install -y clang
+        run: sudo apt update && sudo apt install -y clang
 
       - name: Install lm sensors dependencies
         run: sudo apt update && sudo apt install -y libsensors4-dev
@@ -118,7 +118,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install tauri dependencies
-        run:  sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+        run: sudo apt update && sudo apt install -y libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install clang linux
         run: sudo apt update && sudo apt install -y clang
@@ -189,7 +189,7 @@ jobs:
     name: Release artifacts
     needs: [ check-repo, check-code-style, check-code, test, compile ]
     runs-on: ubuntu-22.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -274,7 +274,7 @@ jobs:
 
       - name: Install clang windows
         if: matrix.platform == 'windows-latest'
-        run:  choco install -y choco install -y visualstudio2022-workload-nativedesktop
+        run: choco install -y choco install -y visualstudio2022-workload-nativedesktop
 
       - name: Install clang linux
         if: matrix.platform == 'ubuntu-20.04'
