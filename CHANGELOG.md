@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/RouHim/sensor-bridge/compare/v0.1.1...v0.1.2) (2023-08-15)
+
+
+### Bug Fixes
+
+* **pipeline:** fix latest version parsing ([022c5f8](https://github.com/RouHim/sensor-bridge/commit/022c5f825e6b7a8e7f5f760956f13196e165b978))
+
 ## [0.1.1](https://github.com/RouHim/sensor-bridge/compare/v0.1.0...v0.1.1) (2023-08-15)
 
 
