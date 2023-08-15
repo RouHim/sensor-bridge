@@ -247,18 +247,15 @@ jobs:
 
       - name: Detect latest github release
         id: get_latest_release
-        uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const response = await github.repos.getLatestRelease({
-              owner: 'rouhim',
-              repo: 'sensor-bridge'
-            })
-            return response.data.tag_name.replace('v', '')
+        run: |
+          VERSION=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r .tag_name)
+          VERSION=${VERSION#v} # remove the 'v' from the version
+          echo "::set-output name=version::${VERSION}"
 
       - name: Print the detected version of the previous step
-        run: echo "The detected version is ${{ steps.get_latest_release.outputs.data }}"
+        run: echo "The detected latest version is ${{ steps.get_latest_release.outputs.data }}"
 
       - name: Set release version
         run: |
