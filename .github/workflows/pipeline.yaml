@@ -189,7 +189,7 @@ jobs:
     name: Release artifacts
     needs: [ check-repo, check-code-style, check-code, test, compile ]
     runs-on: ubuntu-20.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
