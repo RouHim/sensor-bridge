@@ -247,7 +247,6 @@ jobs:
 
       - name: Detect latest github release
         if: matrix.platform == 'ubuntu-20.04'
-        id: get_latest_release
         shell: bash
         run: |
           REPO="RouHim/sensor-bridge"
@@ -258,7 +257,6 @@ jobs:
 
       - name: Detect latest github release
         if: matrix.platform == 'windows-latest'
-        id: get_latest_release
         shell: pwsh
         run: |
           $REPO="RouHim/sensor-bridge"
