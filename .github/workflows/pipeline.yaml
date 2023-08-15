@@ -247,8 +247,6 @@ jobs:
 
       - name: Detect latest github release
         id: get_latest_release
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r .tag_name)
           VERSION=${VERSION#v} # remove the 'v' from the version
