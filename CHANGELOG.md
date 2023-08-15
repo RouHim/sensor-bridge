@@ -1,3 +1,11 @@
+## [0.1.4](https://github.com/RouHim/sensor-bridge/compare/v0.1.3...v0.1.4) (2023-08-15)
+
+
+### Bug Fixes
+
+* **pipeline:** version detection and clang windows setup ([731d1c4](https://github.com/RouHim/sensor-bridge/commit/731d1c400c5bc81d3d61e93bf88ce387c788bf28))
+* **pipeline:** version detection and clang windows setup ([c4ce287](https://github.com/RouHim/sensor-bridge/commit/c4ce28738bba5d67ef2020c77d1757e835e668ce))
+
 ## [0.1.3](https://github.com/RouHim/sensor-bridge/compare/v0.1.2...v0.1.3) (2023-08-15)
 
 
