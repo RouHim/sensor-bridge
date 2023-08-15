@@ -302,13 +302,18 @@ jobs:
         #          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         run: cargo tauri build
 
-      - name: Upload Artifacts
+      - name: Upload Artifacts linux
+        if: matrix.platform == 'ubuntu-20.04'
         run: |
           bash .github/scripts/upload-asset-to-release.sh \
               ${{ secrets.RELEASE_TOKEN }} \
               "src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage" \
               "sensor-bridge_${{ env.VERSION }}_amd64.AppImage"
-          
+
+      - name: Upload Artifacts windows
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
           bash .github/scripts/upload-asset-to-release.sh \
               ${{ secrets.RELEASE_TOKEN }} \
               "src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi" \
