@@ -1,3 +1,11 @@
+## [0.1.3](https://github.com/RouHim/sensor-bridge/compare/v0.1.2...v0.1.3) (2023-08-15)
+
+
+### Bug Fixes
+
+* **pipeline:** fix for windows ([3dd86b8](https://github.com/RouHim/sensor-bridge/commit/3dd86b8ec09dec09b4569b9032df65b401791dd6))
+* **pipeline:** fix for windows ([bd2b2c2](https://github.com/RouHim/sensor-bridge/commit/bd2b2c264dded8759751ebed8ab5d8ee7364c8bf))
+
 ## [0.1.2](https://github.com/RouHim/sensor-bridge/compare/v0.1.1...v0.1.2) (2023-08-15)
 
 
