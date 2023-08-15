@@ -247,20 +247,23 @@ jobs:
 
       - name: Detect latest github release
         if: matrix.platform == 'ubuntu-20.04'
+        id: get_latest_release
         shell: bash
         run: |
-          $REPO="RouHim/sensor-bridge"
-          $LATEST_RELEASE=(Invoke-RestMethod -Uri "https://api.github.com/repos/$REPO/releases/latest").tag_name
-          $LATEST_RELEASE=$LATEST_RELEASE.Replace('v','')
-          Write-Host "Latest release is $LATEST_RELEASE"
-          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$LATEST_RELEASE"
+          REPO="RouHim/sensor-bridge"
+          LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          LATEST_RELEASE=${LATEST_RELEASE#v}
+          echo "Latest release is $LATEST_RELEASE"
+          echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
 
       - name: Detect latest github release
         if: matrix.platform == 'windows-latest'
+        id: get_latest_release
         shell: pwsh
         run: |
           $REPO="RouHim/sensor-bridge"
           $LATEST_RELEASE=(Invoke-RestMethod -Uri "https://api.github.com/repos/$REPO/releases/latest").tag_name
+          $LATEST_RELEASE=$LATEST_RELEASE.Replace('v','')
           Write-Host "Latest release is $LATEST_RELEASE"
           Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$LATEST_RELEASE"
 
@@ -281,7 +284,7 @@ jobs:
 
       - name: Install clang windows
         if: matrix.platform == 'windows-latest'
-        run: choco install -y choco install -y visualstudio2022-workload-nativedesktop
+        run: choco install -y visualstudio2022-workload-nativedesktop
 
       - name: Install clang linux
         if: matrix.platform == 'ubuntu-20.04'
