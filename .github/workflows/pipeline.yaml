@@ -248,12 +248,14 @@ jobs:
       - name: Detect latest github release
         id: get_latest_release
         run: |
-          VERSION=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r .tag_name)
-          VERSION=${VERSION#v} # remove the 'v' from the version
-          echo "::set-output name=version::${VERSION}"
+          REPO="RouHim/sensor-bridge"
+          LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          LATEST_RELEASE=${LATEST_RELEASE#v}
+          echo "Latest release is $LATEST_RELEASE"
+          echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
 
-      - name: Print the detected version of the previous step
-        run: echo "The detected latest version is ${{ steps.get_latest_release.outputs.data }}"
+      - name: Use the version
+        run: echo "The latest release version is $VERSION"
 
       - name: Set release version
         run: |
