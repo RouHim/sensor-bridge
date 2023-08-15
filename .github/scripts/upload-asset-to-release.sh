@@ -5,7 +5,7 @@
 # Parameters:
 #     $1 - GitHub token
 #     $2 - Path to the binary
-#     $3 - Name of the binary
+#     $3 - Name of the binary in the release
 #
 # Usage:
 #     upload-asset-to-release.sh <github_token> <path_to_binary> <binary_name>

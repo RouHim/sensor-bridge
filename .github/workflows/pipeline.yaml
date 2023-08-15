@@ -274,6 +274,7 @@ jobs:
           cd src-tauri
           sd --preview '0.0.0' '${{ env.VERSION }}' tauri.conf.json
           sd '0.0.0' '${{ env.VERSION }}' tauri.conf.json
+          cd ..
           echo "Tauri version is now: ${{ env.VERSION }}"
 
       - name: Install Tauri dependencies (ubuntu only)
@@ -310,5 +311,5 @@ jobs:
           
           bash .github/scripts/upload-asset-to-release.sh \
               ${{ secrets.RELEASE_TOKEN }} \
-              "src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig" \
+              "src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi" \
               "sensor-bridge_${{ env.VERSION }}_x64_en-US.msi"
