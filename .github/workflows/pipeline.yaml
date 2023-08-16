@@ -142,7 +142,6 @@ jobs:
 
   compile:
     name: Compile application
-    if: github.ref != 'refs/heads/main'
     strategy:
       fail-fast: false
       matrix:
@@ -187,7 +186,7 @@ jobs:
         run: cd src-tauri && cargo tauri build --ci --bundles none
 
   create-release:
-    name: Release artifacts
+    name: Create new release
     needs: [ check-repo, check-code-style, check-code, test, compile ]
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/main'
@@ -227,6 +226,7 @@ jobs:
 
   bundle-and-upload:
     needs: [ create-release ]
+    name: Bundle and upload application artifacts
     strategy:
       fail-fast: false
       matrix:
@@ -360,6 +360,7 @@ jobs:
           asset_content_type: application/octet-stream
 
   update-updater:
+    name: Update updater
     needs: [ bundle-and-upload ]
     runs-on: ubuntu-22.04
     env:
