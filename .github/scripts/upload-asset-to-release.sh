@@ -19,7 +19,9 @@ GITHUB_TOKEN=$1
 BIN_PATH=$2
 NAME=$3
 
-echo "Uploading ${BIN_PATH} to ${NAME}"
+# Print the length of the GITHUB_TOKEN variable
+echo "GITHUB_TOKEN length: ${#GITHUB_TOKEN}"
+echo "Uploading '${BIN_PATH}' to '${NAME}'"
 
 # Determine the release ID
 RELEASE_ID=$(curl -s https://api.github.com/repos/RouHim/sensor-bridge/releases/latest | jq -r '.id' )
