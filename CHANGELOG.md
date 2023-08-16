@@ -1,3 +1,10 @@
+## [0.1.14](https://github.com/RouHim/sensor-bridge/compare/v0.1.13...v0.1.14) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** use existing gh action for upload ([321139b](https://github.com/RouHim/sensor-bridge/commit/321139bc6ab7717a75d15852d8bdfdca0841e21e))
+
 ## [0.1.13](https://github.com/RouHim/sensor-bridge/compare/v0.1.12...v0.1.13) (2023-08-16)
 
 
