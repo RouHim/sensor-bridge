@@ -1,3 +1,11 @@
+## [0.1.12](https://github.com/RouHim/sensor-bridge/compare/v0.1.11...v0.1.12) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** fix mime type detecting in windows ([f96b025](https://github.com/RouHim/sensor-bridge/commit/f96b02577afc192aec69b638103f8b03379996f6))
+* **pipeline:** fix mime type detecting in windows ([2437574](https://github.com/RouHim/sensor-bridge/commit/2437574c72e1f20abe310db220810aea9a37c4a2))
+
 ## [0.1.11](https://github.com/RouHim/sensor-bridge/compare/v0.1.10...v0.1.11) (2023-08-16)
 
 
