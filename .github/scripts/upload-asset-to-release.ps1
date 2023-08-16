@@ -32,7 +32,7 @@ $RELEASE_ID = Invoke-RestMethod -Uri https://api.github.com/repos/RouHim/sensor-
 $UPLOAD_URL = "https://uploads.github.com/repos/RouHim/sensor-bridge/releases/${RELEASE_ID}/assets?name=${NAME}"
 
 # Get the MIME type of the binary
-$MIME_TYPE = (Get-File -Path $BIN_PATH).MimeType
+$MIME_TYPE = [System.Web.MimeMapping]::GetMimeMapping($BIN_PATH)
 
 # Create headers for the request
 $HEADERS = @{
