@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/RouHim/sensor-bridge/compare/v0.1.17...v0.2.0) (2023-08-16)
+
+
+### Features
+
+* **pipeline:** enable tauri updater ([b8ad2aa](https://github.com/RouHim/sensor-bridge/commit/b8ad2aa1a5538edf49d3fd76a521f4d989759658))
+
 ## [0.1.17](https://github.com/RouHim/sensor-bridge/compare/v0.1.16...v0.1.17) (2023-08-16)
 
 ## [0.1.16](https://github.com/RouHim/sensor-bridge/compare/v0.1.15...v0.1.16) (2023-08-16)
