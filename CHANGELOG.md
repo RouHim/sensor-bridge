@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/RouHim/sensor-bridge/compare/v0.3.1...v0.3.2) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** wrong update json filename ([296cbf1](https://github.com/RouHim/sensor-bridge/commit/296cbf1363051d2495ad06f958cccf3a91ae53b5))
+
 ## [0.3.1](https://github.com/RouHim/sensor-bridge/compare/v0.3.0...v0.3.1) (2023-08-16)
 
 
