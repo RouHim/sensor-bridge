@@ -42,3 +42,6 @@ cat <<< $(jq --arg APPIMAGE_SIG "$APPIMAGE_SIG" '.platforms."linux-x86_64".signa
 # Set the windows specific data
 cat <<< $(jq --arg MSI_URL "$MSI_URL" '.platforms."windows-x86_64".url = "\($MSI_URL)"' ${UPDATER_JSON_FILE}) > ${UPDATER_JSON_FILE}
 cat <<< $(jq --arg MSI_SIG "$MSI_SIG" '.platforms."windows-x86_64".signature = "\($MSI_SIG)"' ${UPDATER_JSON_FILE}) > ${UPDATER_JSON_FILE}
+
+# Print the final json file
+cat "${UPDATER_JSON_FILE}"

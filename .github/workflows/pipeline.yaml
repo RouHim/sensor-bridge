@@ -385,4 +385,4 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           gist_id: 4c3d1cf64150dac63d6cfdab2fce306d
-          file_path: ${{ env.UPDATER_FILE }} ${{ env.VERSION }}
+          file_path: ${{ env.UPDATER_FILE }}
