@@ -73,7 +73,12 @@
       "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost"
     },
     "updater": {
-      "active": false
+      "active": true,
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI2ODI0RjQ5QzAzNTdGQTgKUldTb2Z6WEFTVStDSnUzMUxrMHJYSUlDWmpUdEtxVlRWblp3eHA4M2NFbDV4U3dvQ2drTTVWTjAK",
+      "endpoints": [
+        "https://gist.github.com/RouHim/4c3d1cf64150dac63d6cfdab2fce306d/raw"
+      ]
     },
     "windows": [
       {

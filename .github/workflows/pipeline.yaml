@@ -288,12 +288,12 @@ jobs:
         run: cargo install tauri-cli
 
       - name: Build the app
-        #        env:
-        #          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-        #          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         run: cargo tauri build
 
-      - name: Upload linux artifacts
+      - name: Upload linux AppImage
         if: matrix.platform == 'ubuntu-20.04'
         uses: actions/upload-release-asset@v1
         env:
@@ -304,7 +304,29 @@ jobs:
           asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage
           asset_content_type: application/octet-stream
 
-      - name: Upload windows artifacts
+      - name: Upload linux AppImage updater
+        if: matrix.platform == 'ubuntu-20.04'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
+          asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload linux AppImage updater signature
+        if: matrix.platform == 'ubuntu-20.04'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
+          asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
+          asset_content_type: application/octet-stream
+
+      - name: Upload windows installer
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-release-asset@v1
         env:
@@ -314,3 +336,41 @@ jobs:
           asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
           asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
           asset_content_type: application/octet-stream
+
+      - name: Upload windows updater
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
+          asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
+          asset_content_type: application/octet-stream
+
+      - name: Upload windows updater signature
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
+          asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
+          asset_content_type: application/octet-stream
+
+  update-updater:
+    needs: [ bundle-and-upload ]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build updater json
+        run: bash .github/updater/build_update_json.sh
+
+      - name: Deploy update information to gist
+        uses: exuanbo/actions-deploy-gist@v1
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          gist_id: 4c3d1cf64150dac63d6cfdab2fce306d
+          file_path: sensorbridge_update.json ${{ env.VERSION }}
