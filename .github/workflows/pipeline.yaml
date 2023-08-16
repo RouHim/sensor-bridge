@@ -270,8 +270,19 @@ jobs:
           Write-Host "Latest release is $LATEST_RELEASE"
           Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$LATEST_RELEASE"
 
+      - name: Set UPLOAD_URL variable
+        shell: bash
+        run: |
+          UPLOAD_URL=$(curl -s https://api.github.com/repos/rouhim/sensor-bridge/releases/latest | jq -r '.upload_url')
+          echo "UPLOAD_URL=${UPLOAD_URL}" >> $GITHUB_ENV
+
       - name: Print the version
+        shell: bash
         run: echo "The latest release version is ${{ env.VERSION }}"
+
+      - name: Print the upload url
+        shell: bash
+        run: echo "The upload url is ${{ env.UPLOAD_URL }}"
 
       - name: Set release version
         run: |
@@ -307,19 +318,24 @@ jobs:
         #          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         run: cargo tauri build
 
-      - name: Upload artifacts linux
+      - name: Upload linux artifacts
         if: matrix.platform == 'ubuntu-20.04'
-        run: |
-          bash .github/scripts/upload-asset-to-release.sh \
-              "${{ secrets.RELEASE_TOKEN }}" \
-              "src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage" \
-              "sensor-bridge_${{ env.VERSION }}_amd64.AppImage"
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage
+          asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage
+          asset_content_type: application/octet-stream
 
-      - name: Upload artifacts windows
+      - name: Upload windows artifacts
         if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          .github/scripts/upload-asset-to-release.ps1 `
-              "${{ secrets.RELEASE_TOKEN }}" `
-              "src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi" `
-              "sensor-bridge_${{ env.VERSION }}_x64_en-US.msi"
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
+          asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
+          asset_content_type: application/octet-stream
