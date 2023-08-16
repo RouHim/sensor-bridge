@@ -1,3 +1,10 @@
+## [0.1.13](https://github.com/RouHim/sensor-bridge/compare/v0.1.12...v0.1.13) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** upgrade ubuntu ([c956122](https://github.com/RouHim/sensor-bridge/commit/c956122915f17493f90028bd03a016ca4776b9aa))
+
 ## [0.1.12](https://github.com/RouHim/sensor-bridge/compare/v0.1.11...v0.1.12) (2023-08-16)
 
 
