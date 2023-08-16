@@ -250,8 +250,7 @@ jobs:
         shell: bash
         run: sudo apt update && sudo apt upgrade -y && sudo apt dist-upgrade -y
 
-      - name: Detect latest github release - linux
-        if: matrix.platform == 'ubuntu-20.04'
+      - name: Detect and set latest github release VERSION
         shell: bash
         run: |
           REPO="RouHim/sensor-bridge"
@@ -260,31 +259,13 @@ jobs:
           echo "Latest release is $LATEST_RELEASE"
           echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
 
-      - name: Detect latest github release - windows
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          $REPO="RouHim/sensor-bridge"
-          $LATEST_RELEASE=(Invoke-RestMethod -Uri "https://api.github.com/repos/$REPO/releases/latest").tag_name
-          $LATEST_RELEASE=$LATEST_RELEASE.Replace('v','')
-          Write-Host "Latest release is $LATEST_RELEASE"
-          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$LATEST_RELEASE"
-
       - name: Set UPLOAD_URL variable
         shell: bash
         run: |
-          UPLOAD_URL=$(curl -s https://api.github.com/repos/rouhim/sensor-bridge/releases/latest | jq -r '.upload_url')
+          UPLOAD_URL=$(curl --silent https://api.github.com/repos/rouhim/sensor-bridge/releases/latest | jq -r '.upload_url')
           echo "UPLOAD_URL=${UPLOAD_URL}" >> $GITHUB_ENV
 
-      - name: Print the version
-        shell: bash
-        run: echo "The latest release version is ${{ env.VERSION }}"
-
-      - name: Print the upload url
-        shell: bash
-        run: echo "The upload url is ${{ env.UPLOAD_URL }}"
-
-      - name: Set release version
+      - name: Set version to cargo
         run: |
           cargo install sd
           cd src-tauri
