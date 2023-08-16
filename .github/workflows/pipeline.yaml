@@ -245,11 +245,6 @@ jobs:
           workspaces: "src-tauri -> target"
           cache-on-failure: true # upload cache even if there are errors in this step
 
-      - name: Detect latest github release - linux
-        if: matrix.platform == 'ubuntu-20.04'
-        shell: bash
-        run: sudo apt update && sudo apt upgrade -y && sudo apt dist-upgrade -y
-
       - name: Detect and set latest github release VERSION
         shell: bash
         run: |
