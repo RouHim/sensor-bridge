@@ -18,11 +18,20 @@ set -e
 GITHUB_TOKEN=$1
 BIN_PATH=$2
 NAME=$3
-echo "Uploading $BIN_PATH to $NAME"
+
+echo "Uploading ${BIN_PATH} to ${NAME}"
+
+# Determine the release ID
 RELEASE_ID=$(curl -s https://api.github.com/repos/RouHim/sensor-bridge/releases/latest | jq -r '.id' )
+
+# Build the upload URL
 UPLOAD_URL="https://uploads.github.com/repos/RouHim/sensor-bridge/releases/${RELEASE_ID}/assets?name=${NAME}"
+
+# Upload the binary to GitHub latest github release
 curl -X POST \
-  -H "Content-Type: $(file -b --mime-type "$BIN_PATH")" \
+  -H "Content-Type: $(file -b --mime-type "${BIN_PATH}")" \
 	-H "Authorization: token ${GITHUB_TOKEN}"\
 	-T "${BIN_PATH}" \
+	--connect-timeout 10 \
+	--max-time 60 \
   "${UPLOAD_URL}"

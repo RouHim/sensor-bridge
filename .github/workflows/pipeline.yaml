@@ -306,15 +306,15 @@ jobs:
         if: matrix.platform == 'ubuntu-20.04'
         run: |
           bash .github/scripts/upload-asset-to-release.sh \
-              ${{ secrets.RELEASE_TOKEN }} \
+              "${{ secrets.RELEASE_TOKEN }}" \
               "src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage" \
               "sensor-bridge_${{ env.VERSION }}_amd64.AppImage"
 
       - name: Upload artifacts windows
         if: matrix.platform == 'windows-latest'
-        shell: bash
+        shell: pwsh
         run: |
-          bash .github/scripts/upload-asset-to-release.sh \
-              ${{ secrets.RELEASE_TOKEN }} \
-              "src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi" \
+          .github/scripts/upload-asset-to-release.ps1 `
+              "${{ secrets.RELEASE_TOKEN }}" `
+              "src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi" `
               "sensor-bridge_${{ env.VERSION }}_x64_en-US.msi"
