@@ -362,15 +362,17 @@ jobs:
   update-updater:
     needs: [ bundle-and-upload ]
     runs-on: ubuntu-22.04
+    env:
+      UPDATER_FILE: ".github/updater/sensorbridge_update.json"
     steps:
       - uses: actions/checkout@v3
 
       - name: Build updater json
-        run: bash .github/updater/build_update_json.sh
+        run: bash .github/updater/build_update_json.sh "${{ env.VERSION }}" "${{ env.UPDATER_FILE }}"
 
       - name: Deploy update information to gist
         uses: exuanbo/actions-deploy-gist@v1
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           gist_id: 4c3d1cf64150dac63d6cfdab2fce306d
-          file_path: sensorbridge_update.json ${{ env.VERSION }}
+          file_path: ${{ env.UPDATER_FILE }} ${{ env.VERSION }}
