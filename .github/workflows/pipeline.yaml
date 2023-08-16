@@ -368,6 +368,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Detect and set latest github release VERSION
+        shell: bash
+        run: |
+          REPO="RouHim/sensor-bridge"
+          LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          LATEST_RELEASE=${LATEST_RELEASE#v}
+          echo "Latest release is $LATEST_RELEASE"
+          echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
+
       - name: Build updater json
         run: bash .github/updater/build_update_json.sh "${{ env.VERSION }}" "${{ env.UPDATER_FILE }}"
 
