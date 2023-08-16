@@ -1,3 +1,10 @@
+## [0.1.15](https://github.com/RouHim/sensor-bridge/compare/v0.1.14...v0.1.15) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** cleanup release script ([47efd21](https://github.com/RouHim/sensor-bridge/commit/47efd21c1761e7832015498994c5d1551f8e85d1))
+
 ## [0.1.14](https://github.com/RouHim/sensor-bridge/compare/v0.1.13...v0.1.14) (2023-08-16)
 
 
