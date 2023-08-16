@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/RouHim/sensor-bridge/compare/v0.3.0...v0.3.1) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** fix missing version ([8457f37](https://github.com/RouHim/sensor-bridge/commit/8457f378e28634f9b0e5bf60bcf53ffdb41f1444))
+
 # [0.3.0](https://github.com/RouHim/sensor-bridge/compare/v0.2.0...v0.3.0) (2023-08-16)
 
 
