@@ -1,3 +1,16 @@
+# [0.3.0](https://github.com/RouHim/sensor-bridge/compare/v0.2.0...v0.3.0) (2023-08-16)
+
+
+### Bug Fixes
+
+* **pipeline:** compile stage ([dbf64d1](https://github.com/RouHim/sensor-bridge/commit/dbf64d1aee575b056f9b1ff6c13efd8730df6a0d))
+* **pipeline:** gist file upload ([3e1f6d9](https://github.com/RouHim/sensor-bridge/commit/3e1f6d912009ed4c2cdf7775f2eb0e45709095f8))
+
+
+### Features
+
+* **pipeline:** skip app compile on main ([8f7d2a4](https://github.com/RouHim/sensor-bridge/commit/8f7d2a444b079b6bc4407be9dd860d1ead9f8c5d))
+
 # [0.2.0](https://github.com/RouHim/sensor-bridge/compare/v0.1.17...v0.2.0) (2023-08-16)
 
 
