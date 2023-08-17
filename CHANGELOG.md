@@ -1,3 +1,10 @@
+## [0.3.3](https://github.com/RouHim/sensor-bridge/compare/v0.3.2...v0.3.3) (2023-08-17)
+
+
+### Bug Fixes
+
+* **preview:** allow base64 data loading in prod mode ([054f991](https://github.com/RouHim/sensor-bridge/commit/054f991deec9f32aa3641046bd8d06f7989f3bde))
+
 ## [0.3.2](https://github.com/RouHim/sensor-bridge/compare/v0.3.1...v0.3.2) (2023-08-16)
 
 
