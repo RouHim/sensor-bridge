@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/RouHim/sensor-bridge/compare/v0.4.0...v0.5.0) (2023-08-17)
+
+
+### Features
+
+* **ui:** add move up and move down buttons ([cc54038](https://github.com/RouHim/sensor-bridge/commit/cc54038284fd932c79ebd856dcacca00b291b046))
+
 # [0.4.0](https://github.com/RouHim/sensor-bridge/compare/v0.3.3...v0.4.0) (2023-08-17)
 
 
