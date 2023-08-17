@@ -354,7 +354,7 @@ fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
     }
 }
 
-///
+/// Handles the system tray behaviour
 fn build_system_tray_handler() -> fn(&AppHandle<Wry>, SystemTrayEvent) {
     |app, event| match event {
         SystemTrayEvent::DoubleClick {

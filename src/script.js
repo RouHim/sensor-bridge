@@ -17,9 +17,11 @@ const txtDeviceNetworkAddress = document.getElementById("lcd-txt-device-network-
 const txtLcdResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtLcdResolutionHeight = document.getElementById("lcd-txt-resolution-height");
 const designerPane = document.getElementById("lcd-designer-pane");
+const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 const btnSaveElement = document.getElementById("lcd-btn-save-element");
 const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
-const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
+const btnMoveElementUp = document.getElementById("lcd-btn-move-element-up");
+const btnMoveElementDown = document.getElementById("lcd-btn-move-element-down");
 
 // Config panes
 const layoutTextConfig = document.getElementById("lcd-text-config");
@@ -104,6 +106,8 @@ window.addEventListener("DOMContentLoaded", () => {
     btnTransferActive.addEventListener("click", () => toggleSync(btnTransferActive.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
     btnRemoveElement.addEventListener("click", removeElement);
+    btnMoveElementUp.addEventListener("click", moveElementUp);
+    btnMoveElementDown.addEventListener("click", moveElementDown);
     cmbElementType.addEventListener("change", onElementTypeChange);
     btnElementSelectStaticImage.addEventListener("click", selectStaticImage);
     btnElementConditionalImageInfo.addEventListener("click", () => showConditionalImageInfo());
@@ -1158,7 +1162,7 @@ function showLastSelectedElementDetail() {
     cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
     txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
     txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
-    txtElementFontColor.dispatchEvent(new Event('input', { bubbles: true }));
+    txtElementFontColor.dispatchEvent(new Event('input', {bubbles: true}));
 
     // Static image
     txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
@@ -1173,12 +1177,12 @@ function showLastSelectedElementDetail() {
     txtElementGraphHeight.value = lastSelectedListElement.getAttribute("data-element-graph-height");
     cmbElementGraphType.value = lastSelectedListElement.getAttribute("data-element-graph-type");
     txtElementGraphColor.value = lastSelectedListElement.getAttribute("data-element-graph-color");
-    txtElementGraphColor.dispatchEvent(new Event('input', { bubbles: true }));
+    txtElementGraphColor.dispatchEvent(new Event('input', {bubbles: true}));
     txtElementGraphStrokeWidth.value = lastSelectedListElement.getAttribute("data-element-graph-stroke-width");
     txtElementGraphBackgroundColor.value = lastSelectedListElement.getAttribute("data-element-graph-background-color");
-    txtElementGraphBackgroundColor.dispatchEvent(new Event('input', { bubbles: true }));
+    txtElementGraphBackgroundColor.dispatchEvent(new Event('input', {bubbles: true}));
     txtElementGraphBorderColor.value = lastSelectedListElement.getAttribute("data-element-graph-border-color");
-    txtElementGraphBorderColor.dispatchEvent(new Event('input', { bubbles: true }));
+    txtElementGraphBorderColor.dispatchEvent(new Event('input', {bubbles: true}));
 
     // Conditional image
     cmbConditionalImageSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
@@ -1275,4 +1279,60 @@ function recalculateZIndex() {
         // Update the z-index of the designer element
         designerElement.style.zIndex = "" + index;
     });
+}
+
+// Moves the selected element up in the list
+function moveElementUp() {
+    if (lastSelectedListElement === null) {
+        alert("Please select a element first.");
+        return;
+    }
+
+    // Check if element exists in designer
+    if (lastSelectedDesignerElement === null) {
+        alert("Please select a element first.");
+        return;
+    }
+
+    // Check if the element is already the first element
+    if (lastSelectedListElement.previousElementSibling === null) {
+        return;
+    }
+
+    // Move the element in the list
+    lastSelectedListElement.parentNode.insertBefore(lastSelectedListElement, lastSelectedListElement.previousElementSibling);
+
+    // Recalculate the z-index of all elements
+    recalculateZIndex();
+
+    // Save config
+    saveConfig();
+}
+
+// Moves the selected element one position down in the list
+function moveElementDown() {
+    if (lastSelectedListElement === null) {
+        alert("Please select a element first.");
+        return;
+    }
+
+    // Check if element exists in designer
+    if (lastSelectedDesignerElement === null) {
+        alert("Please select a element first.");
+        return;
+    }
+
+    // Check if the element is already the last element
+    if (lastSelectedListElement.nextElementSibling === null) {
+        return;
+    }
+
+    // Move the element in the list
+    lastSelectedListElement.parentNode.insertBefore(lastSelectedListElement.nextElementSibling, lastSelectedListElement);
+
+    // Recalculate the z-index of all elements
+    recalculateZIndex();
+
+    // Save config
+    saveConfig();
 }
