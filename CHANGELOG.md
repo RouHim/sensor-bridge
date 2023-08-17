@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/RouHim/sensor-bridge/compare/v0.3.3...v0.4.0) (2023-08-17)
+
+
+### Features
+
+* **pipeline:** use binstall in instead of cargo install to speed up build times ([b696b10](https://github.com/RouHim/sensor-bridge/commit/b696b10323952d5448398420594a20cfe8d050e6))
+
 ## [0.3.3](https://github.com/RouHim/sensor-bridge/compare/v0.3.2...v0.3.3) (2023-08-17)
 
 
