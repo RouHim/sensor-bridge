@@ -35,8 +35,14 @@ cargo tauri dev
 
 ### Build
 
-For building the project, run the following command in the root directory of the project:
+For building a release version, run the following command in the root directory of the project:
 
 ```bash
 cargo tauri build
 ```
+
+#### Debug version
+In order to build a debuggable version of a release build follow this steps:
+* Add this feature to the tauri crate in the Cargo.toml: `devtools`
+* Build a debug release version with: `cargo tauri build --debug`
+* Enable debug logging with: `RUST_LOG=debug`

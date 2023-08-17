@@ -70,7 +70,7 @@
       }
     },
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost"
+      "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data:"
     },
     "updater": {
       "active": true,
