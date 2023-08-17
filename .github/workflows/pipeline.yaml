@@ -104,8 +104,9 @@ jobs:
           workspaces: "src-tauri -> target"
           cache-on-failure: true # upload cache even if there are errors in this step
 
+      - uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-udeps
-        run: cargo install cargo-udeps --locked
+        run: cargo binstall cargo-udeps
 
       - name: Analyze dependencies
         run: cd src-tauri && cargo update && cargo +nightly udeps
@@ -179,8 +180,9 @@ jobs:
           workspaces: "src-tauri -> target"
           cache-on-failure: true # upload cache even if there are errors in this step
 
+      - uses: cargo-bins/cargo-binstall@main
       - name: Install Tauri-CLI
-        run: cargo install tauri-cli
+        run: cargo binstall tauri-cli
 
       - name: Compile application
         run: cd src-tauri && cargo tauri build --ci --bundles none
@@ -284,8 +286,9 @@ jobs:
         if: matrix.platform == 'ubuntu-20.04'
         run: sudo apt update && sudo apt install -y libsensors4-dev
 
+      - uses: cargo-bins/cargo-binstall@main
       - name: Install Tauri-CLI
-        run: cargo install tauri-cli
+        run: cargo binstall tauri-cli
 
       - name: Build the app
         env:
