@@ -5,7 +5,9 @@ use std::io::BufRead;
 
 #[cfg(target_os = "linux")]
 use log::{debug, info, warn};
-use sensor_core::{SensorType, SensorValue};
+#[cfg(target_os = "linux")]
+use sensor_core::SensorType;
+use sensor_core::SensorValue;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()

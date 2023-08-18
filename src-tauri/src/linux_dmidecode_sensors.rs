@@ -6,7 +6,9 @@ use std::sync::{Arc, Mutex};
 use dmidecode::{BaseBoard, Bios, EntryPoint, Structure};
 #[cfg(target_os = "linux")]
 use log::info;
-use sensor_core::{SensorType, SensorValue};
+#[cfg(target_os = "linux")]
+use sensor_core::SensorType;
+use sensor_core::SensorValue;
 use super_shell::RootShell;
 
 pub struct DmiDecodeSensors {
