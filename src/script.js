@@ -291,8 +291,8 @@ function addNetworkDeviceToList(id, name) {
 
 function getGraphConfig(listItem) {
     // Get graph config attributes
-    const elementGraphMinSensorValue = parseFloat(listItem.getAttribute("data-element-graph-min-sensor-value"));
-    const elementGraphMaxSensorValue = parseFloat(listItem.getAttribute("data-element-graph-max-sensor-value"));
+    const elementGraphMinSensorValue = parseFloat(listItem.getAttribute("data-element-graph-min-value"));
+    const elementGraphMaxSensorValue = parseFloat(listItem.getAttribute("data-element-graph-max-value"));
     const elementGraphWidth = parseInt(listItem.getAttribute("data-element-graph-width"));
     const elementGraphHeight = parseInt(listItem.getAttribute("data-element-graph-height"));
     const elementGraphType = listItem.getAttribute("data-element-graph-type");
