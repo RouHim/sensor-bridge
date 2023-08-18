@@ -252,7 +252,7 @@ fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
     }
 
     // Open a new lcd preview window
-    lcd_preview::show(app_handle, &port_config);
+    lcd_preview::show(app_handle, port_config);
 }
 
 /// Returns the lcd preview image for the specified com port as base64 encoded string

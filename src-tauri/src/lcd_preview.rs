@@ -18,7 +18,7 @@ pub const WINDOW_LABEL: &str = "lcd_preview";
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
 //noinspection RsWrongGenericArgumentsNumber
-pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
+pub fn show(app_handle: AppHandle, port_config: NetPortConfig) {
     let network_device_id = port_config.id.clone();
     let width = port_config.lcd_config.resolution_width;
     let height = port_config.lcd_config.resolution_height;
@@ -39,6 +39,9 @@ pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
 
         // There is already a window handle
         if lcd_preview_window.is_err() {
+            let app_handle = app_handle.clone();
+            let port_config = port_config.clone();
+            show(app_handle, port_config);
             return;
         }
 
