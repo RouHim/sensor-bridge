@@ -1,3 +1,10 @@
+## [0.7.1](https://github.com/RouHim/sensor-bridge/compare/v0.7.0...v0.7.1) (2023-08-18)
+
+
+### Bug Fixes
+
+* **pipeline:** set missing cargo version ([d0af590](https://github.com/RouHim/sensor-bridge/commit/d0af5909271eb0490eccad80637be9a6e18f43c9))
+
 # [0.7.0](https://github.com/RouHim/sensor-bridge/compare/v0.6.0...v0.7.0) (2023-08-18)
 
 
