@@ -100,6 +100,12 @@ fn main() {
             static_sensor_values,
             sensor_value_history,
         })
+        .setup(|app| {
+            // Add cargo version to title
+            let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
+            app.get_window("main").unwrap().set_title(&title).unwrap();
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_sensor_values,
             get_app_config,
