@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/RouHim/sensor-bridge/compare/v0.5.0...v0.6.0) (2023-08-18)
+
+
+### Features
+
+* **cargo:** use tag of sensor core library ([1e7eb0a](https://github.com/RouHim/sensor-bridge/commit/1e7eb0aa145ceb23158cfa856d615cbf14391d35))
+
 # [0.5.0](https://github.com/RouHim/sensor-bridge/compare/v0.4.0...v0.5.0) (2023-08-17)
 
 
