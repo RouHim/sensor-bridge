@@ -5,7 +5,8 @@ use std::thread;
 use log::info;
 use rayon::prelude::*;
 use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
+use tauri::WindowEvent::CloseRequested;
 
 use crate::config::NetPortConfig;
 use crate::{conditional_image, sensor, static_image, utils};
@@ -34,10 +35,14 @@ pub fn show(app_handle: AppHandle, port_config: &NetPortConfig) {
             &app_handle,
             WINDOW_LABEL,
             tauri::WindowUrl::App(format!("lcd_preview.html#{network_device_id}").into()),
-        )
-        .build()
-        .unwrap();
+        ).build();
 
+        // There is already a window handle
+        if lcd_preview_window.is_err() {
+            return;
+        }
+
+        let lcd_preview_window = lcd_preview_window.unwrap();
         lcd_preview_window.set_title("LCD Preview").unwrap();
         lcd_preview_window.set_resizable(false).unwrap();
         lcd_preview_window
@@ -95,6 +100,6 @@ pub fn render(
         // Return the base64 string
         base64::Engine::encode(&engine, buf)
     })
-    .join()
-    .unwrap()
+        .join()
+        .unwrap()
 }
