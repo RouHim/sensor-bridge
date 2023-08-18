@@ -1,3 +1,17 @@
+# [0.7.0](https://github.com/RouHim/sensor-bridge/compare/v0.6.0...v0.7.0) (2023-08-18)
+
+
+### Bug Fixes
+
+* **imports:** fix linux import ([5c58df1](https://github.com/RouHim/sensor-bridge/commit/5c58df1e28b8c729dde46bdbc3d80a494a628cdd))
+* **windows:** prevent crashing when toggle preview ([cf20366](https://github.com/RouHim/sensor-bridge/commit/cf20366ff45f007cbc540ab0ebab7108471ee295))
+* **windows:** window is not openening when clicking for the second time ([e2d8fc1](https://github.com/RouHim/sensor-bridge/commit/e2d8fc1833eccb63181a62769ef609dc5c9584d4))
+
+
+### Features
+
+* **app:** add version to title ([3bf7aec](https://github.com/RouHim/sensor-bridge/commit/3bf7aecff77fb5610499d94968e60fa7755d89b6))
+
 # [0.6.0](https://github.com/RouHim/sensor-bridge/compare/v0.5.0...v0.6.0) (2023-08-18)
 
 
