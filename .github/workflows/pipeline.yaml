@@ -147,7 +147,6 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ ubuntu-20.04, windows-latest ]
-
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code

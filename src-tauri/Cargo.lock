@@ -3463,12 +3463,11 @@ dependencies = [
 
 [[package]]
 name = "sensor-core"
-version = "0.1.0"
-source = "git+https://github.com/RouHim/sensor-core?branch=main#6941afa707eccc633849988b8eedad90993234f4"
+version = "0.0.0"
+source = "git+https://github.com/RouHim/sensor-core?tag=v1.0.1#62e2890cf0171a7a3f913d4a838fc343635f53eb"
 dependencies = [
  "base64 0.21.2",
  "dirs",
- "env_logger",
  "image",
  "imageproc",
  "lazy_static",
