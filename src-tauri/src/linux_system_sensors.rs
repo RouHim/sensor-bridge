@@ -1,6 +1,8 @@
 #[cfg(target_os = "linux")]
 use sensor_core::SensorType;
 use sensor_core::SensorValue;
+#[cfg(target_os = "linux")]
+use std::fs;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
