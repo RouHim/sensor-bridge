@@ -1,3 +1,10 @@
+## [0.7.2](https://github.com/RouHim/sensor-bridge/compare/v0.7.1...v0.7.2) (2023-08-18)
+
+
+### Bug Fixes
+
+* **ui:** min max graph value ([9892e7e](https://github.com/RouHim/sensor-bridge/commit/9892e7e207cdd3ac6953a72220b6c9cd22f5a84c))
+
 ## [0.7.1](https://github.com/RouHim/sensor-bridge/compare/v0.7.0...v0.7.1) (2023-08-18)
 
 
