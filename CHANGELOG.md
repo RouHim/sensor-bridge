@@ -1,3 +1,10 @@
+## [0.7.3](https://github.com/RouHim/sensor-bridge/compare/v0.7.2...v0.7.3) (2023-08-21)
+
+
+### Bug Fixes
+
+* **icon:** improve icons ([1a1e123](https://github.com/RouHim/sensor-bridge/commit/1a1e1238f22b01ec9228b1df1d85b6cc098e5b26))
+
 ## [0.7.2](https://github.com/RouHim/sensor-bridge/compare/v0.7.1...v0.7.2) (2023-08-18)
 
 
