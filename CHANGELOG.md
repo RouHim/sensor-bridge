@@ -1,3 +1,10 @@
+# [0.8.0](https://github.com/RouHim/sensor-bridge/compare/v0.7.5...v0.8.0) (2023-08-22)
+
+
+### Features
+
+* **ui:** verify network address ([7da76b5](https://github.com/RouHim/sensor-bridge/commit/7da76b56870549d13a00de4116cc71bf958f9b34))
+
 ## [0.7.5](https://github.com/RouHim/sensor-bridge/compare/v0.7.4...v0.7.5) (2023-08-22)
 
 ## [0.7.4](https://github.com/RouHim/sensor-bridge/compare/v0.7.3...v0.7.4) (2023-08-21)
