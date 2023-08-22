@@ -119,6 +119,7 @@ fn main() {
             get_lcd_preview_image,
             get_graph_preview_image,
             get_conditional_image_preview_image,
+            verify_network_address,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -348,6 +349,11 @@ fn get_conditional_image_preview_image(
 
     let engine = base64::engine::general_purpose::STANDARD;
     base64::Engine::encode(&engine, graph_data)
+}
+
+#[tauri::command]
+fn verify_network_address(address: &str) -> bool {
+    net_port::verify_network_address(address)
 }
 
 /// Handle tauri window events

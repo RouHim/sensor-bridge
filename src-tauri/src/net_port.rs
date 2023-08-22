@@ -1,4 +1,6 @@
 use std::net::IpAddr;
+use std::process::Command;
+use std::str;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -28,7 +30,7 @@ fn connect_to_tcp_socket(
     net_port_config: &NetPortConfig,
     handler: &NodeHandler<()>,
 ) -> Option<Endpoint> {
-    let ip = resolve_hostname(net_port_config);
+    let ip = resolve_hostname(&net_port_config.address);
 
     if ip.is_none() {
         error!("Could not resolve hostname {}", net_port_config.address);
@@ -62,25 +64,23 @@ fn connect_to_tcp_socket(
     }
 }
 
-/// Resolves the name of the device to an ip address
-fn resolve_hostname(net_port_config: &NetPortConfig) -> Option<String> {
-    let target = &net_port_config.address;
-
+/// Resolves the name of the device to an ip v4 address
+fn resolve_hostname(address: &str) -> Option<String> {
     // Check if target string is an valid ip address
-    if IpAddr::from_str(target).is_ok() {
-        return Some(target.to_string());
+    if IpAddr::from_str(address).is_ok() {
+        return Some(address.to_string());
     }
 
     // Otherwise we most likely have a hostname, try to resolve the hostname
     // and get the first ipv4 address
-    return match dns_lookup::lookup_host(target).ok() {
+    return match dns_lookup::lookup_host(address).ok() {
         Some(ips) => ips
             .iter()
             .filter(|ip| ip.is_ipv4())
             .map(|ip| ip.to_string())
             .next(),
         None => {
-            error!("Could not resolve hostname {}", target);
+            error!("Could not resolve hostname {}", address);
             None
         }
     };
@@ -247,4 +247,26 @@ fn wait(start_time: Instant) {
             PUSH_RATE
         });
     thread::sleep(time_to_wait);
+}
+
+/// Verifies that the specified address is reachable
+pub fn verify_network_address(address: &str) -> bool {
+    let ip = resolve_hostname(address);
+
+    if ip.is_none() {
+        error!("Could not resolve hostname {}", address);
+        return false;
+    }
+
+    // Pings the specified address
+    ping_ip(&ip.unwrap())
+}
+
+/// Pings the specified ip address
+pub fn ping_ip(ip: &str) -> bool {
+    if cfg!(target_os = "windows") {
+        Command::new("ping").args(["-n", "1", ip]).output().is_ok()
+    } else {
+        Command::new("ping").args(["-c", "1", ip]).output().is_ok()
+    }
 }

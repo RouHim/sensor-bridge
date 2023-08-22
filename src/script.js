@@ -113,6 +113,9 @@ window.addEventListener("DOMContentLoaded", () => {
     btnElementConditionalImageInfo.addEventListener("click", () => showConditionalImageInfo());
     btnElementSelectConditionalImage.addEventListener("click", selectConditionalImage);
 
+    // If lost focus, check network config
+    txtDeviceNetworkAddress.addEventListener("focusout", verifyNetworkAddress);
+
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
     designerPane.addEventListener('drop', dropOnDesignerPane);
@@ -125,6 +128,21 @@ window.addEventListener("DOMContentLoaded", () => {
         onNetDeviceSelected(cmbNetworkPorts.options[0]);
     }
 });
+
+function verifyNetworkAddress() {
+    // Call backend to verify network address
+    invoke('verify_network_address', {address: txtDeviceNetworkAddress.value}).then(
+        (isValid) => {
+            if (isValid) {
+                txtDeviceNetworkAddress.classList.remove("invalid");
+                console.log("Network address is valid");
+            } else {
+                txtDeviceNetworkAddress.classList.add("invalid");
+                console.log("Network address is invalid");
+            }
+        }
+    );
+}
 
 /// Show an info dialog which explains how to use conditional image upload
 function showConditionalImageInfo() {

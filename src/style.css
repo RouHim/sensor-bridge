@@ -133,3 +133,7 @@ html, body {
 tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     background-color: transparent;
 }
+
+.invalid {
+    border: 1px solid red;
+}
