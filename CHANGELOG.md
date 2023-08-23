@@ -1,3 +1,11 @@
+# [0.10.0](https://github.com/RouHim/sensor-bridge/compare/v0.9.1...v0.10.0) (2023-08-23)
+
+
+### Features
+
+* **networking:** make network resilient for restarts of display and brdige ([bf83075](https://github.com/RouHim/sensor-bridge/commit/bf83075041b5700d82fc637e72bedeccc35628b4))
+* **ui:** constants for element types ([3d46b30](https://github.com/RouHim/sensor-bridge/commit/3d46b3079acd15fff6c3779e1cde60f515b96e71))
+
 ## [0.9.1](https://github.com/RouHim/sensor-bridge/compare/v0.9.0...v0.9.1) (2023-08-23)
 
 
