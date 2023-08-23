@@ -80,6 +80,12 @@ let currentNetworkDeviceId = null;
 const DESIGNER_ID_PREFIX = "designer-";
 const LIST_ID_PREFIX = "list-";
 
+// Element types
+const ELEMENT_TYPE_TEXT = "text";
+const ELEMENT_TYPE_STATIC_IMAGE = "static-image";
+const ELEMENT_TYPE_GRAPH = "graph";
+const ELEMENT_TYPE_CONDITIONAL_IMAGE = "conditional-image";
+
 window.addEventListener("DOMContentLoaded", () => {
     // Configure color picker
     window.Coloris && (Coloris({
@@ -204,16 +210,16 @@ function onElementTypeChange() {
 
     const selectedElement = cmbElementType.options[cmbElementType.selectedIndex].value;
     switch (selectedElement) {
-        case "text":
+        case ELEMENT_TYPE_TEXT:
             layoutTextConfig.style.display = "block";
             break;
-        case "static-image":
+        case ELEMENT_TYPE_STATIC_IMAGE:
             layoutStaticImageConfig.style.display = "block";
             break;
-        case "graph":
+        case ELEMENT_TYPE_GRAPH:
             layoutGraphConfig.style.display = "block";
             break;
-        case "conditional-image":
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
             layoutConditionalImageConfig.style.display = "block";
             break;
     }
@@ -731,9 +737,9 @@ function updateElement(calculatedId) {
     // If the element type is a graph, the sensor id is the number sensor id
     // If the element type is a conditional image, the sensor id is the conditional image sensor id
     let sensorId = cmbSensorIdSelection.value;
-    if (cmbElementType.value === "graph") {
+    if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
         sensorId = cmbNumberSensorIdSelection.value;
-    } else if (cmbElementType.value === "conditional-image") {
+    } else if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
         sensorId = cmbConditionalImageSensorIdSelection.value;
     }
 
@@ -782,7 +788,7 @@ function updateElement(calculatedId) {
 
     switch (cmbElementType.value) {
         default:
-        case "text":
+        case ELEMENT_TYPE_TEXT:
             designerElement.title = txtElementName.value;
             designerElement.innerHTML = txtElementTextFormat.value
                 .replace("{value}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].title)
@@ -791,12 +797,12 @@ function updateElement(calculatedId) {
             designerElement.style.fontFamily = "monospace";
             designerElement.style.color = txtElementFontColor.value;
             break;
-        case "static-image":
+        case ELEMENT_TYPE_STATIC_IMAGE:
             designerElement.style.width = txtElementStaticImageWidth.value + "px";
             designerElement.style.height = txtElementStaticImageHeight.value + "px";
             designerElement.src = toTauriAssetPath(txtElementStaticImageFile.value);
             break;
-        case "graph":
+        case ELEMENT_TYPE_GRAPH:
             designerElement.style.width = txtElementGraphWidth.value + "px";
             designerElement.style.height = txtElementGraphHeight.value + "px";
             invoke('get_graph_preview_image', {
@@ -807,7 +813,7 @@ function updateElement(calculatedId) {
                     designerElement.src = "data:image/png;base64," + response;
                 })
             break;
-        case "conditional-image":
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
             designerElement.style.width = txtElementConditionalImageWidth.value + "px";
             designerElement.style.height = txtElementConditionalImageHeight.value + "px";
             invoke('get_conditional_image_preview_image', {
@@ -826,7 +832,7 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
     let designerElement;
     switch (sensorType) {
         default:
-        case "text":
+        case ELEMENT_TYPE_TEXT:
             designerElement = document.createElement("div");
 
             designerElement.title = sensorName;
@@ -835,14 +841,14 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
             designerElement.style.fontFamily = "monospace";
             designerElement.style.color = elementTextConfig.font_color;
             break;
-        case "static-image":
+        case ELEMENT_TYPE_STATIC_IMAGE:
             designerElement = document.createElement("img");
 
             designerElement.style.width = elementImageConfig.width + "px";
             designerElement.style.height = elementImageConfig.height + "px";
             designerElement.src = toTauriAssetPath(elementImageConfig.image_path);
             break;
-        case "graph":
+        case ELEMENT_TYPE_GRAPH:
             designerElement = document.createElement("img");
 
             designerElement.style.width = elementGraphConfig.width + "px";
@@ -855,7 +861,7 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
                 designerElement.src = "data:image/png;base64," + response;
             })
             break;
-        case "conditional-image":
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
             designerElement = document.createElement("img");
 
             designerElement.style.width = elementConditionalImageConfig.width + "px";
@@ -931,7 +937,7 @@ function validateUi() {
     }
 
     // Text config
-    if (cmbElementType.value === "text") {
+    if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
         if (txtElementFontSize.value === "" || isNaN(txtElementFontSize.value)) {
             alert("Please enter a font size for the text element.");
             return false;
@@ -943,7 +949,7 @@ function validateUi() {
     }
 
     // Static image
-    if (cmbElementType.value === "static-image") {
+    if (cmbElementType.value === ELEMENT_TYPE_STATIC_IMAGE) {
         if (txtElementStaticImageFile.value === "") {
             alert("Please select a static image for the static image element.");
             return false;
@@ -960,7 +966,7 @@ function validateUi() {
     }
 
     // graph
-    if (cmbElementType.value === "graph") {
+    if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
         if (txtElementGraphWidth.value === "" || isNaN(txtElementGraphWidth.value)) {
             alert("Please enter a width for the graph element.");
             return false;
@@ -993,7 +999,7 @@ function validateUi() {
     }
 
     // conditional image
-    if (cmbElementType.value === "conditional-image") {
+    if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
         if (cmbConditionalImageSensorIdSelection.value === "") {
             alert("Please select a sensor for the conditional image element.");
             return false;
@@ -1040,9 +1046,9 @@ function saveDeviceConfig() {
         // If selected element type is graph use cmbNumberSensorIdSelection
         // If selected element type is conditional-image use cmbConditionalImageSensorIdSelection
         let selectedSensor = cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex];
-        if (cmbElementType.value === "graph") {
+        if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
             selectedSensor = cmbNumberSensorIdSelection.options[cmbNumberSensorIdSelection.selectedIndex];
-        } else if (cmbElementType.value === "conditional-image") {
+        } else if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
             selectedSensor = cmbConditionalImageSensorIdSelection.options[cmbConditionalImageSensorIdSelection.selectedIndex];
         }
 
