@@ -1,3 +1,10 @@
+# [0.9.0](https://github.com/RouHim/sensor-bridge/compare/v0.8.1...v0.9.0) (2023-08-23)
+
+
+### Features
+
+* **ui:** parallel graph rendering ([c86cfc5](https://github.com/RouHim/sensor-bridge/commit/c86cfc5fe3abffee450011c70e623420b6e8baf0))
+
 ## [0.8.1](https://github.com/RouHim/sensor-bridge/compare/v0.8.0...v0.8.1) (2023-08-23)
 
 # [0.8.0](https://github.com/RouHim/sensor-bridge/compare/v0.7.5...v0.8.0) (2023-08-22)
