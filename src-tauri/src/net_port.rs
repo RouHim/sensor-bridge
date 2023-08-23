@@ -52,6 +52,10 @@ fn connect_to_tcp_socket(
     match endpoint {
         Ok(endpoint) => {
             info!("Connected to device {}({})", net_port_config.name, &address);
+
+            let mut net_port = (handler.clone(), endpoint.0);
+            prepare_static_data(net_port_config, &mut net_port);
+
             Some(endpoint.0)
         }
         Err(_err) => {
@@ -62,6 +66,23 @@ fn connect_to_tcp_socket(
             None
         }
     }
+}
+
+/// Prepares the static data.
+/// This sends the static image data and the conditional image data to the remote tcp socket.
+fn prepare_static_data(
+    net_port_config: &NetPortConfig,
+    net_port: &mut (NodeHandler<()>, Endpoint),
+) {
+    // Prepare static image data
+    prepare_static_image_data_on_display(net_port_config, net_port);
+
+    // Prepare conditional image data
+    prepare_conditional_image_data_on_display(net_port_config, net_port);
+
+    // Wait 1 seconds for the assets to be loaded
+    info!("Waiting 1s for assets to be loaded...");
+    thread::sleep(Duration::from_secs(1));
 }
 
 /// Resolves the name of the device to an ip v4 address
@@ -102,26 +123,12 @@ pub fn start_sync(
     // Start new thread that writes to the remote tcp socket
     let handle = thread::spawn(move || {
         // Try to open the named network port
-        let mut net_port = match open(&net_port_config) {
-            Some((handler, endpoint)) => (handler, endpoint),
-            None => {
-                // Set the port_running_state_handle to false
-                *port_running_state_handle.lock().unwrap() = false;
-                return;
-            }
+        let mut net_port = match try_open_tcp_socket(&net_port_config, &port_running_state_handle) {
+            Some(value) => value,
+            None => return,
         };
 
-        // Prepare static image data
-        prepare_static_image_data_on_display(&net_port_config, &mut net_port);
-
-        // Prepare conditional image data
-        prepare_conditional_image_data_on_display(&net_port_config, &mut net_port);
-
-        // Wait 1 seconds for the assets to be loaded
-        info!("Waiting 1s for assets to be loaded...");
-        thread::sleep(Duration::from_secs(1));
-
-        // Iterate until the port_running_state_handle is set to false
+        // Send data until the port_running_state_handle is set to false (sync button in UI)
         while *port_running_state_handle.lock().unwrap() {
             // Measure duration
             let start_time = Instant::now();
@@ -146,6 +153,26 @@ pub fn start_sync(
     });
 
     Arc::new(handle)
+}
+
+/// Tries to open the tcp socket until the port_running_state_handle is set to false.
+/// Returns a tcp handler and tcp listener
+fn try_open_tcp_socket(
+    net_port_config: &NetPortConfig,
+    port_running_state_handle: &Arc<Mutex<bool>>,
+) -> Option<(NodeHandler<()>, Endpoint)> {
+    let mut net_port = None;
+
+    while *port_running_state_handle.lock().unwrap() && net_port.is_none() {
+        // Wait 1 seconds before trying to open the port again
+        thread::sleep(Duration::from_secs(1));
+
+        // Try to open the named network port
+        net_port = open(net_port_config);
+    }
+    net_port.as_ref()?;
+
+    net_port
 }
 
 /// Prepares the render data for the remote tcp socket
