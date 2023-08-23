@@ -83,8 +83,6 @@ fn to_sensor_value(
     let (value, unit) = if sensor_type.eq("Throughput") {
         let (value, unit) = crate::utils::pretty_bytes(*value as usize);
         (value, format!("{unit}/s"))
-    } else if sensor_type.eq("Data") || sensor_type.eq("SmallData") {
-        crate::utils::pretty_bytes(*value as usize)
     } else {
         (*value as f64, unit)
     };
@@ -113,7 +111,7 @@ fn match_sensor_type(sensor_type: &str) -> (SensorType, String) {
         "Load" => (SensorType::Number, "%"),
         "Data" => (SensorType::Number, "B"),
         "Power" => (SensorType::Number, "W"),
-        "SmallData" => (SensorType::Number, "B"),
+        "SmallData" => (SensorType::Number, "MB"),
         "Clock" => (SensorType::Number, "MHz"),
         "Voltage" => (SensorType::Number, "V"),
         "Energy" => (SensorType::Number, "mWh"),
