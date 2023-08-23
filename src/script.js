@@ -803,7 +803,7 @@ function updateElement(calculatedId) {
                 sensorId: sensorId,
                 graphConfig: getGraphConfig(listEntryElement)
             })
-                .then(response => {
+                .then(async response => {
                     designerElement.src = "data:image/png;base64," + response;
                 })
             break;
@@ -815,7 +815,7 @@ function updateElement(calculatedId) {
                 sensorId: sensorId,
                 conditionalImageConfig: getConditionalImageConfig(listEntryElement)
             })
-                .then(response => {
+                .then(async response => {
                     designerElement.src = "data:image/png;base64," + response;
                 })
             break;
@@ -851,7 +851,7 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
                 networkDeviceId: currentNetworkDeviceId,
                 sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
                 graphConfig: getGraphConfig(lastSelectedListElement)
-            }).then(response => {
+            }).then(async response => {
                 designerElement.src = "data:image/png;base64," + response;
             })
             break;
@@ -864,7 +864,7 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
                 elementId: elementId,
                 sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
                 conditionalImageConfig: getConditionalImageConfig(lastSelectedListElement),
-            }).then(response => {
+            }).then(async response => {
                 designerElement.src = "data:image/png;base64," + response;
             })
             break;
