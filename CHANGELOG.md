@@ -1,3 +1,10 @@
+## [0.9.1](https://github.com/RouHim/sensor-bridge/compare/v0.9.0...v0.9.1) (2023-08-23)
+
+
+### Bug Fixes
+
+* **windows:** fix byte data from libre hw monitor ([6c24380](https://github.com/RouHim/sensor-bridge/commit/6c243802c5544c7e1e94dfdedf18091b9482215d))
+
 # [0.9.0](https://github.com/RouHim/sensor-bridge/compare/v0.8.1...v0.9.0) (2023-08-23)
 
 
