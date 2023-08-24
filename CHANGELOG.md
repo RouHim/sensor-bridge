@@ -1,3 +1,10 @@
+# [0.12.0](https://github.com/RouHim/sensor-bridge/compare/v0.11.0...v0.12.0) (2023-08-24)
+
+
+### Features
+
+* **ui:** async ui loading ([a17c13e](https://github.com/RouHim/sensor-bridge/commit/a17c13e36f5ac4d5569ece2919823463bd871725))
+
 # [0.11.0](https://github.com/RouHim/sensor-bridge/compare/v0.10.1...v0.11.0) (2023-08-24)
 
 
