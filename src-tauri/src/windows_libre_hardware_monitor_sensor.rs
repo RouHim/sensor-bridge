@@ -1,3 +1,4 @@
+use log::error;
 #[cfg(target_os = "windows")]
 use std::collections::HashMap;
 
@@ -15,11 +16,17 @@ pub fn get_sensor_values() -> Vec<SensorValue> {
 
 #[cfg(target_os = "windows")]
 fn get_all_available_sensors() -> Vec<SensorValue> {
-    let wmi_con = WMIConnection::with_namespace_path(
+    // Check if the WMI namespace exists
+    let wmi_con = match WMIConnection::with_namespace_path(
         "ROOT\\LibreHardwareMonitor",
         COMLibrary::new().unwrap(),
-    )
-    .unwrap();
+    ) {
+        Ok(wmi_con) => wmi_con,
+        _ => {
+            error!("WMI namespace ROOT\\LibreHardwareMonitor not found. Is LibreHardwareMonitor running?");
+            return vec![];
+        }
+    };
 
     let hardware_list: Vec<HashMap<String, Variant>> =
         match wmi_con.raw_query("SELECT * FROM Hardware") {

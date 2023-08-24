@@ -523,10 +523,11 @@ function onNetDeviceSelected(element) {
             cmbNetworkPorts.value = networkDeviceId;
 
             // Load sensor values
-            loadSensorValues();
-
-            // Load lcd config
-            loadLcdConfig(networkDeviceId);
+            loadSensorValues().then(() => {
+                    // Load lcd config
+                    loadLcdConfig(networkDeviceId);
+                }
+            );
         }
     );
 }
@@ -656,7 +657,7 @@ function addElementToList(elementId, sensorId, positionX, positionY, elementName
 }
 
 function loadSensorValues() {
-    invoke('get_sensor_values').then(
+    return invoke('get_sensor_values').then(
         (loadedSensors) => {
             // cast sensor values to json object
             sensorValues = JSON.parse(loadedSensors);
@@ -695,6 +696,14 @@ function setSelectedElement(listHtmlElement) {
 
     lastSelectedListElement = document.getElementById(LIST_ID_PREFIX + elementId);
     lastSelectedDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+
+    // Remove the border from all designer elements
+    Array.from(designerPane.children).forEach((child) => {
+        child.style.border = "none";
+    });
+
+    // Add a border to the selected designer element
+    lastSelectedDesignerElement.style.border = "1px solid var(--selection)";
 
     // Register arrow key press event to move the selected element on the designer pane
     document.addEventListener("keydown", moveSelectedElement);
