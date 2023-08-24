@@ -1,3 +1,10 @@
+# [0.13.0](https://github.com/RouHim/sensor-bridge/compare/v0.12.0...v0.13.0) (2023-08-24)
+
+
+### Features
+
+* **ui:** load lcd config async & select highlight ([5da2627](https://github.com/RouHim/sensor-bridge/commit/5da2627ba22992988912b69e32bac01801ef5217))
+
 # [0.12.0](https://github.com/RouHim/sensor-bridge/compare/v0.11.0...v0.12.0) (2023-08-24)
 
 
