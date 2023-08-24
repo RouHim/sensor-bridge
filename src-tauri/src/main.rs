@@ -3,19 +3,19 @@
     windows_subsystem = "windows"
 )]
 
-use std::{fs, thread};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::{fs, thread};
 
 use log::error;
 use sensor_core::{
-    conditional_image_renderer, ConditionalImageConfig, graph_renderer, GraphConfig, SensorValue,
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig, SensorValue,
 };
 use super_shell::RootShell;
+use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
-use tauri::State;
 
 use crate::config::{AppConfig, NetPortConfig};
 
