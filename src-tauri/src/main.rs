@@ -127,12 +127,12 @@ fn main() {
 }
 
 #[tauri::command]
-fn get_sensor_values(app_state: State<AppState>) -> String {
+async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()> {
     let sensor_values = sensor::read_all_sensor_values(
         &app_state.sensor_value_history,
         &app_state.static_sensor_values,
     );
-    serde_json::to_string(&sensor_values).unwrap()
+    Ok(serde_json::to_string(&sensor_values).unwrap())
 }
 
 #[tauri::command]
@@ -142,9 +142,9 @@ fn create_network_device_config() -> String {
 }
 
 #[tauri::command]
-fn get_network_device_config(network_device_id: String) -> String {
+async fn get_network_device_config(network_device_id: String) -> Result<String, ()> {
     let port_config: NetPortConfig = config::read(&network_device_id);
-    serde_json::to_string(&port_config).unwrap()
+    Ok(serde_json::to_string(&port_config).unwrap())
 }
 
 #[tauri::command]
@@ -161,7 +161,7 @@ fn remove_network_device_config(network_device_id: String) {
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-fn save_app_config(id: String, name: String, address: String, lcd_config: String) {
+async fn save_app_config(id: String, name: String, address: String, lcd_config: String) {
     let mut port_config: NetPortConfig = config::read(&id);
 
     port_config.name = name;
@@ -193,6 +193,140 @@ fn enable_sync(app_state: State<AppState>, network_device_id: String) {
         .lock()
         .unwrap()
         .insert(network_device_id, thread_handle);
+}
+
+/// Disables the sync for the specified address and port.
+/// Also set the config for the port to inactive and save it
+#[tauri::command]
+fn disable_sync(app_state: State<AppState>, network_device_id: String) {
+    let mut port_config: NetPortConfig = config::read(&network_device_id);
+    port_config.active = false;
+    config::write(&port_config);
+
+    // Stop the sync thread for the port
+    let port_handle = app_state.port_handle.lock().unwrap();
+    stop_sync_thread(&network_device_id, port_handle);
+}
+
+/// Toggles the live preview for the specified lcd address and port.
+/// If the live preview is enabled, it will be disabled and vice versa.
+//noinspection RsWrongGenericArgumentsNumber
+#[tauri::command]
+fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
+    let port_config: NetPortConfig = config::read(&network_device_id);
+
+    // If the window is still present, close it
+    let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    if let Some(window) = existing_window {
+        window.close().unwrap();
+    }
+
+    // Open a new lcd preview window
+    lcd_preview::show(app_handle, port_config);
+}
+
+/// Returns the lcd preview image for the specified com port as base64 encoded string
+//noinspection RsWrongGenericArgumentsNumber
+#[tauri::command]
+fn get_lcd_preview_image(
+    app_state: State<'_, AppState>,
+    app_handle: AppHandle,
+    network_device_id: String,
+) -> String {
+    let port_config: NetPortConfig = config::read(&network_device_id);
+    let lcd_config = port_config.lcd_config;
+
+    // If the window is not visible, return an empty string
+    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    if let Some(window) = maybe_window {
+        if !window.is_visible().unwrap() {
+            return String::new();
+        }
+    }
+
+    lcd_preview::render(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+        lcd_config,
+    )
+}
+
+#[tauri::command]
+async fn get_graph_preview_image(
+    app_state: State<'_, AppState>,
+    sensor_id: String,
+    mut graph_config: GraphConfig,
+) -> Result<String, ()> {
+    sensor::read_all_sensor_values(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+    );
+
+    // Read and prepare sensor values
+    graph_config.sensor_values = sensor_core::extract_value_sequence(
+        app_state.sensor_value_history.lock().unwrap().deref(),
+        &sensor_id,
+    );
+
+    let graph_data = graph_renderer::render(&graph_config);
+    let engine = base64::engine::general_purpose::STANDARD;
+    Ok(base64::Engine::encode(&engine, graph_data))
+}
+
+#[tauri::command]
+async fn get_conditional_image_preview_image(
+    app_state: State<'_, AppState>,
+    element_id: String,
+    sensor_id: String,
+    mut conditional_image_config: ConditionalImageConfig,
+) -> Result<String, ()> {
+    let sensor_values = sensor::read_all_sensor_values(
+        &app_state.sensor_value_history,
+        &app_state.static_sensor_values,
+    );
+
+    // Filter sensor values for provided sensor id
+    let sensor_value = sensor_values
+        .iter()
+        .find(|sensor_value| sensor_value.id == sensor_id)
+        .unwrap();
+
+    conditional_image_config.sensor_value = sensor_value.value.clone();
+
+    // Extract zip to local cache folder
+
+    conditional_image_config.images_path =
+        conditional_image::prepare_element(&element_id, &conditional_image_config);
+
+    let graph_data: Vec<u8> = match conditional_image_renderer::render(
+        &element_id,
+        &sensor_value.sensor_type,
+        conditional_image_config,
+    ) {
+        Some(data) => data,
+        None => {
+            error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {}", sensor_value.value);
+            return Err(());
+        }
+    };
+
+    let engine = base64::engine::general_purpose::STANDARD;
+    Ok(base64::Engine::encode(&engine, graph_data))
+}
+
+#[tauri::command]
+async fn verify_network_address(address: String) -> bool {
+    net_port::verify_network_address(&address)
+}
+
+/// Handle tauri window events
+fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
+    |event| {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
+            event.window().hide().unwrap();
+            api.prevent_close();
+        }
+    }
 }
 
 /// Starts the sync thread for the specified port
@@ -230,140 +364,6 @@ fn stop_sync_thread(
     let port_thread_handle = port_handle.get(network_device_id).unwrap();
     *port_thread_handle.running.lock().unwrap() = false;
     port_thread_handle.handle.thread().unpark();
-}
-
-/// Disables the sync for the specified address and port.
-/// Also set the config for the port to inactive and save it
-#[tauri::command]
-fn disable_sync(app_state: State<AppState>, network_device_id: String) {
-    let mut port_config: NetPortConfig = config::read(&network_device_id);
-    port_config.active = false;
-    config::write(&port_config);
-
-    // Stop the sync thread for the port
-    let port_handle = app_state.port_handle.lock().unwrap();
-    stop_sync_thread(&network_device_id, port_handle);
-}
-
-/// Toggles the live preview for the specified lcd address and port.
-/// If the live preview is enabled, it will be disabled and vice versa.
-//noinspection RsWrongGenericArgumentsNumber
-#[tauri::command]
-fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
-    let port_config: NetPortConfig = config::read(&network_device_id);
-
-    // If the window is still present, close it
-    let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
-    if let Some(window) = existing_window {
-        window.close().unwrap();
-    }
-
-    // Open a new lcd preview window
-    lcd_preview::show(app_handle, port_config);
-}
-
-/// Returns the lcd preview image for the specified com port as base64 encoded string
-//noinspection RsWrongGenericArgumentsNumber
-#[tauri::command]
-fn get_lcd_preview_image(
-    app_state: State<AppState>,
-    app_handle: AppHandle,
-    network_device_id: String,
-) -> String {
-    let port_config: NetPortConfig = config::read(&network_device_id);
-    let lcd_config = port_config.lcd_config;
-
-    // If the window is not visible, return an empty string
-    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
-    if let Some(window) = maybe_window {
-        if !window.is_visible().unwrap() {
-            return String::new();
-        }
-    }
-
-    lcd_preview::render(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-        lcd_config,
-    )
-}
-
-#[tauri::command]
-fn get_graph_preview_image(
-    app_state: State<AppState>,
-    sensor_id: &str,
-    mut graph_config: GraphConfig,
-) -> String {
-    sensor::read_all_sensor_values(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-    );
-
-    // Read and prepare sensor values
-    graph_config.sensor_values = sensor_core::extract_value_sequence(
-        app_state.sensor_value_history.lock().unwrap().deref(),
-        sensor_id,
-    );
-
-    let graph_data = graph_renderer::render(&graph_config);
-    let engine = base64::engine::general_purpose::STANDARD;
-    base64::Engine::encode(&engine, graph_data)
-}
-
-#[tauri::command]
-fn get_conditional_image_preview_image(
-    app_state: State<AppState>,
-    element_id: &str,
-    sensor_id: &str,
-    mut conditional_image_config: ConditionalImageConfig,
-) -> String {
-    let sensor_values = sensor::read_all_sensor_values(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-    );
-
-    // Filter sensor values for provided sensor id
-    let sensor_value = sensor_values
-        .iter()
-        .find(|sensor_value| sensor_value.id == sensor_id)
-        .unwrap();
-
-    conditional_image_config.sensor_value = sensor_value.value.clone();
-
-    // Extract zip to local cache folder
-
-    conditional_image_config.images_path =
-        conditional_image::prepare_element(element_id, &conditional_image_config);
-
-    let graph_data: Vec<u8> = match conditional_image_renderer::render(
-        element_id,
-        &sensor_value.sensor_type,
-        conditional_image_config,
-    ) {
-        Some(data) => data,
-        None => {
-            error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {}", sensor_value.value);
-            return String::new();
-        }
-    };
-
-    let engine = base64::engine::general_purpose::STANDARD;
-    base64::Engine::encode(&engine, graph_data)
-}
-
-#[tauri::command]
-fn verify_network_address(address: &str) -> bool {
-    net_port::verify_network_address(address)
-}
-
-/// Handle tauri window events
-fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
-    |event| {
-        if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
-            event.window().hide().unwrap();
-            api.prevent_close();
-        }
-    }
 }
 
 /// Handles the system tray behaviour

@@ -18,8 +18,13 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
     let mut sensor_values: Vec<SensorValue> = vec![];
 
     // Get all available sensors
-    // Initialize LM sensors library.
-    let sensors = lm_sensors::Initializer::default().initialize().unwrap();
+    // Initialize LM sensors library and wait until it is not used by another process
+    let mut sensors = lm_sensors::Initializer::default().initialize().ok();
+    while sensors.is_none() {
+        sensors = lm_sensors::Initializer::default().initialize().ok();
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    let sensors = sensors.unwrap();
 
     // Print all chips.
     for chip in sensors.chip_iter(None) {
@@ -43,13 +48,11 @@ fn get_all_available_sensors() -> Vec<SensorValue> {
                     sensor_unit = "°C".to_string();
                 }
 
-                let sensor_label = format!("LM: {}", &sensor_name);
-
                 sensor_values.push(SensorValue {
-                    id: sensor_name,
+                    id: format!("lm_{sensor_name}"),
                     value: sensor_value.to_string(),
                     unit: sensor_unit,
-                    label: sensor_label,
+                    label: sensor_name,
                     sensor_type: SensorType::Number,
                 });
             }
