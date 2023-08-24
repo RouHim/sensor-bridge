@@ -23,6 +23,13 @@ const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
 const btnMoveElementUp = document.getElementById("lcd-btn-move-element-up");
 const btnMoveElementDown = document.getElementById("lcd-btn-move-element-down");
 
+// Control pad
+const btnControlPadUp = document.getElementById("lcd-btn-designer-control-pad-up");
+const btnControlPadLeft = document.getElementById("lcd-btn-designer-control-pad-left");
+const btnControlPadChangeMoveUnit = document.getElementById("lcd-btn-designer-control-pad-move-unit");
+const btnControlPadRight = document.getElementById("lcd-btn-designer-control-pad-right");
+const btnControlPadDown = document.getElementById("lcd-btn-designer-control-pad-down");
+
 // Config panes
 const layoutTextConfig = document.getElementById("lcd-text-config");
 const layoutStaticImageConfig = document.getElementById("lcd-static-image-config");
@@ -116,8 +123,20 @@ window.addEventListener("DOMContentLoaded", () => {
     btnMoveElementDown.addEventListener("click", moveElementDown);
     cmbElementType.addEventListener("change", onElementTypeChange);
     btnElementSelectStaticImage.addEventListener("click", selectStaticImage);
-    btnElementConditionalImageInfo.addEventListener("click", () => showConditionalImageInfo());
+    btnElementConditionalImageInfo.addEventListener("click", showConditionalImageInfo);
     btnElementSelectConditionalImage.addEventListener("click", selectConditionalImage);
+    btnControlPadChangeMoveUnit.addEventListener("click", changeMoveUnit);
+    btnControlPadUp.addEventListener("click", () => moveElementControlPad("up"));
+    btnControlPadLeft.addEventListener("click", () => moveElementControlPad("left"));
+    btnControlPadRight.addEventListener("click", () => moveElementControlPad("right"));
+    btnControlPadDown.addEventListener("click", () => moveElementControlPad("down"));
+
+    // Prevent arrow key scrolling
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            event.preventDefault();
+        }
+    });
 
     // If lost focus, check network config
     txtDeviceNetworkAddress.addEventListener("focusout", verifyNetworkAddress);
@@ -134,6 +153,41 @@ window.addEventListener("DOMContentLoaded", () => {
         onNetDeviceSelected(cmbNetworkPorts.options[0]);
     }
 });
+
+/// Moves the current selected element with the move unit of btnControlPadChangeMoveUnit
+function moveElementControlPad(direction) {
+    const moveUnit = parseInt(btnControlPadChangeMoveUnit.getAttribute("data-move-unit"));
+
+    // If the last selected element is null, return
+    if (!lastSelectedDesignerElement || !lastSelectedListElement) {
+        return;
+    }
+
+    moveSelectedElementBy(moveUnit, direction);
+}
+
+/// Toggle move unit between: 1, 5, 25, 50
+function changeMoveUnit() {
+    let currentMoveUnit = btnControlPadChangeMoveUnit.getAttribute("data-move-unit");
+    switch (currentMoveUnit) {
+        case "1":
+            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "5");
+            btnControlPadChangeMoveUnit.innerText = "5px";
+            break;
+        case "5":
+            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "25");
+            btnControlPadChangeMoveUnit.innerText = "25px";
+            break;
+        case "25":
+            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "50");
+            btnControlPadChangeMoveUnit.innerText = "50px";
+            break;
+        case "50":
+            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "1");
+            btnControlPadChangeMoveUnit.innerText = "1px";
+            break;
+    }
+}
 
 function verifyNetworkAddress() {
     // Call backend to verify network address
@@ -663,67 +717,68 @@ function setSelectedElement(listHtmlElement) {
 
 
 // If the ctrl key is pressed, entry is moved by 5px instead of 1px
-function moveSelectedElement() {
-    // Check if the ctrl key or shift is pressed
-    const isModifierPressed = event.ctrlKey || event.shiftKey;
-
+function moveSelectedElement(event) {
     // Check if the arrow keys are pressed
     const isArrowUpPressed = event.key === "ArrowUp";
     const isArrowDownPressed = event.key === "ArrowDown";
     const isArrowLeftPressed = event.key === "ArrowLeft";
     const isArrowRightPressed = event.key === "ArrowRight";
 
-    // Check if the user pressed the ctrl key and an arrow key
-    if (isModifierPressed && (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed)) {
-        // Move the selected element by 5px
-        moveSelectedElementBy(5, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
-    } else if (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed) {
-        // Move the selected element by 1px
-        moveSelectedElementBy(1, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed);
+    const moveBy = parseInt(btnControlPadChangeMoveUnit.getAttribute("data-move-unit"));
+
+    // Check if the user pressed an arrow key
+    if (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed) {
+        const direction = event.key.replace("Arrow", "").toLowerCase();
+        moveSelectedElementBy(moveBy, direction);
     }
 }
 
-function moveSelectedElementBy(number, isArrowUpPressed, isArrowDownPressed, isArrowLeftPressed, isArrowRightPressed) {
+function moveSelectedElementBy(moveBy, direction) {
     // Get the current position of the selected element
-    let currentX = parseInt(lastSelectedDesignerElement.style.left);
-    let currentY = parseInt(lastSelectedDesignerElement.style.top);
+    let xPos = parseInt(lastSelectedDesignerElement.style.left);
+    let yPos = parseInt(lastSelectedDesignerElement.style.top);
 
     // Move the selected element by the given number
-    if (isArrowUpPressed) {
-        currentY -= number;
-    } else if (isArrowDownPressed) {
-        currentY += number;
-    } else if (isArrowLeftPressed) {
-        currentX -= number;
-    } else if (isArrowRightPressed) {
-        currentX += number;
+    switch (direction) {
+        case "up":
+            yPos -= moveBy;
+            break;
+        case "down":
+            yPos += moveBy;
+            break;
+        case "left":
+            xPos -= moveBy;
+            break;
+        case "right":
+            xPos += moveBy;
+            break;
     }
 
     // Check if the element is out of bounds
-    if (currentX < 0) {
-        currentX = 0;
+    if (xPos < 0) {
+        xPos = 0;
     }
-    if (currentY < 0) {
-        currentY = 0;
+    if (yPos < 0) {
+        yPos = 0;
     }
-    if (currentX > designerPane.clientWidth - lastSelectedDesignerElement.clientWidth) {
-        currentX = designerPane.clientWidth - lastSelectedDesignerElement.clientWidth;
+    if (xPos > designerPane.clientWidth - lastSelectedDesignerElement.clientWidth) {
+        xPos = designerPane.clientWidth - lastSelectedDesignerElement.clientWidth;
     }
-    if (currentY > designerPane.clientHeight - lastSelectedDesignerElement.clientHeight) {
-        currentY = designerPane.clientHeight - lastSelectedDesignerElement.clientHeight;
+    if (yPos > designerPane.clientHeight - lastSelectedDesignerElement.clientHeight) {
+        yPos = designerPane.clientHeight - lastSelectedDesignerElement.clientHeight;
     }
 
     // Update the position of the selected element
-    txtElementPositionX.value = currentX;
-    txtElementPositionY.value = currentY;
+    txtElementPositionX.value = xPos;
+    txtElementPositionY.value = yPos;
 
     // Update the position of the selected element in the designer
-    lastSelectedDesignerElement.style.left = currentX + "px";
-    lastSelectedDesignerElement.style.top = currentY + "px";
+    lastSelectedDesignerElement.style.left = xPos + "px";
+    lastSelectedDesignerElement.style.top = yPos + "px";
 
     // Update the position of the selected element in the list
-    lastSelectedListElement.setAttribute("data-element-position-x", currentX);
-    lastSelectedListElement.setAttribute("data-element-position-y", currentY);
+    lastSelectedListElement.setAttribute("data-element-position-x", xPos);
+    lastSelectedListElement.setAttribute("data-element-position-y", yPos);
 
     // Save the updated element
     saveConfig();
@@ -809,7 +864,7 @@ function updateElement(calculatedId) {
                 sensorId: sensorId,
                 graphConfig: getGraphConfig(listEntryElement)
             })
-                .then(async response => {
+                .then(response => {
                     designerElement.src = "data:image/png;base64," + response;
                 })
             break;
@@ -821,7 +876,7 @@ function updateElement(calculatedId) {
                 sensorId: sensorId,
                 conditionalImageConfig: getConditionalImageConfig(listEntryElement)
             })
-                .then(async response => {
+                .then(response => {
                     designerElement.src = "data:image/png;base64," + response;
                 })
             break;
@@ -857,7 +912,7 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
                 networkDeviceId: currentNetworkDeviceId,
                 sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
                 graphConfig: getGraphConfig(lastSelectedListElement)
-            }).then(async response => {
+            }).then(response => {
                 designerElement.src = "data:image/png;base64," + response;
             })
             break;
@@ -870,7 +925,7 @@ function addElementToDesignerPane(zIndex, elementId, elementSensorValue, element
                 elementId: elementId,
                 sensorId: lastSelectedListElement.getAttribute("data-sensor-id"),
                 conditionalImageConfig: getConditionalImageConfig(lastSelectedListElement),
-            }).then(async response => {
+            }).then(response => {
                 designerElement.src = "data:image/png;base64," + response;
             })
             break;

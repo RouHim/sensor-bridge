@@ -3371,7 +3371,7 @@ dependencies = [
 [[package]]
 name = "sensor-core"
 version = "0.0.0"
-source = "git+https://github.com/RouHim/sensor-core?tag=v1.1.2#49f8563411ace3430ec30753214442d2703a541b"
+source = "git+https://github.com/RouHim/sensor-core?tag=v1.1.3#bad31536e22089ad6892775fa2db43fdb52bdb8a"
 dependencies = [
  "dirs",
  "image",

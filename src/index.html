@@ -31,7 +31,8 @@
             <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
             </select>
 
-            <button class="icon-button" id="btn-add-network-device" title="Add a new network device" style="font-size: 2em;">
+            <button class="icon-button" id="btn-add-network-device" title="Add a new network device"
+                    style="font-size: 2em;">
                 <i data-feather="plus"></i>
             </button>
 
@@ -78,12 +79,37 @@
                     <div style="margin-left: 5px; margin-right: 5px">x</div>
                     <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
                            value="600">
-
                 </div>
             </div>
 
             <div class="center-horizontal">
                 <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px;">
+                </div>
+
+                <div>
+                    <div id="lcd-designer-control-pad-up">
+                        <div id="lcd-btn-designer-control-pad-up" class="icon-button">
+                            <i data-feather="arrow-up"></i>
+                        </div>
+                    </div>
+
+                    <div id="lcd-designer-control-pad-left-right">
+                        <div id="lcd-btn-designer-control-pad-left" class="icon-button">
+                            <i data-feather="arrow-left"></i>
+                        </div>
+                        <button id="lcd-btn-designer-control-pad-move-unit" data-move-unit="1">
+                            1px
+                        </button>
+                        <div id="lcd-btn-designer-control-pad-right" class="icon-button">
+                            <i data-feather="arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <div id="lcd-designer-control-pad-down">
+                        <div id="lcd-btn-designer-control-pad-down" class="icon-button">
+                            <i data-feather="arrow-down"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -97,17 +123,17 @@
 
                 <div id="lcd-sensor-entry-config" style="width: 75%">
 
+                    <button class="icon-button" id="lcd-btn-move-element-up" title="Move element up in the list">
+                        <i data-feather="arrow-up"></i>
+                    </button>
+                    <button class="icon-button" id="lcd-btn-move-element-down" title="Move element down in the list">
+                        <i data-feather="arrow-down"></i>
+                    </button>
                     <button class="icon-button" id="lcd-btn-remove-element">
                         <i data-feather="trash"></i>
                     </button>
                     <button class="icon-button" id="lcd-btn-save-element" title="Save sensor configuration">
                         <i data-feather="save"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-move-element-up" title="Move element up">
-                        <i data-feather="arrow-up"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-move-element-down" title="Move element down">
-                        <i data-feather="arrow-down"></i>
                     </button>
 
                     <table>

@@ -221,7 +221,7 @@ fn send_tcp_data(
         }
         SendStatus::ResourceNotFound => {
             warn!(" Not found --> Reconnecting");
-            // ignore errors
+            // Connection was lost, try to reconnect
             *net_port = match open(net_port_config) {
                 Some((handler, endpoint)) => (handler, endpoint),
                 None => {
@@ -231,6 +231,7 @@ fn send_tcp_data(
         }
         SendStatus::ResourceNotAvailable => {
             warn!(" Not available --> Reconnecting");
+            // Connection failed, try to reconnect
             *net_port = match open(net_port_config) {
                 Some((handler, endpoint)) => (handler, endpoint),
                 None => {

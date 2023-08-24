@@ -59,7 +59,7 @@ html, body {
     box-shadow: none !important;
     color: inherit;
     padding: 0;
-    margin-left: 10px;
+    margin: 0;
     font: inherit;
     cursor: pointer;
     font-size: 1.25em;
@@ -136,4 +136,18 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
 
 .invalid {
     border: 1px solid red;
+}
+
+#lcd-designer-control-pad-left-right, #lcd-designer-control-pad-up, #lcd-designer-control-pad-down {
+    color: var(--form-text);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    /* place elements vertical between each other */
+    flex-wrap: wrap;
+    align-content: center;
+    /* place elements horizontal */
+    flex-flow: row wrap;
+
 }
