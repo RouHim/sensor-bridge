@@ -1,3 +1,4 @@
+#[cfg(target_os = "windows")]
 use log::error;
 #[cfg(target_os = "windows")]
 use std::collections::HashMap;
