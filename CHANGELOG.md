@@ -1,3 +1,10 @@
+## [0.13.2](https://github.com/RouHim/sensor-bridge/compare/v0.13.1...v0.13.2) (2023-08-25)
+
+
+### Bug Fixes
+
+* **pipeline:** fix binstall ([eacf9b6](https://github.com/RouHim/sensor-bridge/commit/eacf9b6fed3c964e1009a6381eb86a29772bfbcd))
+
 ## [0.13.1](https://github.com/RouHim/sensor-bridge/compare/v0.13.0...v0.13.1) (2023-08-24)
 
 # [0.13.0](https://github.com/RouHim/sensor-bridge/compare/v0.12.0...v0.13.0) (2023-08-24)
