@@ -22,7 +22,7 @@ REPO_BASE_URL="https://github.com/RouHim/sensor-bridge"
 echo "Version: $VERSION"
 echo "Updater JSON file: $UPDATER_JSON_FILE"
 echo "NOTES: $NOTES"
-echo "Repo:"
+echo "Repo: $REPO_BASE_URL"
 
 # Collect linux AppImage data
 APPIMAGE_URL="${REPO_BASE_URL}/releases/download/v${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz"
