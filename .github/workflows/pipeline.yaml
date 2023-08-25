@@ -106,7 +106,7 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-udeps
-        run: cargo binstall cargo-udeps
+        run: cargo binstall --no-confirm --force cargo-udeps
 
       - name: Analyze dependencies
         run: cd src-tauri && cargo update && cargo +nightly udeps
@@ -181,7 +181,7 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
       - name: Install Tauri-CLI
-        run: cargo binstall tauri-cli
+        run: cargo binstall --no-confirm --force tauri-cli
 
       - name: Compile application
         run: cd src-tauri && cargo tauri build --ci --bundles none
@@ -289,7 +289,7 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
       - name: Install Tauri-CLI
-        run: cargo binstall tauri-cli
+        run: cargo binstall --no-confirm --force tauri-cli
 
       - name: Build the app
         env:
