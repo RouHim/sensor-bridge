@@ -101,7 +101,6 @@ fn main() {
             sensor_value_history,
         })
         .setup(|app| {
-            // Add cargo version to title
             let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
             app.get_window("main").unwrap().set_title(&title).unwrap();
             Ok(())
@@ -120,6 +119,8 @@ fn main() {
             get_graph_preview_image,
             get_conditional_image_preview_image,
             verify_network_address,
+            import_config,
+            export_config,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -317,6 +318,36 @@ async fn get_conditional_image_preview_image(
 #[tauri::command]
 async fn verify_network_address(address: String) -> bool {
     net_port::verify_network_address(&address)
+}
+
+#[tauri::command]
+async fn export_config(file_path: String) -> Result<(), ()> {
+    let app_config: AppConfig = config::read_from_app_config();
+    let json_config = serde_json::to_string_pretty(&app_config).unwrap();
+    let file_path = if file_path.ends_with(".json") {
+        file_path
+    } else {
+        format!("{}.json", file_path)
+    };
+    fs::write(file_path, json_config).unwrap();
+    Ok(())
+}
+
+#[tauri::command]
+async fn import_config(file_path: String) -> Result<(), tauri::Error> {
+    let json_config = fs::read_to_string(file_path).unwrap();
+    let app_config: Result<AppConfig, serde_json::Error> = serde_json::from_str(&json_config);
+
+    if app_config.is_err() {
+        Err(app_config.err().unwrap().into())
+    } else {
+        app_config
+            .unwrap()
+            .network_devices
+            .values()
+            .for_each(config::write);
+        Ok(())
+    }
 }
 
 /// Handle tauri window events

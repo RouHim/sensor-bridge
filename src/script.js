@@ -1,5 +1,5 @@
 const {invoke, convertFileSrc} = window.__TAURI__.tauri;
-const {open} = window.__TAURI__.dialog;
+const {open, save} = window.__TAURI__.dialog;
 
 // Network port selection
 const cmbNetworkPorts = document.getElementById("main-network-ports-select");
@@ -10,6 +10,8 @@ const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-devic
 const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
 const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
 const btnTransferActive = document.getElementById("main-chk-transfer-active");
+const btnExportConfig = document.getElementById("btn-export-config");
+const btnImportConfig = document.getElementById("btn-import-config");
 
 // LCD designer
 const txtDeviceName = document.getElementById("lcd-txt-device-name");
@@ -114,6 +116,8 @@ window.addEventListener("DOMContentLoaded", () => {
     // Register button click events
     btnAddNetworkDevice.addEventListener("click", createNetworkPort);
     btnRemoveNetworkDevice.addEventListener("click", removeDevice);
+    btnExportConfig.addEventListener("click", exportConfig);
+    btnImportConfig.addEventListener("click", importConfig);
     btnSaveNetworkDevice.addEventListener("click", saveDeviceConfig);
     btnSaveElement.addEventListener("click", saveDeviceConfig);
     btnTransferActive.addEventListener("click", () => toggleSync(btnTransferActive.checked));
@@ -153,6 +157,57 @@ window.addEventListener("DOMContentLoaded", () => {
         onNetDeviceSelected(cmbNetworkPorts.options[0]);
     }
 });
+
+/// Exports the current config to a file the use can save on his computer
+function exportConfig() {
+    // Open a tauri dialog to let the user select a file to export to
+    save({
+        multiple: false,
+        directory: false,
+        filters: [{
+            name: 'JSON',
+            extensions: ['json'],
+        }]
+    }).then(
+        (selected) => {
+            // If the user selected a file, save the config to the file
+            if (typeof selected === "string" && selected !== "") {
+                invoke('export_config', {filePath: selected});
+            } else {
+                console.log("No file selected");
+            }
+        }
+    );
+}
+
+/// Imports a config from a file the user can select
+function importConfig() {
+    // Open a tauri dialog to let the user select a file to import from
+    open({
+        multiple: false,
+        directory: false,
+        filters: [{
+            name: 'JSON',
+            extensions: ['json'],
+        }]
+    }).then(
+        (selected) => {
+            // If the user selected a file, load the config from the file
+            if (typeof selected === "string" && selected !== "") {
+                invoke('import_config', {filePath: selected}).then(
+                    () => {
+                        // Reload all devices from config
+                        loadDeviceConfigs();
+                    }
+                ).catch((error) => {
+                    alert("Error while importing config. " + error);
+                })
+            } else {
+                console.log("No file selected");
+            }
+        }
+    );
+}
 
 /// Moves the current selected element with the move unit of btnControlPadChangeMoveUnit
 function moveElementControlPad(direction) {
