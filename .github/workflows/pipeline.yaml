@@ -170,7 +170,7 @@ jobs:
         id: semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: npx semantic-release
+        run: npx semantic-release -vv
 
       - name: Delete old releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
