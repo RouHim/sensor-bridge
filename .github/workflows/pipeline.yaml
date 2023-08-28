@@ -188,6 +188,9 @@ jobs:
       matrix:
         platform: [ ubuntu-20.04, windows-latest ]
     runs-on: ${{ matrix.platform }}
+    env:
+      REPO_OWNER: RouHim
+      REPO_NAME: sensor-bridge
     steps:
       - uses: actions/checkout@v3
 
@@ -201,20 +204,14 @@ jobs:
           workspaces: "src-tauri -> target"
           cache-on-failure: true # upload cache even if there are errors in this step
 
-      - name: Detect and set latest github release VERSION
+      - name: Set version to environment
         shell: bash
         run: |
           REPO="RouHim/sensor-bridge"
-          LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | jq -r ".tag_name")
-          LATEST_RELEASE=${LATEST_RELEASE#v}
-          echo "Latest release is $LATEST_RELEASE"
-          echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
-
-      - name: Set UPLOAD_URL variable
-        shell: bash
-        run: |
-          UPLOAD_URL=$(curl --silent https://api.github.com/repos/rouhim/sensor-bridge/releases/latest | jq -r '.upload_url')
-          echo "UPLOAD_URL=${UPLOAD_URL}" >> $GITHUB_ENV
+          LATEST_RELEASE_VERSION=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | jq -r ".tag_name")
+          LATEST_RELEASE_VERSION=${LATEST_RELEASE_VERSION#v}
+          echo "Latest release is $LATEST_RELEASE_VERSION"
+          echo "VERSION=$LATEST_RELEASE_VERSION" >> $GITHUB_ENV
 
       - name: Set version
         shell: bash
@@ -254,69 +251,87 @@ jobs:
 
       - name: Upload linux AppImage
         if: matrix.platform == 'ubuntu-20.04'
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage
-          asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          .github/helper/upload-github-release-asset.sh \
+            github_api_token=$GITHUB_TOKEN \
+            owner=${{ env.REPO_OWNER }} \
+            repo=${{ env.REPO_NAME }} \
+            tag=v${{ env.VERSION }} \
+            filepath=src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage \
+            filename=sensor-bridge_${{ env.VERSION }}_amd64.AppImage
 
       - name: Upload linux AppImage updater
         if: matrix.platform == 'ubuntu-20.04'
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
-          asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          .github/helper/upload-github-release-asset.sh \
+            github_api_token=$GITHUB_TOKEN \
+            owner=${{ env.REPO_OWNER }} \
+            repo=${{ env.REPO_NAME }} \
+            tag=v${{ env.VERSION }} \
+            filepath=src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz \
+            filename=sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz
 
       - name: Upload linux AppImage updater signature
         if: matrix.platform == 'ubuntu-20.04'
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
-          asset_name: sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          .github/helper/upload-github-release-asset.sh \
+            github_api_token=$GITHUB_TOKEN \
+            owner=${{ env.REPO_OWNER }} \
+            repo=${{ env.REPO_NAME }} \
+            tag=v${{ env.VERSION }} \
+            filepath=src-tauri/target/release/bundle/appimage/sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig \
+            filename=sensor-bridge_${{ env.VERSION }}_amd64.AppImage.tar.gz.sig
 
       - name: Upload windows installer
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
-          asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          .github/helper/upload-github-release-asset.sh \
+            github_api_token=$GITHUB_TOKEN \
+            owner=${{ env.REPO_OWNER }} \
+            repo=${{ env.REPO_NAME }} \
+            tag=v${{ env.VERSION }} \
+            filepath=src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi \
+            filename=sensor-bridge_${{ env.VERSION }}_x64_en-US.msi
 
       - name: Upload windows updater
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
-          asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          .github/helper/upload-github-release-asset.sh \
+            github_api_token=$GITHUB_TOKEN \
+            owner=${{ env.REPO_OWNER }} \
+            repo=${{ env.REPO_NAME }} \
+            tag=v${{ env.VERSION }} \
+            filepath=src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip \
+            filename=sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip
 
       - name: Upload windows updater signature
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.UPLOAD_URL }}
-          asset_path: src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
-          asset_name: sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          .github/helper/upload-github-release-asset.sh \
+            github_api_token=$GITHUB_TOKEN \
+            owner=${{ env.REPO_OWNER }} \
+            repo=${{ env.REPO_NAME }} \
+            tag=v${{ env.VERSION }} \
+            filepath=src-tauri/target/release/bundle/msi/sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig \
+            filename=sensor-bridge_${{ env.VERSION }}_x64_en-US.msi.zip.sig
 
   update-updater:
     name: Update updater
@@ -327,14 +342,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Detect and set latest github release VERSION
+      - name: Set version to environment
         shell: bash
         run: |
           REPO="RouHim/sensor-bridge"
-          LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | jq -r ".tag_name")
-          LATEST_RELEASE=${LATEST_RELEASE#v}
-          echo "Latest release is $LATEST_RELEASE"
-          echo "VERSION=$LATEST_RELEASE" >> $GITHUB_ENV
+          LATEST_RELEASE_VERSION=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | jq -r ".tag_name")
+          LATEST_RELEASE_VERSION=${LATEST_RELEASE_VERSION#v}
+          echo "Latest release is $LATEST_RELEASE_VERSION"
+          echo "VERSION=$LATEST_RELEASE_VERSION" >> $GITHUB_ENV
 
       - name: Build updater json
         run: bash .github/updater/build_update_json.sh "${{ env.VERSION }}" "${{ env.UPDATER_FILE }}"
