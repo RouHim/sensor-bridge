@@ -24,7 +24,8 @@
     * On
       Windows: [Enable the "C++ Clang tools for Windows" component in the Visual Studio Installer](https://www.wikihow.com/Install-Clang-on-Windows)
     * On Linux: `sudo apt install clang` or `sudo pacman -S clang` or `sudo dnf install clang`
-* lm-sensors dev on linux: `sudo apt install libsensors4-dev` or `sudo pacman -S lm_sensors` or `sudo dnf install lm_sensors` 
+* lm-sensors dev on linux: `sudo apt install libsensors4-dev` or `sudo pacman -S lm_sensors`
+  or `sudo dnf install lm_sensors`
 
 ### Run
 
@@ -43,7 +44,9 @@ cargo tauri build
 ```
 
 #### Debug version
+
 In order to build a debuggable version of a release build follow this steps:
+
 * Add this feature to the tauri crate in the Cargo.toml: `devtools`
 * Build a debug release version with: `cargo tauri build --debug`
 * Enable debug logging with: `RUST_LOG=debug`
