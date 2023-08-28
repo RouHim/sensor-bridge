@@ -17,10 +17,10 @@ use tauri::State;
 use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
-use crate::config::{AppConfig, NetPortConfig};
+use crate::config::{AppConfig, NetworkDeviceConfig};
 
 mod conditional_image;
-mod config;
+pub(crate) mod config;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
 mod linux_lm_sensors;
@@ -114,7 +114,7 @@ fn main() {
             save_app_config,
             enable_sync,
             disable_sync,
-            toggle_lcd_live_preview,
+            show_lcd_live_preview,
             get_lcd_preview_image,
             get_graph_preview_image,
             get_conditional_image_preview_image,
@@ -137,55 +137,83 @@ async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()>
 }
 
 #[tauri::command]
-fn create_network_device_config() -> String {
-    let port_config: NetPortConfig = config::create();
-    port_config.id
+async fn create_network_device_config() -> Result<String, ()> {
+    let new_network_device_config = config::create_network_device_config();
+    Ok(new_network_device_config.id)
 }
 
 #[tauri::command]
-async fn get_network_device_config(network_device_id: String) -> Result<String, ()> {
-    let port_config: NetPortConfig = config::read(&network_device_id);
-    Ok(serde_json::to_string(&port_config).unwrap())
+async fn get_network_device_config(network_device_id: String) -> Result<String, String> {
+    let network_device_config = match config::read(&network_device_id) {
+        Some(config) => config,
+        None => {
+            return Err("Config not found".to_string());
+        }
+    };
+
+    serde_json::to_string(&network_device_config).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
-fn get_app_config() -> String {
-    let app_config: AppConfig = config::read_from_app_config();
-    serde_json::to_string(&app_config).unwrap()
-}
-
-#[tauri::command]
-fn remove_network_device_config(network_device_id: String) {
+async fn remove_network_device_config(network_device_id: String) -> Result<(), ()> {
     config::remove(&network_device_id);
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_app_config() -> Result<String, String> {
+    let app_config: AppConfig = config::read_from_app_config();
+    serde_json::to_string(&app_config).map_err(|err| err.to_string())
 }
 
 /// Saves the address config for the specified address and port.
 /// If the address config does not exist, it will be created.
 #[tauri::command]
-async fn save_app_config(id: String, name: String, address: String, lcd_config: String) {
-    let mut port_config: NetPortConfig = config::read(&id);
+async fn save_app_config(
+    id: String,
+    name: String,
+    address: String,
+    lcd_config: String,
+) -> Result<(), String> {
+    let mut network_device_config = match config::read(&id) {
+        Some(config) => config,
+        None => {
+            return Err("Config not found".to_string());
+        }
+    };
 
-    port_config.name = name;
-    port_config.address = address;
-    port_config.lcd_config = serde_json::from_str(lcd_config.as_str()).unwrap();
+    network_device_config.name = name;
+    network_device_config.address = address;
+    network_device_config.lcd_config = serde_json::from_str(lcd_config.as_str()).unwrap();
 
-    config::write(&port_config);
+    config::write(&network_device_config);
+
+    Ok(())
 }
 
 /// Enables the sync for the specified address and port.
 /// Also set the config for the port to active and save it
 #[tauri::command]
-fn enable_sync(app_state: State<AppState>, network_device_id: String) {
-    let mut port_config: NetPortConfig = config::read(&network_device_id);
-    port_config.active = true;
-    config::write(&port_config);
+async fn enable_sync(
+    app_state: State<'_, AppState>,
+    network_device_id: String,
+) -> Result<(), String> {
+    let mut network_device_config = match config::read(&network_device_id) {
+        Some(config) => config,
+        None => {
+            return Err("Config not found".to_string());
+        }
+    };
+
+    network_device_config.active = true;
+    config::write(&network_device_config);
 
     // Start the sync for the port and hand
     // This creates a new thread and returns a handle to it
     let thread_handle = start_port_thread(
         &app_state.sensor_value_history,
         &app_state.static_sensor_values,
-        port_config,
+        network_device_config,
     );
 
     // Add the port handle to the app state
@@ -194,27 +222,46 @@ fn enable_sync(app_state: State<AppState>, network_device_id: String) {
         .lock()
         .unwrap()
         .insert(network_device_id, thread_handle);
+
+    Ok(())
 }
 
 /// Disables the sync for the specified address and port.
 /// Also set the config for the port to inactive and save it
 #[tauri::command]
-fn disable_sync(app_state: State<AppState>, network_device_id: String) {
-    let mut port_config: NetPortConfig = config::read(&network_device_id);
-    port_config.active = false;
-    config::write(&port_config);
+async fn disable_sync(
+    app_state: State<'_, AppState>,
+    network_device_id: String,
+) -> Result<(), String> {
+    let mut network_device_config = match config::read(&network_device_id) {
+        Some(config) => config,
+        None => {
+            return Err("Config not found".to_string());
+        }
+    };
+    network_device_config.active = false;
+    config::write(&network_device_config);
 
     // Stop the sync thread for the port
     let port_handle = app_state.port_handle.lock().unwrap();
     stop_sync_thread(&network_device_id, port_handle);
+
+    Ok(())
 }
 
 /// Toggles the live preview for the specified lcd address and port.
 /// If the live preview is enabled, it will be disabled and vice versa.
-//noinspection RsWrongGenericArgumentsNumber
 #[tauri::command]
-fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
-    let port_config: NetPortConfig = config::read(&network_device_id);
+async fn show_lcd_live_preview(
+    app_handle: AppHandle,
+    network_device_id: String,
+) -> Result<(), String> {
+    let network_device_config = match config::read(&network_device_id) {
+        Some(config) => config,
+        None => {
+            return Err("Config not found".to_string());
+        }
+    };
 
     // If the window is still present, close it
     let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
@@ -223,25 +270,32 @@ fn toggle_lcd_live_preview(app_handle: AppHandle, network_device_id: String) {
     }
 
     // Open a new lcd preview window
-    lcd_preview::show(app_handle, port_config);
+    lcd_preview::show(app_handle, network_device_config);
+
+    Ok(())
 }
 
 /// Returns the lcd preview image for the specified com port as base64 encoded string
-//noinspection RsWrongGenericArgumentsNumber
 #[tauri::command]
-fn get_lcd_preview_image(
+async fn get_lcd_preview_image(
     app_state: State<'_, AppState>,
     app_handle: AppHandle,
     network_device_id: String,
-) -> String {
-    let port_config: NetPortConfig = config::read(&network_device_id);
-    let lcd_config = port_config.lcd_config;
+) -> Result<String, String> {
+    let network_device_config = match config::read(&network_device_id) {
+        Some(config) => config,
+        None => {
+            return Err("Config not found".to_string());
+        }
+    };
+    let lcd_config = network_device_config.lcd_config;
 
     // If the window is not visible, return an empty string
     let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
     if let Some(window) = maybe_window {
         if !window.is_visible().unwrap() {
-            return String::new();
+            // The window is not visible, return an empty string
+            return Ok("".to_string());
         }
     }
 
@@ -250,6 +304,7 @@ fn get_lcd_preview_image(
         &app_state.static_sensor_values,
         lcd_config,
     )
+    .map_err(|_| "Error rendering preview image".to_string())
 }
 
 #[tauri::command]
@@ -365,7 +420,7 @@ fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
 fn start_port_thread(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
-    port_config: NetPortConfig,
+    port_config: NetworkDeviceConfig,
 ) -> ThreadHandle {
     let port_running_state_handle = Arc::new(Mutex::new(true));
     let port_handle = net_port::start_sync(

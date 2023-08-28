@@ -7,7 +7,7 @@ use image::{DynamicImage, ImageBuffer, Rgba};
 pub fn pretty_bytes(value: usize) -> (f64, String) {
     let mut value = value as f64;
     let mut unit = 0;
-    let units = vec!["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    let units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
     while value > 1024f64 {
         value /= 1024f64;

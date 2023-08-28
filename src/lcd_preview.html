@@ -26,12 +26,15 @@
                 const img = document.getElementById("lcd-preview-image");
                 img.src = "data:image/jpeg;base64," + preview_image;
             }
+        ).catch((error) => {
+                console.log("Error getting lcd preview image: " + error);
+            }
         );
     }
 </script>
 
 
-<body>
+<body style="background-color: #000000">
 <img id="lcd-preview-image"/>
 </body>
 </html>

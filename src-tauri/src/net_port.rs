@@ -11,14 +11,14 @@ use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
 use sensor_core::{LcdConfig, RenderData, SensorValue, TransportMessage, TransportType};
 
-use crate::config::NetPortConfig;
+use crate::config::NetworkDeviceConfig;
 use crate::{conditional_image, sensor, static_image, utils};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
 
 /// Opens a tcp socket to the specified address
-pub fn open(net_port_config: &NetPortConfig) -> Option<(NodeHandler<()>, Endpoint)> {
+pub fn open(net_port_config: &NetworkDeviceConfig) -> Option<(NodeHandler<()>, Endpoint)> {
     let (handler, _listener) = message_io::node::split::<()>();
     let tcp_endpoint = connect_to_tcp_socket(net_port_config, &handler);
 
@@ -27,7 +27,7 @@ pub fn open(net_port_config: &NetPortConfig) -> Option<(NodeHandler<()>, Endpoin
 
 /// Establishes a tcp connection to the specified address
 fn connect_to_tcp_socket(
-    net_port_config: &NetPortConfig,
+    net_port_config: &NetworkDeviceConfig,
     handler: &NodeHandler<()>,
 ) -> Option<Endpoint> {
     let ip = resolve_hostname(&net_port_config.address);
@@ -71,7 +71,7 @@ fn connect_to_tcp_socket(
 /// Prepares the static data.
 /// This sends the static image data and the conditional image data to the remote tcp socket.
 fn prepare_static_data(
-    net_port_config: &NetPortConfig,
+    net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
     // Prepare static image data
@@ -114,7 +114,7 @@ fn resolve_hostname(address: &str) -> Option<String> {
 pub fn start_sync(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
-    net_port_config: NetPortConfig,
+    net_port_config: NetworkDeviceConfig,
     port_running_state_handle: Arc<Mutex<bool>>,
 ) -> Arc<thread::JoinHandle<()>> {
     let static_sensor_values = static_sensor_values.clone();
@@ -158,7 +158,7 @@ pub fn start_sync(
 /// Tries to open the tcp socket until the port_running_state_handle is set to false.
 /// Returns a tcp handler and tcp listener
 fn try_open_tcp_socket(
-    net_port_config: &NetPortConfig,
+    net_port_config: &NetworkDeviceConfig,
     port_running_state_handle: &Arc<Mutex<bool>>,
 ) -> Option<(NodeHandler<()>, Endpoint)> {
     let mut net_port = None;
@@ -177,7 +177,7 @@ fn try_open_tcp_socket(
 
 /// Prepares the render data for the remote tcp socket
 fn prepare_static_image_data_on_display(
-    net_port_config: &NetPortConfig,
+    net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
     let static_image_data = static_image::prepare_images(&net_port_config.lcd_config);
@@ -187,7 +187,7 @@ fn prepare_static_image_data_on_display(
 
 /// Prepares the conditional image data and sends it to the remote tcp socket
 fn prepare_conditional_image_data_on_display(
-    net_port_config: &NetPortConfig,
+    net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
     let conditional_image_data = conditional_image::prepare_images(&net_port_config.lcd_config);
@@ -197,7 +197,7 @@ fn prepare_conditional_image_data_on_display(
 
 /// Sends the data to the remote tcp socket
 fn send_tcp_data(
-    net_port_config: &NetPortConfig,
+    net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
     data_to_send: Vec<u8>,
 ) {

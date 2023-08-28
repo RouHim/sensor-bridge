@@ -10,12 +10,12 @@ use uuid::Uuid;
 /// The app config
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AppConfig {
-    pub network_devices: HashMap<String, NetPortConfig>,
+    pub network_devices: HashMap<String, NetworkDeviceConfig>,
 }
 
 /// Config for a single network device
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct NetPortConfig {
+pub struct NetworkDeviceConfig {
     pub id: String,
     pub name: String,
     pub address: String,
@@ -23,9 +23,9 @@ pub struct NetPortConfig {
     pub lcd_config: LcdConfig,
 }
 
-impl NetPortConfig {
-    fn default() -> NetPortConfig {
-        NetPortConfig {
+impl NetworkDeviceConfig {
+    fn default() -> NetworkDeviceConfig {
+        NetworkDeviceConfig {
             id: Uuid::new_v4().to_string(),
             name: "A new device".to_string(),
             address: "".to_string(),
@@ -35,34 +35,25 @@ impl NetPortConfig {
     }
 }
 
-pub fn create() -> NetPortConfig {
-    let new_config = NetPortConfig::default();
+pub fn create_network_device_config() -> NetworkDeviceConfig {
+    let new_config = NetworkDeviceConfig::default();
     write(&new_config);
     new_config
 }
 
 /// Loads the config file from disk.
 /// If the file does not exist, it will be created.
-/// Returns the config for the specified com port.
-/// If no config for the specified com port exists, None is returned.
-pub fn read(network_device_id: &str) -> NetPortConfig {
+/// Returns the config for the specified network device.
+/// If no config for the specified network device exists, None is returned.
+pub fn read(network_device_id: &str) -> Option<NetworkDeviceConfig> {
     let config: AppConfig = read_from_app_config();
-    let maybe_config = config.network_devices.get(network_device_id);
-
-    if maybe_config.is_none() {
-        // Create port config
-        let port_config = NetPortConfig::default();
-        write(&port_config);
-        return port_config;
-    }
-
-    maybe_config.unwrap().clone()
+    config.network_devices.get(network_device_id).cloned()
 }
 
 /// Writes the specified config to disk.
 /// If the config file does not exist, it will be created.
 /// If the config file already exists, the specified config will be added to it.
-pub fn write(net_port_config: &NetPortConfig) {
+pub fn write(net_port_config: &NetworkDeviceConfig) {
     let mut config: AppConfig = read_from_app_config();
     config
         .network_devices

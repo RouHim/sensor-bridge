@@ -7,7 +7,7 @@ use rayon::prelude::*;
 use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
 use tauri::AppHandle;
 
-use crate::config::NetPortConfig;
+use crate::config::NetworkDeviceConfig;
 use crate::{conditional_image, sensor, static_image, utils};
 
 /// Constant for the window label
@@ -17,14 +17,13 @@ pub const WINDOW_LABEL: &str = "lcd_preview";
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
-//noinspection RsWrongGenericArgumentsNumber
-pub fn show(app_handle: AppHandle, port_config: NetPortConfig) {
+pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
     let network_device_id = port_config.id.clone();
     let width = port_config.lcd_config.resolution_width;
     let height = port_config.lcd_config.resolution_height;
     let lcd_elements = port_config.lcd_config.elements.clone();
 
-    info!("Showing lcd preview for {}", port_config.name);
+    info!("Showing lcd preview for '{}'", port_config.name);
 
     thread::spawn(move || {
         // Prepare static assets
@@ -82,7 +81,7 @@ pub fn render(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
     lcd_config: LcdConfig,
-) -> String {
+) -> std::thread::Result<String> {
     let static_sensor_values = static_sensor_values.clone();
     let sensor_value_history = sensor_value_history.clone();
     let lcd_config = lcd_config.clone();
@@ -104,5 +103,4 @@ pub fn render(
         base64::Engine::encode(&engine, buf)
     })
     .join()
-    .unwrap()
 }

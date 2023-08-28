@@ -11,7 +11,7 @@ impl sensor::SensorProvider for SystemSensor {
 }
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
-    let sensors_requests = vec![get_system_time];
+    let sensors_requests = [get_system_time];
 
     sensors_requests.iter().flat_map(|f| f()).collect()
 }

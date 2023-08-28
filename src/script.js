@@ -150,12 +150,13 @@ window.addEventListener("DOMContentLoaded", () => {
     designerPane.addEventListener('drop', dropOnDesignerPane);
 
     // Load all devices from config
-    loadDeviceConfigs();
-
-    // Select first net port
-    if (cmbNetworkPorts.options.length > 0) {
-        onNetDeviceSelected(cmbNetworkPorts.options[0]);
-    }
+    loadDeviceConfigs().then(() => {
+            // Select first net port
+            if (cmbNetworkPorts.options.length > 0) {
+                onNetDeviceSelected(cmbNetworkPorts.options[0]);
+            }
+        }
+    )
 });
 
 /// Exports the current config to a file the use can save on his computer
@@ -197,7 +198,12 @@ function importConfig() {
                 invoke('import_config', {filePath: selected}).then(
                     () => {
                         // Reload all devices from config
-                        loadDeviceConfigs();
+                        loadDeviceConfigs().then(() => {
+                            // Select first net port
+                            if (cmbNetworkPorts.options.length > 0) {
+                                onNetDeviceSelected(cmbNetworkPorts.options[0]);
+                            }
+                        });
                     }
                 ).catch((error) => {
                     alert("Error while importing config. " + error);
@@ -348,14 +354,17 @@ function removeDevice() {
     cmbNetworkPorts.removeChild(toRemove);
 
     // Remove net port from backend
-    invoke('remove_network_device_config', {networkDeviceId: networkDeviceId});
-
-    // If is at least one net port, select the first one
-    if (cmbNetworkPorts.options.length > 0) {
-        onNetDeviceSelected(cmbNetworkPorts.options[0]);
-    } else {
-        clearForm();
-    }
+    invoke('remove_network_device_config', {networkDeviceId: networkDeviceId}).then(() => {
+            // If is at least one net port, select the first / next one
+            if (cmbNetworkPorts.options.length > 0) {
+                onNetDeviceSelected(cmbNetworkPorts.options[0]);
+            } else {
+                clearForm();
+            }
+        }
+    ).catch((error) => {
+        alert("Error while removing network device. " + error);
+    });
 }
 
 function clearForm() {
@@ -374,14 +383,18 @@ function createNetworkPort() {
 
             // Load all device configs from config
             loadDeviceConfigs().then(() => {
-                // Select new net device
+                // Select new network device
                 let liElement = document.getElementById(networkDeviceId);
                 onNetDeviceSelected(liElement);
             });
-        });
+        })
+        .catch((error) => {
+                alert("Error while creating a new network device. " + error);
+            }
+        );
 }
 
-function loadDeviceConfigs() {
+async function loadDeviceConfigs() {
     // Load config from backend
     return invoke('get_app_config').then((appConfig) => {
         // Map config to JSON
@@ -555,7 +568,11 @@ function saveConfig() {
         name: deviceName,
         address: deviceAddress,
         lcdConfig: JSON.stringify(lcdConfig),
-    });
+    }).catch(
+        (error) => {
+            alert("Error while saving config. " + error);
+        }
+    )
 }
 
 function onNetDeviceSelected(element) {
@@ -584,21 +601,32 @@ function onNetDeviceSelected(element) {
                 }
             );
         }
-    );
+    ).catch((error) => {
+        alert("Error while loading config for network device id: " + networkDeviceId + ". " + error);
+    });
 }
 
 // Toggles the sync for the selected net port
 function toggleSync(checked) {
     if (checked) {
-        invoke('enable_sync', {networkDeviceId: currentNetworkDeviceId});
+        invoke('enable_sync', {networkDeviceId: currentNetworkDeviceId})
+            .catch((error) => {
+                alert("Error while enabling network device. " + error);
+            });
     } else {
-        invoke('disable_sync', {networkDeviceId: currentNetworkDeviceId});
+        invoke('disable_sync', {networkDeviceId: currentNetworkDeviceId})
+            .catch((error) => {
+                alert("Error while disabling network device. " + error);
+            });
     }
 }
 
 
 function toggleLivePreview() {
-    invoke('toggle_lcd_live_preview', {networkDeviceId: currentNetworkDeviceId});
+    invoke('show_lcd_live_preview', {networkDeviceId: currentNetworkDeviceId})
+        .catch((error) => {
+            alert("Error while showing live preview. " + error);
+        });
 }
 
 function loadLcdConfig(networkDeviceId) {
@@ -644,7 +672,9 @@ function loadLcdConfig(networkDeviceId) {
             designerPane.style.width = lcdConfig.resolution_width + "px";
             designerPane.style.height = lcdConfig.resolution_height + "px";
         }
-    );
+    ).catch((error) => {
+        alert("Error while loading config for network device id: " + networkDeviceId + ". " + error);
+    });
 }
 
 function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig, elementGraphConfig, elementConditionalImageConfig) {
