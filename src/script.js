@@ -135,13 +135,6 @@ window.addEventListener("DOMContentLoaded", () => {
     btnControlPadRight.addEventListener("click", () => moveElementControlPad("right"));
     btnControlPadDown.addEventListener("click", () => moveElementControlPad("down"));
 
-    // Prevent arrow key scrolling
-    window.addEventListener("keydown", (event) => {
-        if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
-            event.preventDefault();
-        }
-    });
-
     // If lost focus, check network config
     txtDeviceNetworkAddress.addEventListener("focusout", verifyNetworkAddress);
 
@@ -256,10 +249,8 @@ function verifyNetworkAddress() {
         (isValid) => {
             if (isValid) {
                 txtDeviceNetworkAddress.classList.remove("invalid");
-                console.log("Network address is valid");
             } else {
                 txtDeviceNetworkAddress.classList.add("invalid");
-                console.log("Network address is invalid");
             }
         }
     );
@@ -344,12 +335,12 @@ function removeDevice() {
     // Get selected net port id
     let networkDeviceId = currentNetworkDeviceId;
 
-    // If net port id is empty, return
-    if (networkDeviceId === "") {
+    // If net port id is empty, not set or null, return
+    if (networkDeviceId === "" || networkDeviceId === null || networkDeviceId === undefined) {
         return;
     }
 
-    // Remove net port from list
+    // Remove network device from list
     let toRemove = document.getElementById(networkDeviceId);
     cmbNetworkPorts.removeChild(toRemove);
 
@@ -812,6 +803,13 @@ function setSelectedElement(listHtmlElement) {
 
 // If the ctrl key is pressed, entry is moved by 5px instead of 1px
 function moveSelectedElement(event) {
+    console.log(event.target);
+
+    // If target is an input element, prevent moving the element
+    if (event.target.tagName === "INPUT") {
+        return;
+    }
+
     // Check if the arrow keys are pressed
     const isArrowUpPressed = event.key === "ArrowUp";
     const isArrowDownPressed = event.key === "ArrowDown";
@@ -822,6 +820,11 @@ function moveSelectedElement(event) {
 
     // Check if the user pressed an arrow key
     if (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed) {
+        // If target is body then prevent default
+        if (event.target.tagName === "BODY") {
+            event.preventDefault();
+        }
+
         const direction = event.key.replace("Arrow", "").toLowerCase();
         moveSelectedElementBy(moveBy, direction);
     }
@@ -873,9 +876,6 @@ function moveSelectedElementBy(moveBy, direction) {
     // Update the position of the selected element in the list
     lastSelectedListElement.setAttribute("data-element-position-x", xPos);
     lastSelectedListElement.setAttribute("data-element-position-y", yPos);
-
-    // Save the updated element
-    saveConfig();
 }
 
 function updateElement(calculatedId) {
@@ -1313,9 +1313,6 @@ function removeElement() {
 
     // Select the first element in the list
     setSelectedElement(lstDesignerPlacedElements.firstChild);
-
-    // Save config
-    saveConfig();
 }
 
 function onListElementClick(event) {
@@ -1392,8 +1389,6 @@ function dropOnDesignerPane(event) {
     // Update X and Y position in the detail pane
     txtElementPositionX.value = x;
     txtElementPositionY.value = y;
-
-    saveConfig();
 }
 
 function updateLcdDesignPaneDimensions() {
@@ -1407,8 +1402,6 @@ function updateLcdDesignPaneDimensions() {
 
     designerPane.style.width = width + "px";
     designerPane.style.height = height + "px";
-
-    saveConfig();
 }
 
 function onListElementDragStart(event) {
@@ -1433,8 +1426,6 @@ function onListElementDrop(event) {
 
     // Recalculate the z-index of all elements
     recalculateZIndex();
-
-    saveConfig();
 }
 
 // Recalculates the z-index of all designer elements
@@ -1477,9 +1468,6 @@ function moveElementUp() {
 
     // Recalculate the z-index of all elements
     recalculateZIndex();
-
-    // Save config
-    saveConfig();
 }
 
 // Moves the selected element one position down in the list
@@ -1505,7 +1493,4 @@ function moveElementDown() {
 
     // Recalculate the z-index of all elements
     recalculateZIndex();
-
-    // Save config
-    saveConfig();
 }
