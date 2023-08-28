@@ -1,3 +1,18 @@
+# [0.15.0](https://github.com/RouHim/sensor-bridge/compare/v0.14.2...v0.15.0) (2023-08-28)
+
+
+### Bug Fixes
+
+* correct minor typos in code ([56b544e](https://github.com/RouHim/sensor-bridge/commit/56b544e2fc4c54d3a46f4420036a567ddd40deb0))
+* **pipeline:** broken asset upload ([99574c9](https://github.com/RouHim/sensor-bridge/commit/99574c916e95bbc354f0bc21fa0539a38edecf12))
+* **ui:** save too often ([55e4fa0](https://github.com/RouHim/sensor-bridge/commit/55e4fa0931b43b53dd6fe7d9517ab78bc604d440))
+
+
+### Features
+
+* **app:** trigger new release ([4bbaa35](https://github.com/RouHim/sensor-bridge/commit/4bbaa35ef1e5a0e4e42819ffc9ff9fadd5f3d8e6))
+* **ui:** Improve async command handling ([280cae6](https://github.com/RouHim/sensor-bridge/commit/280cae63d92ae7c7d34598c03ad6a5bbd3fe43a9))
+
 ## [0.14.2](https://github.com/RouHim/sensor-bridge/compare/v0.14.1...v0.14.2) (2023-08-26)
 
 ## [0.14.1](https://github.com/RouHim/sensor-bridge/compare/v0.14.0...v0.14.1) (2023-08-26)
