@@ -160,7 +160,7 @@ jobs:
           npm install -g \
              semantic-release  \
             @semantic-release/git  \
-            @semantic-release/gitlab  \
+            @semantic-release/github  \
             @semantic-release/changelog  \
             @semantic-release/exec \
             @semantic-release/commit-analyzer \
