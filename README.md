@@ -5,7 +5,8 @@
 ### Windows
 
 * [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)
-* [RTSS](https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html)
+
+[//]: # (* [RTSS]&#40;https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html&#41;)
 
 ### Linux
 
