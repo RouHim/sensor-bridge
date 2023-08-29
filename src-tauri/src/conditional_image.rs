@@ -136,7 +136,10 @@ pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareConditionalImageData {
 
     // Unpack archive to cache folder
     conditional_image_elements.par_iter().for_each(|element| {
-        prepare_element(&element.id, &element.conditional_image_config);
+        prepare_element(
+            &element.id,
+            element.conditional_image_config.as_ref().unwrap(),
+        );
     });
 
     // Pre-process / Pre-render and prepare for display transport

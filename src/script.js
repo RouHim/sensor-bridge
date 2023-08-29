@@ -647,10 +647,25 @@ function saveConfig() {
         const elementX = parseInt(listItem.getAttribute("data-element-position-x"));
         const elementY = parseInt(listItem.getAttribute("data-element-position-y"));
 
-        const textConfig = getTextConfig(listItem);
-        const imageConfig = getStaticImageConfig(listItem);
-        const graphConfig = getGraphConfig(listItem);
-        const conditionalImageConfig = getConditionalImageConfig(listItem);
+        // Distinguish between the element type, and then just fill the field that is needed
+        let textConfig = null;
+        let imageConfig = null;
+        let graphConfig = null;
+        let conditionalImageConfig = null;
+        switch (elementType) {
+            case ELEMENT_TYPE_TEXT:
+                textConfig = getTextConfig(listItem);
+                break;
+            case ELEMENT_TYPE_STATIC_IMAGE:
+                imageConfig = getStaticImageConfig(listItem);
+                break;
+            case ELEMENT_TYPE_GRAPH:
+                graphConfig = getGraphConfig(listItem);
+                break;
+            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                conditionalImageConfig = getConditionalImageConfig(listItem);
+                break;
+        }
 
         // Build lcd element
         return {
@@ -783,9 +798,7 @@ function loadLcdConfig(networkDeviceId) {
             designerPane.style.width = lcdConfig.resolution_width + "px";
             designerPane.style.height = lcdConfig.resolution_height + "px";
         }
-    ).catch((error) => {
-        alert("Error while loading config for network device id: " + networkDeviceId + ". " + error);
-    });
+    )
 }
 
 function addElementToList(elementId, sensorId, positionX, positionY, elementName, elementType, elementTextConfig, elementImageConfig, elementGraphConfig, elementConditionalImageConfig) {
@@ -801,32 +814,40 @@ function addElementToList(elementId, sensorId, positionX, positionY, elementName
     liElement.setAttribute("data-element-position-y", positionY);
 
     // Text config
-    liElement.setAttribute("data-element-text-format", elementTextConfig.text_format);
-    liElement.setAttribute("data-element-font-size", elementTextConfig.font_size);
-    liElement.setAttribute("data-element-font-color", elementTextConfig.font_color);
+    if (elementType === ELEMENT_TYPE_TEXT) {
+        liElement.setAttribute("data-element-text-format", elementTextConfig.text_format);
+        liElement.setAttribute("data-element-font-size", elementTextConfig.font_size);
+        liElement.setAttribute("data-element-font-color", elementTextConfig.font_color);
+    }
 
     // Image config
-    liElement.setAttribute("data-element-static-image", elementImageConfig.image_path);
-    liElement.setAttribute("data-element-static-image-width", elementImageConfig.width);
-    liElement.setAttribute("data-element-static-image-height", elementImageConfig.height);
+    if (elementType === ELEMENT_TYPE_STATIC_IMAGE) {
+        liElement.setAttribute("data-element-static-image", elementImageConfig.image_path);
+        liElement.setAttribute("data-element-static-image-width", elementImageConfig.width);
+        liElement.setAttribute("data-element-static-image-height", elementImageConfig.height);
+    }
 
     // Graph config
-    liElement.setAttribute("data-element-graph-min-value", elementGraphConfig.min_sensor_value);
-    liElement.setAttribute("data-element-graph-max-value", elementGraphConfig.max_sensor_value);
-    liElement.setAttribute("data-element-graph-width", elementGraphConfig.width);
-    liElement.setAttribute("data-element-graph-height", elementGraphConfig.height);
-    liElement.setAttribute("data-element-graph-type", elementGraphConfig.graph_type);
-    liElement.setAttribute("data-element-graph-color", elementGraphConfig.graph_color);
-    liElement.setAttribute("data-element-graph-stroke-width", elementGraphConfig.graph_stroke_width);
-    liElement.setAttribute("data-element-graph-background-color", elementGraphConfig.background_color);
-    liElement.setAttribute("data-element-graph-border-color", elementGraphConfig.border_color);
+    if (elementType === ELEMENT_TYPE_GRAPH) {
+        liElement.setAttribute("data-element-graph-min-value", elementGraphConfig.min_sensor_value);
+        liElement.setAttribute("data-element-graph-max-value", elementGraphConfig.max_sensor_value);
+        liElement.setAttribute("data-element-graph-width", elementGraphConfig.width);
+        liElement.setAttribute("data-element-graph-height", elementGraphConfig.height);
+        liElement.setAttribute("data-element-graph-type", elementGraphConfig.graph_type);
+        liElement.setAttribute("data-element-graph-color", elementGraphConfig.graph_color);
+        liElement.setAttribute("data-element-graph-stroke-width", elementGraphConfig.graph_stroke_width);
+        liElement.setAttribute("data-element-graph-background-color", elementGraphConfig.background_color);
+        liElement.setAttribute("data-element-graph-border-color", elementGraphConfig.border_color);
+    }
 
     // Conditional image config
-    liElement.setAttribute("data-element-conditional-image-images-path", elementConditionalImageConfig.images_path);
-    liElement.setAttribute("data-element-conditional-image-min-value", elementConditionalImageConfig.min_sensor_value);
-    liElement.setAttribute("data-element-conditional-image-max-value", elementConditionalImageConfig.max_sensor_value);
-    liElement.setAttribute("data-element-conditional-image-width", elementConditionalImageConfig.width);
-    liElement.setAttribute("data-element-conditional-image-height", elementConditionalImageConfig.height);
+    if (elementType === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
+        liElement.setAttribute("data-element-conditional-image-images-path", elementConditionalImageConfig.images_path);
+        liElement.setAttribute("data-element-conditional-image-min-value", elementConditionalImageConfig.min_sensor_value);
+        liElement.setAttribute("data-element-conditional-image-max-value", elementConditionalImageConfig.max_sensor_value);
+        liElement.setAttribute("data-element-conditional-image-width", elementConditionalImageConfig.width);
+        liElement.setAttribute("data-element-conditional-image-height", elementConditionalImageConfig.height);
+    }
 
     // Build li element
     liElement.innerHTML = elementName;
@@ -1018,33 +1039,41 @@ function updateElement(calculatedId) {
     listEntryElement.setAttribute("data-element-type", cmbElementType.value);
 
     // Text config
-    listEntryElement.setAttribute("data-element-position-y", txtElementPositionY.value);
-    listEntryElement.setAttribute("data-element-font-size", txtElementTextFontSize.value);
-    listEntryElement.setAttribute("data-element-font-color", txtElementTextFontColor.value);
+    if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
+        listEntryElement.setAttribute("data-element-position-y", txtElementPositionY.value);
+        listEntryElement.setAttribute("data-element-font-size", txtElementTextFontSize.value);
+        listEntryElement.setAttribute("data-element-font-color", txtElementTextFontColor.value);
+    }
 
     // Image config
-    listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
-    listEntryElement.setAttribute("data-element-static-image", txtElementStaticImageFile.value);
-    listEntryElement.setAttribute("data-element-static-image-width", txtElementStaticImageWidth.value);
-    listEntryElement.setAttribute("data-element-static-image-height", txtElementStaticImageHeight.value);
+    if (cmbElementType.value === ELEMENT_TYPE_STATIC_IMAGE) {
+        listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
+        listEntryElement.setAttribute("data-element-static-image", txtElementStaticImageFile.value);
+        listEntryElement.setAttribute("data-element-static-image-width", txtElementStaticImageWidth.value);
+        listEntryElement.setAttribute("data-element-static-image-height", txtElementStaticImageHeight.value);
+    }
 
     // Graph config
-    listEntryElement.setAttribute("data-element-graph-min-value", txtElementGraphMinValue.value);
-    listEntryElement.setAttribute("data-element-graph-max-value", txtElementGraphMaxValue.value);
-    listEntryElement.setAttribute("data-element-graph-width", txtElementGraphWidth.value);
-    listEntryElement.setAttribute("data-element-graph-height", txtElementGraphHeight.value);
-    listEntryElement.setAttribute("data-element-graph-type", cmbElementGraphType.value);
-    listEntryElement.setAttribute("data-element-graph-color", txtElementGraphColor.value);
-    listEntryElement.setAttribute("data-element-graph-stroke-width", txtElementGraphStrokeWidth.value);
-    listEntryElement.setAttribute("data-element-graph-background-color", txtElementGraphBackgroundColor.value);
-    listEntryElement.setAttribute("data-element-graph-border-color", txtElementGraphBorderColor.value);
+    if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
+        listEntryElement.setAttribute("data-element-graph-min-value", txtElementGraphMinValue.value);
+        listEntryElement.setAttribute("data-element-graph-max-value", txtElementGraphMaxValue.value);
+        listEntryElement.setAttribute("data-element-graph-width", txtElementGraphWidth.value);
+        listEntryElement.setAttribute("data-element-graph-height", txtElementGraphHeight.value);
+        listEntryElement.setAttribute("data-element-graph-type", cmbElementGraphType.value);
+        listEntryElement.setAttribute("data-element-graph-color", txtElementGraphColor.value);
+        listEntryElement.setAttribute("data-element-graph-stroke-width", txtElementGraphStrokeWidth.value);
+        listEntryElement.setAttribute("data-element-graph-background-color", txtElementGraphBackgroundColor.value);
+        listEntryElement.setAttribute("data-element-graph-border-color", txtElementGraphBorderColor.value);
+    }
 
     // Conditional image config
-    listEntryElement.setAttribute("data-element-conditional-image-images-path", txtElementConditionalImageImagesPath.value);
-    listEntryElement.setAttribute("data-element-conditional-image-min-value", txtElementConditionalImageMinValue.value);
-    listEntryElement.setAttribute("data-element-conditional-image-max-value", txtElementConditionalImageMaxValue.value);
-    listEntryElement.setAttribute("data-element-conditional-image-width", txtElementConditionalImageWidth.value);
-    listEntryElement.setAttribute("data-element-conditional-image-height", txtElementConditionalImageHeight.value);
+    if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
+        listEntryElement.setAttribute("data-element-conditional-image-images-path", txtElementConditionalImageImagesPath.value);
+        listEntryElement.setAttribute("data-element-conditional-image-min-value", txtElementConditionalImageMinValue.value);
+        listEntryElement.setAttribute("data-element-conditional-image-max-value", txtElementConditionalImageMaxValue.value);
+        listEntryElement.setAttribute("data-element-conditional-image-width", txtElementConditionalImageWidth.value);
+        listEntryElement.setAttribute("data-element-conditional-image-height", txtElementConditionalImageHeight.value);
+    }
 
     listEntryElement.innerHTML = txtElementName.value;
 
@@ -1446,39 +1475,47 @@ function showLastSelectedElementDetail() {
     onElementTypeChange();
 
     // Text
-    txtElementTextFormat.value = lastSelectedListElement.getAttribute("data-element-text-format");
-    cmbTextSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
-    txtElementTextFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
-    txtElementTextFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
-    txtElementTextFontColor.dispatchEvent(new Event('input', {bubbles: true}));
+    if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
+        txtElementTextFormat.value = lastSelectedListElement.getAttribute("data-element-text-format");
+        cmbTextSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+        txtElementTextFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
+        txtElementTextFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
+        txtElementTextFontColor.dispatchEvent(new Event('input', {bubbles: true}));
+    }
 
     // Static image
-    txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
-    txtElementStaticImageWidth.value = lastSelectedListElement.getAttribute("data-element-static-image-width");
-    txtElementStaticImageHeight.value = lastSelectedListElement.getAttribute("data-element-static-image-height");
+    if (cmbElementType.value === ELEMENT_TYPE_STATIC_IMAGE) {
+        txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
+        txtElementStaticImageWidth.value = lastSelectedListElement.getAttribute("data-element-static-image-width");
+        txtElementStaticImageHeight.value = lastSelectedListElement.getAttribute("data-element-static-image-height");
+    }
 
     // Graph
-    cmbGraphSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
-    txtElementGraphMinValue.value = lastSelectedListElement.getAttribute("data-element-graph-min-value");
-    txtElementGraphMaxValue.value = lastSelectedListElement.getAttribute("data-element-graph-max-value");
-    txtElementGraphWidth.value = lastSelectedListElement.getAttribute("data-element-graph-width");
-    txtElementGraphHeight.value = lastSelectedListElement.getAttribute("data-element-graph-height");
-    cmbElementGraphType.value = lastSelectedListElement.getAttribute("data-element-graph-type");
-    txtElementGraphColor.value = lastSelectedListElement.getAttribute("data-element-graph-color");
-    txtElementGraphColor.dispatchEvent(new Event('input', {bubbles: true}));
-    txtElementGraphStrokeWidth.value = lastSelectedListElement.getAttribute("data-element-graph-stroke-width");
-    txtElementGraphBackgroundColor.value = lastSelectedListElement.getAttribute("data-element-graph-background-color");
-    txtElementGraphBackgroundColor.dispatchEvent(new Event('input', {bubbles: true}));
-    txtElementGraphBorderColor.value = lastSelectedListElement.getAttribute("data-element-graph-border-color");
-    txtElementGraphBorderColor.dispatchEvent(new Event('input', {bubbles: true}));
+    if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
+        cmbGraphSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+        txtElementGraphMinValue.value = lastSelectedListElement.getAttribute("data-element-graph-min-value");
+        txtElementGraphMaxValue.value = lastSelectedListElement.getAttribute("data-element-graph-max-value");
+        txtElementGraphWidth.value = lastSelectedListElement.getAttribute("data-element-graph-width");
+        txtElementGraphHeight.value = lastSelectedListElement.getAttribute("data-element-graph-height");
+        cmbElementGraphType.value = lastSelectedListElement.getAttribute("data-element-graph-type");
+        txtElementGraphColor.value = lastSelectedListElement.getAttribute("data-element-graph-color");
+        txtElementGraphColor.dispatchEvent(new Event('input', {bubbles: true}));
+        txtElementGraphStrokeWidth.value = lastSelectedListElement.getAttribute("data-element-graph-stroke-width");
+        txtElementGraphBackgroundColor.value = lastSelectedListElement.getAttribute("data-element-graph-background-color");
+        txtElementGraphBackgroundColor.dispatchEvent(new Event('input', {bubbles: true}));
+        txtElementGraphBorderColor.value = lastSelectedListElement.getAttribute("data-element-graph-border-color");
+        txtElementGraphBorderColor.dispatchEvent(new Event('input', {bubbles: true}));
+    }
 
     // Conditional image
-    cmbConditionalImageSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
-    txtElementConditionalImageImagesPath.value = lastSelectedListElement.getAttribute("data-element-conditional-image-images-path");
-    txtElementConditionalImageMinValue.value = lastSelectedListElement.getAttribute("data-element-conditional-image-min-value");
-    txtElementConditionalImageMaxValue.value = lastSelectedListElement.getAttribute("data-element-conditional-image-max-value");
-    txtElementConditionalImageWidth.value = lastSelectedListElement.getAttribute("data-element-conditional-image-width");
-    txtElementConditionalImageHeight.value = lastSelectedListElement.getAttribute("data-element-conditional-image-height");
+    if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
+        cmbConditionalImageSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+        txtElementConditionalImageImagesPath.value = lastSelectedListElement.getAttribute("data-element-conditional-image-images-path");
+        txtElementConditionalImageMinValue.value = lastSelectedListElement.getAttribute("data-element-conditional-image-min-value");
+        txtElementConditionalImageMaxValue.value = lastSelectedListElement.getAttribute("data-element-conditional-image-max-value");
+        txtElementConditionalImageWidth.value = lastSelectedListElement.getAttribute("data-element-conditional-image-width");
+        txtElementConditionalImageHeight.value = lastSelectedListElement.getAttribute("data-element-conditional-image-height");
+    }
 }
 
 function dropOnDesignerPane(event) {

@@ -70,7 +70,10 @@ fn prepare_assets(elements: Vec<LcdElement>) {
         .par_iter()
         .filter(|element| element.element_type == ElementType::ConditionalImage)
         .for_each(|element| {
-            conditional_image::prepare_element(&element.id, &element.conditional_image_config);
+            conditional_image::prepare_element(
+                &element.id,
+                element.conditional_image_config.as_ref().unwrap(),
+            );
         });
 }
 

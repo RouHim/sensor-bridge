@@ -13,7 +13,7 @@ use crate::utils;
 /// Thus they can be loaded without modification from filesystem in the render loop.
 pub fn prepare(element: &LcdElement) {
     // Pre-Render image to desired size
-    let image_config = &element.image_config;
+    let image_config = element.image_config.as_ref().unwrap();
     let image = image::open(&image_config.image_path).unwrap();
     let image = image.resize_exact(
         image_config.width,
@@ -40,7 +40,7 @@ pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareStaticImageData {
         .elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
-        .map(|element| prepare_image(&element.id, &element.image_config))
+        .map(|element| prepare_image(&element.id, element.image_config.as_ref().unwrap()))
         .collect();
 
     PrepareStaticImageData {
