@@ -1,3 +1,10 @@
+# [0.16.0](https://github.com/RouHim/sensor-bridge/compare/v0.15.1...v0.16.0) (2023-08-29)
+
+
+### Features
+
+* **network:** use tcp instead of icmp ping ([89243c6](https://github.com/RouHim/sensor-bridge/commit/89243c6b58c067187cdb631c9e0f6108085b8f01))
+
 ## [0.15.1](https://github.com/RouHim/sensor-bridge/compare/v0.15.0...v0.15.1) (2023-08-28)
 
 # [0.15.0](https://github.com/RouHim/sensor-bridge/compare/v0.14.2...v0.15.0) (2023-08-28)
