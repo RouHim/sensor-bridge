@@ -1,3 +1,10 @@
+# [0.17.0](https://github.com/RouHim/sensor-bridge/compare/v0.16.0...v0.17.0) (2023-08-29)
+
+
+### Features
+
+* **ui:** add extended sensor selection dialog ([a50fe4d](https://github.com/RouHim/sensor-bridge/commit/a50fe4d9b87c7f6c298d7adb119e334ec9002e86))
+
 # [0.16.0](https://github.com/RouHim/sensor-bridge/compare/v0.15.1...v0.16.0) (2023-08-29)
 
 
