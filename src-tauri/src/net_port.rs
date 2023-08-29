@@ -10,8 +10,8 @@ use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
 use sensor_core::{LcdConfig, RenderData, SensorValue, TransportMessage, TransportType};
 
-use crate::{conditional_image, sensor, static_image, utils};
 use crate::config::NetworkDeviceConfig;
+use crate::{conditional_image, sensor, static_image, utils};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
