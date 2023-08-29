@@ -10,7 +10,7 @@
     <link href="libs/water-css-dark/dark.css" rel="stylesheet">
 
     <!-- Coloris Color Picker -->
-    <link rel="stylesheet" href="libs/coloris/coloris.min.css"/>
+    <link href="libs/coloris/coloris.min.css" rel="stylesheet"/>
     <script src="libs/coloris/coloris.min.js">
     </script>
 
@@ -24,6 +24,22 @@
 
 <body>
 <div id="base-container">
+    <dialog id="sensor-selection-dialog" style="width: 80vw; height: 80vh; padding: 0; overflow: hidden">
+        <div id="sensor-selection-table-filter">
+            <input id="sensor-selection-table-filter-input" placeholder="Start typing to filter sensors..." type="text">
+        </div>
+        <table id="sensor-selection-table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </dialog>
+
     <div id="master-pane">
 
         <div class="flex-container center-horizontal">
@@ -31,8 +47,8 @@
             <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
             </select>
 
-            <button class="icon-button" id="btn-add-network-device" title="Add a new network device"
-                    style="font-size: 2em; margin-right: 10px;">
+            <button class="icon-button" id="btn-add-network-device" style="font-size: 2em; margin-right: 10px;"
+                    title="Add a new network device">
                 <i data-feather="plus"></i>
             </button>
 
@@ -41,8 +57,7 @@
                 <i data-feather="save"></i>
             </button>
 
-            <button class="icon-button" id="lcd-btn-remove-network-device"
-                    style="font-size: 2em; margin-right: 10px;"
+            <button class="icon-button" id="lcd-btn-remove-network-device" style="font-size: 2em; margin-right: 10px;"
                     title="Remove device configuration">
                 <i data-feather="trash"></i>
             </button>
@@ -64,7 +79,7 @@
 
             <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the display">
                 <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
-                <i data-feather="power" class="kill-switch-icon"></i>
+                <i class="kill-switch-icon" data-feather="power"></i>
             </label>
 
         </div>
@@ -73,7 +88,7 @@
 
         <div id="lcd-panel" style="display: block;">
 
-            <div id="device-config" class="flex-container center-horizontal">
+            <div class="flex-container center-horizontal" id="device-config">
                 <label for="lcd-txt-device-name" style="margin-right: 5px">Device name:</label>
                 <input id="lcd-txt-device-name" style="width: 150px;" title="Enter a simple name of your device">
 
@@ -98,25 +113,25 @@
 
                 <div>
                     <div id="lcd-designer-control-pad-up">
-                        <div id="lcd-btn-designer-control-pad-up" class="icon-button">
+                        <div class="icon-button" id="lcd-btn-designer-control-pad-up">
                             <i data-feather="arrow-up"></i>
                         </div>
                     </div>
 
                     <div id="lcd-designer-control-pad-left-right">
-                        <div id="lcd-btn-designer-control-pad-left" class="icon-button">
+                        <div class="icon-button" id="lcd-btn-designer-control-pad-left">
                             <i data-feather="arrow-left"></i>
                         </div>
-                        <button id="lcd-btn-designer-control-pad-move-unit" data-move-unit="1">
+                        <button data-move-unit="1" id="lcd-btn-designer-control-pad-move-unit">
                             1px
                         </button>
-                        <div id="lcd-btn-designer-control-pad-right" class="icon-button">
+                        <div class="icon-button" id="lcd-btn-designer-control-pad-right">
                             <i data-feather="arrow-right"></i>
                         </div>
                     </div>
 
                     <div id="lcd-designer-control-pad-down">
-                        <div id="lcd-btn-designer-control-pad-down" class="icon-button">
+                        <div class="icon-button" id="lcd-btn-designer-control-pad-down">
                             <i data-feather="arrow-down"></i>
                         </div>
                     </div>
@@ -125,7 +140,7 @@
 
             <hr>
 
-            <div id="lcd-elements-detail-editor" class="row-flex-container">
+            <div class="row-flex-container" id="lcd-elements-detail-editor">
                 <div style="width: 25%; margin-right: 10px; padding-right: 10px; border-right: #ccc solid 1px;">
                     <ul id="lcd-designer-placed-elements">
                     </ul>
@@ -148,7 +163,7 @@
 
                     <table>
                         <colgroup>
-                            <col span="1" style="width: 100px">
+                            <col span="1" style="width: 200px">
                             <col span="1">
                         </colgroup>
                         <tbody>
@@ -180,13 +195,20 @@
 
                     <table id="lcd-text-config" style="display: inherit;">
                         <colgroup>
-                            <col span="1" style="width: 100px">
+                            <col span="1" style="width: 200px">
                             <col span="1">
                         </colgroup>
                         <tbody>
                         <tr>
                             <td>Sensor:</td>
-                            <td><select id="lcd-cmb-sensor-id-selection"></select></td>
+                            <td>
+                                <select id="lcd-cmb-sensor-id-selection" style="float: left"></select>
+                                <button class="icon-button" id="lcd-text-config-btn-select-sensor-id"
+                                        style="float: left; margin-top: 5px; margin-left: 5px;"
+                                        title="Show extended sensor selection dialog">
+                                    <i data-feather="external-link"></i>
+                                </button>
+                            </td>
                         </tr>
                         <tr>
                             <td>Format:</td>
@@ -200,7 +222,7 @@
                         <tr>
                             <td>Font color:</td>
                             <td>
-                                <input id="lcd-txt-element-font-color" type="text" value="#ffffffff" data-coloris>
+                                <input data-coloris id="lcd-txt-element-font-color" type="text" value="#ffffffff">
                             </td>
                         </tr>
                         </tbody>
@@ -208,17 +230,19 @@
 
                     <table id="lcd-static-image-config" style="display: none;">
                         <colgroup>
-                            <col span="1" style="width: 100px">
+                            <col span="1" style="width: 200px">
                             <col span="1">
                         </colgroup>
                         <tbody>
                         <tr>
                             <td>Image:</td>
                             <td>
-                                <button class="icon-button" id="lcd-btn-static-image-select">
+                                <input id="lcd-txt-element-static-image-file" style="float: left">
+                                <button class="icon-button" id="lcd-btn-static-image-select"
+                                        style="float: left; margin-top: 5px; margin-left: 5px;">
                                     <i data-feather="folder"></i>
                                 </button>
-                                <input id="lcd-txt-element-static-image-file">
+                            </td>
                         </tr>
                         <tr>
                             <td>Width:</td>
@@ -242,7 +266,14 @@
                         <tbody>
                         <tr>
                             <td>Sensor:</td>
-                            <td><select id="lcd-cmb-number-sensor-id-selection"></select></td>
+                            <td>
+                                <select id="lcd-cmb-number-sensor-id-selection" style="float: left"></select>
+                                <button class="icon-button" id="lcd-graph-config-btn-select-sensor-id"
+                                        style="float: left; margin-top: 5px; margin-left: 5px;"
+                                        title="Show extended sensor selection dialog">
+                                    <i data-feather="external-link"></i>
+                                </button>
+                            </td>
                         </tr>
                         <tr title="If not set manually, the upper and lower graph bounds are automatically calculated from the sensor values.">
                             <td>Min. sensor value:</td>
@@ -276,7 +307,7 @@
                         <tr>
                             <td>Graph color:</td>
                             <td>
-                                <input id="lcd-graph-color" type="text" value="#000000ff" data-coloris>
+                                <input data-coloris id="lcd-graph-color" type="text" value="#000000ff">
                             </td>
                         </tr>
                         <tr>
@@ -287,13 +318,13 @@
                         <tr>
                             <td>Graph background color:</td>
                             <td>
-                                <input id="lcd-graph-background-color" type="text" value="#00000000" data-coloris>
+                                <input data-coloris id="lcd-graph-background-color" type="text" value="#00000000">
                             </td>
                         </tr>
                         <tr>
                             <td>Graph border color:</td>
                             <td>
-                                <input id="lcd-graph-border-color" type="text" value="#ffffff00" data-coloris>
+                                <input data-coloris id="lcd-graph-border-color" type="text" value="#ffffff00">
                             </td>
                         </tr>
 
@@ -308,18 +339,27 @@
                         <tbody>
                         <tr>
                             <td>Sensor:</td>
-                            <td><select id="lcd-cmb-conditional-image-sensor-id-selection"></select></td>
+                            <td>
+                                <select id="lcd-cmb-conditional-image-sensor-id-selection" style="float: left"></select>
+                                <button class="icon-button" id="lcd-conditional-image-config-btn-select-sensor-id"
+                                        style="float: left; margin-top: 5px; margin-left: 5px;"
+                                        title="Show extended sensor selection dialog">
+                                    <i data-feather="external-link"></i>
+                                </button>
+                            </td>
                         </tr>
                         <tr>
                             <td>Image Package:</td>
                             <td>
-                                <button class="icon-button" id="lcd-btn-conditional-image-select">
+                                <input id="lcd-txt-element-conditional-image-images-path" style="float: left">
+                                <button class="icon-button" id="lcd-btn-conditional-image-select"
+                                        style="float: left; margin-top: 5px; margin-left: 5px;">
                                     <i data-feather="folder"></i>
                                 </button>
-                                <button class="icon-button" id="lcd-btn-conditional-image-info">
+                                <button class="icon-button" id="lcd-btn-conditional-image-info"
+                                        style="float: left; margin-top: 5px; margin-left: 5px;">
                                     <i data-feather="info"></i>
                                 </button>
-                                <input id="lcd-txt-element-conditional-image-images-path">
                             </td>
                         </tr>
                         <tr id="lcd-conditional-image-min-value-row">

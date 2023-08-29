@@ -1,6 +1,11 @@
 const {invoke, convertFileSrc} = window.__TAURI__.tauri;
 const {open, save} = window.__TAURI__.dialog;
 
+// Modal dialog
+const sensorSelectionDialog = document.getElementById("sensor-selection-dialog");
+const sensorSelectionTable = document.getElementById("sensor-selection-table");
+const txtSensorSelectionTableFilterInput = document.getElementById("sensor-selection-table-filter-input");
+
 // Network port selection
 const cmbNetworkPorts = document.getElementById("main-network-ports-select");
 
@@ -43,12 +48,13 @@ const txtElementName = document.getElementById("lcd-txt-element-name");
 const cmbElementType = document.getElementById("lcd-cmb-element-type");
 const txtElementPositionX = document.getElementById("lcd-txt-element-position-x");
 const txtElementPositionY = document.getElementById("lcd-txt-element-position-y");
-const cmbSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
 
 // Text
 const txtElementTextFormat = document.getElementById("lcd-txt-element-text-format");
-const txtElementFontSize = document.getElementById("lcd-txt-element-font-size");
-const txtElementFontColor = document.getElementById("lcd-txt-element-font-color");
+const txtElementTextFontSize = document.getElementById("lcd-txt-element-font-size");
+const txtElementTextFontColor = document.getElementById("lcd-txt-element-font-color");
+const cmbTextSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
+const btnTextSensorIdSelectionDialog = document.getElementById("lcd-text-config-btn-select-sensor-id");
 
 // Static image
 const btnElementSelectStaticImage = document.getElementById("lcd-btn-static-image-select");
@@ -57,7 +63,8 @@ const txtElementStaticImageWidth = document.getElementById("lcd-txt-element-stat
 const txtElementStaticImageHeight = document.getElementById("lcd-txt-element-static-image-height");
 
 // Graph
-const cmbNumberSensorIdSelection = document.getElementById("lcd-cmb-number-sensor-id-selection");
+const cmbGraphSensorIdSelection = document.getElementById("lcd-cmb-number-sensor-id-selection");
+const btnGraphSensorIdSelectionDialog = document.getElementById("lcd-graph-config-btn-select-sensor-id");
 const txtElementGraphMinValue = document.getElementById("lcd-txt-element-graph-min-value");
 const txtElementGraphMaxValue = document.getElementById("lcd-txt-element-graph-max-value");
 const txtElementGraphWidth = document.getElementById("lcd-graph-width");
@@ -71,6 +78,7 @@ const btnElementConditionalImageInfo = document.getElementById("lcd-btn-conditio
 
 // Conditional image
 const cmbConditionalImageSensorIdSelection = document.getElementById("lcd-cmb-conditional-image-sensor-id-selection");
+const btnConditionalImageSensorIdSelectionDialog = document.getElementById("lcd-conditional-image-config-btn-select-sensor-id");
 const btnElementSelectConditionalImage = document.getElementById("lcd-btn-conditional-image-select");
 const txtElementConditionalImageImagesPath = document.getElementById("lcd-txt-element-conditional-image-images-path");
 const txtElementConditionalImageMinValue = document.getElementById("lcd-txt-element-conditional-image-min-value");
@@ -134,6 +142,12 @@ window.addEventListener("DOMContentLoaded", () => {
     btnControlPadLeft.addEventListener("click", () => moveElementControlPad("left"));
     btnControlPadRight.addEventListener("click", () => moveElementControlPad("right"));
     btnControlPadDown.addEventListener("click", () => moveElementControlPad("down"));
+    btnTextSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
+    btnGraphSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
+    btnConditionalImageSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
+
+    // Modal dialog handling
+    sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
 
     // If lost focus, check network config
     txtDeviceNetworkAddress.addEventListener("focusout", verifyNetworkAddress);
@@ -150,7 +164,113 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         }
     )
+
+    // Allow enter key down on sensor selection dialog to select first sensor
+    sensorSelectionDialog.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            if (sensorSelectionTable.getElementsByTagName("tr").length > 1) {
+                sensorSelectionDialog.close(sensorSelectionTable.getElementsByTagName("tr")[1].id);
+            }
+        }
+    });
 });
+
+function buildSensorSelectionDialogTable(filterValue) {
+    // If type is graph only use numeric sensors
+    const onlyNumeric = cmbElementType.options[cmbElementType.selectedIndex].value === ELEMENT_TYPE_GRAPH;
+
+    // Clear table entries
+    sensorSelectionTable.innerHTML = "";
+
+    // Add Name and value headers
+    const thead = document.createElement("thead");
+    const row = document.createElement("tr");
+    const thName = document.createElement("th");
+    const thValue = document.createElement("th");
+
+    thName.innerText = "Name";
+    thValue.innerText = "Value";
+
+    row.appendChild(thName);
+    row.appendChild(thValue);
+    thead.appendChild(row);
+    sensorSelectionTable.appendChild(thead);
+
+    // Create tbody
+    const tbody = document.createElement("tbody");
+    sensorSelectionTable.appendChild(tbody);
+
+    // Filter sensor values for graph
+    let filteredSensorValues = onlyNumeric
+        ? sensorValues.filter((sensorValue) => sensorValue.sensor_type === "number")
+        : sensorValues;
+
+    // Filter for keywords split by space
+    if (filterValue !== "" && filterValue !== undefined && filterValue !== null) {
+        filteredSensorValues = filteredSensorValues.filter((sensorValue) => {
+            const keywords = filterValue.split(" ");
+            let matches = 0;
+
+            keywords.forEach((keyword) => {
+                // Check if label or value contains keyword
+                if (sensorValue.label.toLowerCase().includes(keyword.toLowerCase()) || sensorValue.value.toLowerCase().includes(keyword.toLowerCase())) {
+                    matches++;
+                }
+            });
+
+            return matches === keywords.length;
+        });
+    }
+
+    // Fill sensor values into table
+    filteredSensorValues.forEach((sensorValue) => {
+        const row = document.createElement("tr");
+        const name = document.createElement("td");
+        const value = document.createElement("td");
+
+        row.id = sensorValue.id;
+        row.classList.add("sensor-selection-table-row");
+        row.addEventListener("click", () => sensorSelectionDialog.close(sensorValue.id));
+        name.innerText = sensorValue.label;
+        value.innerText = sensorValue.value + " " + sensorValue.unit;
+
+        row.appendChild(name);
+        row.appendChild(value);
+
+        tbody.appendChild(row);
+    });
+}
+
+function showSensorSelectionDialog() {
+    // Show modal dialog
+    sensorSelectionDialog.showModal();
+
+    // When the user clicks anywhere outside the modal, close it
+    window.onclick = function (event) {
+        if (event.target === sensorSelectionDialog) {
+            sensorSelectionDialog.close();
+        }
+    }
+
+    // Build table
+    buildSensorSelectionDialogTable("");
+
+    // Prepare filter input
+    txtSensorSelectionTableFilterInput.value = "";
+    txtSensorSelectionTableFilterInput.select();
+    txtSensorSelectionTableFilterInput.addEventListener("input", () => buildSensorSelectionDialogTable(txtSensorSelectionTableFilterInput.value));
+}
+
+function onCloseSensorSelectionDialog(selectedSensorId) {
+    if (selectedSensorId === "" || selectedSensorId === undefined || selectedSensorId === null) {
+        return;
+    }
+
+    cmbTextSensorIdSelection.value = selectedSensorId;
+    cmbGraphSensorIdSelection.value = selectedSensorId;
+    cmbConditionalImageSensorIdSelection.value = selectedSensorId;
+}
 
 /// Exports the current config to a file the use can save on his computer
 function exportConfig() {
@@ -739,7 +859,7 @@ function loadSensorValues() {
             sensorValues = JSON.parse(loadedSensors);
 
             // Add sensor values to the sensor value combo box
-            cmbSensorIdSelection.innerHTML = sensorValues.map(
+            cmbTextSensorIdSelection.innerHTML = sensorValues.map(
                 (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
             ).join("");
 
@@ -749,7 +869,7 @@ function loadSensorValues() {
             ).join("");
 
             // Filter out only number sensors and add them to cmbNumberSensorIdSelection
-            cmbNumberSensorIdSelection.innerHTML = sensorValues.filter(
+            cmbGraphSensorIdSelection.innerHTML = sensorValues.filter(
                 (sensorValue) => sensorValue.sensor_type === "number"
             ).map(
                 (sensorValue) => `<option value="${sensorValue.id}" data-unit="${sensorValue.unit}" title="${sensorValue.value}">${sensorValue.label}</option>`
@@ -803,8 +923,6 @@ function setSelectedElement(listHtmlElement) {
 
 // If the ctrl key is pressed, entry is moved by 5px instead of 1px
 function moveSelectedElement(event) {
-    console.log(event.target);
-
     // If target is an input element, prevent moving the element
     if (event.target.tagName === "INPUT") {
         return;
@@ -885,9 +1003,9 @@ function updateElement(calculatedId) {
     // Get sensor id
     // If the element type is a graph, the sensor id is the number sensor id
     // If the element type is a conditional image, the sensor id is the conditional image sensor id
-    let sensorId = cmbSensorIdSelection.value;
+    let sensorId = cmbTextSensorIdSelection.value;
     if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
-        sensorId = cmbNumberSensorIdSelection.value;
+        sensorId = cmbGraphSensorIdSelection.value;
     } else if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
         sensorId = cmbConditionalImageSensorIdSelection.value;
     }
@@ -901,8 +1019,8 @@ function updateElement(calculatedId) {
 
     // Text config
     listEntryElement.setAttribute("data-element-position-y", txtElementPositionY.value);
-    listEntryElement.setAttribute("data-element-font-size", txtElementFontSize.value);
-    listEntryElement.setAttribute("data-element-font-color", txtElementFontColor.value);
+    listEntryElement.setAttribute("data-element-font-size", txtElementTextFontSize.value);
+    listEntryElement.setAttribute("data-element-font-color", txtElementTextFontColor.value);
 
     // Image config
     listEntryElement.setAttribute("data-element-text-format", txtElementTextFormat.value);
@@ -940,11 +1058,11 @@ function updateElement(calculatedId) {
         case ELEMENT_TYPE_TEXT:
             designerElement.title = txtElementName.value;
             designerElement.innerHTML = txtElementTextFormat.value
-                .replace("{value}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].title)
-                .replace("{unit}", cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex].getAttribute("data-unit"));
-            designerElement.style.fontSize = txtElementFontSize.value + "px";
+                .replace("{value}", cmbTextSensorIdSelection.options[cmbTextSensorIdSelection.selectedIndex].title)
+                .replace("{unit}", cmbTextSensorIdSelection.options[cmbTextSensorIdSelection.selectedIndex].getAttribute("data-unit"));
+            designerElement.style.fontSize = txtElementTextFontSize.value + "px";
             designerElement.style.fontFamily = "monospace";
-            designerElement.style.color = txtElementFontColor.value;
+            designerElement.style.color = txtElementTextFontColor.value;
             break;
         case ELEMENT_TYPE_STATIC_IMAGE:
             designerElement.style.width = txtElementStaticImageWidth.value + "px";
@@ -1087,11 +1205,11 @@ function validateUi() {
 
     // Text config
     if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
-        if (txtElementFontSize.value === "" || isNaN(txtElementFontSize.value)) {
+        if (txtElementTextFontSize.value === "" || isNaN(txtElementTextFontSize.value)) {
             alert("Please enter a font size for the text element.");
             return false;
         }
-        if (!/^#[0-9A-F]{8}$/i.test(txtElementFontColor.value)) {
+        if (!/^#[0-9A-F]{8}$/i.test(txtElementTextFontColor.value)) {
             alert("Please enter a valid font color for the text element.");
             return false;
         }
@@ -1194,9 +1312,9 @@ function saveDeviceConfig() {
         // If selected element type is static-image use cmbSensorIdSelection
         // If selected element type is graph use cmbNumberSensorIdSelection
         // If selected element type is conditional-image use cmbConditionalImageSensorIdSelection
-        let selectedSensor = cmbSensorIdSelection.options[cmbSensorIdSelection.selectedIndex];
+        let selectedSensor = cmbTextSensorIdSelection.options[cmbTextSensorIdSelection.selectedIndex];
         if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
-            selectedSensor = cmbNumberSensorIdSelection.options[cmbNumberSensorIdSelection.selectedIndex];
+            selectedSensor = cmbGraphSensorIdSelection.options[cmbGraphSensorIdSelection.selectedIndex];
         } else if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
             selectedSensor = cmbConditionalImageSensorIdSelection.options[cmbConditionalImageSensorIdSelection.selectedIndex];
         }
@@ -1212,8 +1330,8 @@ function saveDeviceConfig() {
 
         // Read text config
         const elementTextFormat = txtElementTextFormat.value;
-        const elementFontSize = txtElementFontSize.value;
-        const elementFontColor = txtElementFontColor.value;
+        const elementFontSize = txtElementTextFontSize.value;
+        const elementFontColor = txtElementTextFontColor.value;
 
         // Read image config
         const elementStaticImage = txtElementStaticImageFile.value;
@@ -1329,10 +1447,10 @@ function showLastSelectedElementDetail() {
 
     // Text
     txtElementTextFormat.value = lastSelectedListElement.getAttribute("data-element-text-format");
-    cmbSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
-    txtElementFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
-    txtElementFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
-    txtElementFontColor.dispatchEvent(new Event('input', {bubbles: true}));
+    cmbTextSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+    txtElementTextFontSize.value = lastSelectedListElement.getAttribute("data-element-font-size");
+    txtElementTextFontColor.value = lastSelectedListElement.getAttribute("data-element-font-color");
+    txtElementTextFontColor.dispatchEvent(new Event('input', {bubbles: true}));
 
     // Static image
     txtElementStaticImageFile.value = lastSelectedListElement.getAttribute("data-element-static-image");
@@ -1340,7 +1458,7 @@ function showLastSelectedElementDetail() {
     txtElementStaticImageHeight.value = lastSelectedListElement.getAttribute("data-element-static-image-height");
 
     // Graph
-    cmbNumberSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
+    cmbGraphSensorIdSelection.value = lastSelectedListElement.getAttribute("data-sensor-id");
     txtElementGraphMinValue.value = lastSelectedListElement.getAttribute("data-element-graph-min-value");
     txtElementGraphMaxValue.value = lastSelectedListElement.getAttribute("data-element-graph-max-value");
     txtElementGraphWidth.value = lastSelectedListElement.getAttribute("data-element-graph-width");

@@ -2,14 +2,10 @@ html, body {
     height: 100%;
     max-width: 100%;
     margin: 0;
+    padding: 0;
 }
 
 #base-container {
-    /* Stretch https://stackoverflow.com/a/40445860/4046388 */
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
 }
 
 #master-pane {
@@ -51,6 +47,10 @@ html, body {
     font-size: 25px;
     margin-right: 10px;
     margin-left: 10px;
+}
+
+td {
+    vertical-align: middle;
 }
 
 .icon-button {
@@ -149,5 +149,46 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     align-content: center;
     /* place elements horizontal */
     flex-flow: row wrap;
+}
 
+#sensor-selection-table {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+#sensor-selection-table tbody {
+    display: block;
+    width: 100%;
+    overflow: auto;
+    height: calc(80vh - 100px);
+}
+
+#sensor-selection-table thead tr {
+    display: block;
+}
+
+#sensor-selection-table thead {
+    background: var(--background);
+    color: var(--form-text);
+}
+
+#sensor-selection-table th,
+#sensor-selection-table td {
+    padding: 5px;
+    text-align: left;
+    width: 200px;
+}
+
+#sensor-selection-table tbody tr:hover {
+    background-color: var(--selection);
+}
+
+
+#sensor-selection-table-filter-input {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.sensor-selection-table-row {
+    cursor: pointer;
 }
