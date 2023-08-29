@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/RouHim/sensor-bridge/compare/v0.17.0...v0.18.0) (2023-08-29)
+
+
+### Features
+
+* **sensorvalues:** allow empty values for not selected element types ([2f95c74](https://github.com/RouHim/sensor-bridge/commit/2f95c749255a60513d744ad4669fc90d9b78e489))
+
 # [0.17.0](https://github.com/RouHim/sensor-bridge/compare/v0.16.0...v0.17.0) (2023-08-29)
 
 
