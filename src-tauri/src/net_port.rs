@@ -1,5 +1,4 @@
 use std::net::IpAddr;
-use std::process::Command;
 use std::str;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -11,8 +10,8 @@ use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
 use sensor_core::{LcdConfig, RenderData, SensorValue, TransportMessage, TransportType};
 
-use crate::config::NetworkDeviceConfig;
 use crate::{conditional_image, sensor, static_image, utils};
+use crate::config::NetworkDeviceConfig;
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
@@ -287,14 +286,22 @@ pub fn verify_network_address(address: &str) -> bool {
     }
 
     // Pings the specified address
-    ping_ip(&ip.unwrap())
+    check_ip(&ip.unwrap())
 }
 
 /// Pings the specified ip address
-pub fn ping_ip(ip: &str) -> bool {
-    if cfg!(target_os = "windows") {
-        Command::new("ping").args(["-n", "1", ip]).output().is_ok()
-    } else {
-        Command::new("ping").args(["-c", "1", ip]).output().is_ok()
-    }
+pub fn check_ip(ip: &str) -> bool {
+    // Ensure tcp ping on the NETWORK_PORT is working
+    let (handler, _listener) = message_io::node::split::<()>();
+
+    let address = format!("{ip}:{NETWORK_PORT}");
+
+    info!("Testing IP '{ip}' on TCP port '{NETWORK_PORT}'");
+
+    // Blocks until the connection is established
+    let endpoint = handler
+        .network()
+        .connect_sync(Transport::FramedTcp, address);
+
+    endpoint.is_ok()
 }
