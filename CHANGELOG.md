@@ -1,3 +1,10 @@
+# [0.19.0](https://github.com/RouHim/sensor-bridge/compare/v0.18.1...v0.19.0) (2023-08-30)
+
+
+### Features
+
+* **config:** verify file paths for important ui actions ([8b1e692](https://github.com/RouHim/sensor-bridge/commit/8b1e692274b572674c8f7cf747a6348a5d3234d7))
+
 ## [0.18.1](https://github.com/RouHim/sensor-bridge/compare/v0.18.0...v0.18.1) (2023-08-29)
 
 # [0.18.0](https://github.com/RouHim/sensor-bridge/compare/v0.17.0...v0.18.0) (2023-08-29)
