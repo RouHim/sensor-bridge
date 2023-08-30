@@ -157,13 +157,10 @@ window.addEventListener("DOMContentLoaded", () => {
     designerPane.addEventListener('drop', dropOnDesignerPane);
 
     // Load all devices from config
-    loadDeviceConfigs().then(() => {
-            // Select first net port
-            if (cmbNetworkPorts.options.length > 0) {
-                onNetDeviceSelected(cmbNetworkPorts.options[0]);
-            }
+    loadDeviceConfigs().catch((error) => {
+            alert("Error while loading device configs. " + error);
         }
-    )
+    );
 
     // Allow enter key down on sensor selection dialog to select first sensor
     sensorSelectionDialog.addEventListener("keydown", (event) => {
@@ -311,12 +308,10 @@ function importConfig() {
                 invoke('import_config', {filePath: selected}).then(
                     () => {
                         // Reload all devices from config
-                        loadDeviceConfigs().then(() => {
-                            // Select first net port
-                            if (cmbNetworkPorts.options.length > 0) {
-                                onNetDeviceSelected(cmbNetworkPorts.options[0]);
+                        loadDeviceConfigs().catch((error) => {
+                                alert("Error while loading device configs. " + error);
                             }
-                        });
+                        )
                     }
                 ).catch((error) => {
                     alert("Error while importing config. " + error);

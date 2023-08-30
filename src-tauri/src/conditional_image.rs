@@ -4,6 +4,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 
 use image::ImageFormat;
+
 use rayon::prelude::*;
 use sensor_core::{
     is_image, ConditionalImageConfig, ElementType, LcdConfig, LcdElement,
@@ -42,7 +43,8 @@ pub fn prepare_element(
     let sensor_value_images: Vec<String> = sensor_value_images
         .iter()
         .map(|image_path| {
-            let image_name = image_path.split('/').last().unwrap();
+            let path_buf = PathBuf::from(&image_path);
+            let image_name = path_buf.file_name().unwrap();
             let new_image_path = cache_folder_path.join(image_name);
             fs::rename(image_path, &new_image_path).unwrap();
             new_image_path.to_str().unwrap().to_string()

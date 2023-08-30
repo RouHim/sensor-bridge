@@ -59,6 +59,7 @@ fn main() {
 
     // Cleanup cache dir
     fs::remove_dir_all(sensor_core::get_cache_base_dir()).unwrap_or_default();
+    fs::create_dir_all(sensor_core::get_cache_base_dir()).unwrap();
 
     // Request root shell
     let root_shell = Arc::new(Mutex::new(RootShell::new()));
