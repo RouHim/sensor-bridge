@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/RouHim/sensor-bridge/compare/v0.19.2...v0.20.0) (2023-08-30)
+
+
+### Features
+
+* **ui:** add multiple keyboard shortcuts ([920bbed](https://github.com/RouHim/sensor-bridge/commit/920bbeddcd02c6da89243f6884f87cb839afd90b))
+
 ## [0.19.2](https://github.com/RouHim/sensor-bridge/compare/v0.19.1...v0.19.2) (2023-08-30)
 
 
