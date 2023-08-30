@@ -10,7 +10,8 @@ use std::{fs, thread};
 
 use log::error;
 use sensor_core::{
-    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig, SensorValue,
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementType, GraphConfig,
+    SensorValue,
 };
 use super_shell::RootShell;
 use tauri::State;
@@ -186,6 +187,8 @@ async fn save_app_config(
     network_device_config.address = address;
     network_device_config.lcd_config = serde_json::from_str(lcd_config.as_str()).unwrap();
 
+    verify_config(&network_device_config)?;
+
     config::write(&network_device_config);
 
     Ok(())
@@ -204,6 +207,8 @@ async fn enable_sync(
             return Err("Config not found".to_string());
         }
     };
+
+    verify_config(&network_device_config)?;
 
     network_device_config.active = true;
     config::write(&network_device_config);
@@ -262,6 +267,8 @@ async fn show_lcd_live_preview(
             return Err("Config not found".to_string());
         }
     };
+
+    verify_config(&network_device_config)?;
 
     // If the window is still present, close it
     let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
@@ -487,4 +494,38 @@ fn build_system_tray() -> SystemTray {
             .add_item(CustomMenuItem::new("show".to_string(), "Show"))
             .add_item(CustomMenuItem::new("quit".to_string(), "Quit")),
     )
+}
+
+/// Verifies the config for the specified network device
+fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
+    // Verify all static image path
+    for element in config.lcd_config.elements.iter() {
+        // Ensure that the image file exists
+        if element.element_type == ElementType::StaticImage {
+            let image_path = &element.image_config.as_ref().unwrap().image_path;
+            if fs::metadata(image_path).is_err() {
+                return Err(format!(
+                    "'{}': Image path '{}' does not exist.",
+                    element.name, image_path
+                ));
+            }
+        }
+
+        // Ensure that the zip file exists
+        if element.element_type == ElementType::ConditionalImage {
+            let zip_path = &element
+                .conditional_image_config
+                .as_ref()
+                .unwrap()
+                .images_path;
+            if fs::metadata(zip_path).is_err() {
+                return Err(format!(
+                    "'{}': Filepath '{}' does not exist.",
+                    element.name, zip_path
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
