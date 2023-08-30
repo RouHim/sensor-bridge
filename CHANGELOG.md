@@ -1,3 +1,10 @@
+## [0.19.1](https://github.com/RouHim/sensor-bridge/compare/v0.19.0...v0.19.1) (2023-08-30)
+
+
+### Bug Fixes
+
+* **ui:** avoid double selecting first entry when starting application ([79536f8](https://github.com/RouHim/sensor-bridge/commit/79536f83df4991f334dfca447254670921a9db59))
+
 # [0.19.0](https://github.com/RouHim/sensor-bridge/compare/v0.18.1...v0.19.0) (2023-08-30)
 
 
