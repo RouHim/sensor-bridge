@@ -171,6 +171,9 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+
+    // Register arrow key press event to move the selected element on the designer pane
+    document.addEventListener("keydown", handleKeydownEvent);
 });
 
 function buildSensorSelectionDialogTable(filterValue) {
@@ -858,7 +861,7 @@ function addElementToList(elementId, sensorId, positionX, positionY, elementName
     // We have to re-register the click event because the list was re-rendered
     const designerPlacedElements = document.querySelectorAll("#lcd-designer-placed-elements li");
     designerPlacedElements.forEach((designerElement) => {
-        designerElement.addEventListener("click", onListElementClick);
+        designerElement.addEventListener("click", event => setSelectedElement(event.target));
         designerElement.addEventListener('dragstart', onListElementDragStart);
         designerElement.addEventListener('dragover', onListItemDragOver);
         designerElement.addEventListener('drop', onListElementDrop);
@@ -917,9 +920,6 @@ function setSelectedElement(listHtmlElement) {
     // Add a border to the selected designer element
     lastSelectedDesignerElement.style.border = "1px solid var(--selection)";
 
-    // Register arrow key press event to move the selected element on the designer pane
-    document.addEventListener("keydown", moveSelectedElement);
-
     // Set background color of the selected element to --background
     lastSelectedListElement.style.backgroundColor = "var(--selection)";
 
@@ -936,34 +936,124 @@ function setSelectedElement(listHtmlElement) {
     showLastSelectedElementDetail();
 }
 
-
-// If the ctrl key is pressed, entry is moved by 5px instead of 1px
-function moveSelectedElement(event) {
-    // If target is an input element, prevent moving the element
-    if (event.target.tagName === "INPUT") {
+// Handles the keydown events on application level
+function handleKeydownEvent(event) {
+    if (event.ctrlKey && event.key === "Delete") {
+        event.preventDefault();
+        removeElement();
+        return;
+    }
+    if (event.ctrlKey && event.key === "s") {
+        event.preventDefault();
+        saveDeviceConfig();
+        return;
+    }
+    if (event.ctrlKey && event.key === "d") {
+        event.preventDefault();
+        duplicateElement();
+        return;
+    }
+    if (event.ctrlKey && event.key === "ArrowUp") {
+        event.preventDefault();
+        moveElementUp();
+        return;
+    }
+    if (event.ctrlKey && event.key === "ArrowDown") {
+        event.preventDefault();
+        moveElementDown();
+        return;
+    }
+    if (event.altKey && event.key === "ArrowUp") {
+        event.preventDefault();
+        selectPreviousElement();
+        return;
+    }
+    if (event.altKey && event.key === "ArrowDown") {
+        event.preventDefault();
+        selectNextElement();
         return;
     }
 
+    handleArrowKeydownEvent(event);
+}
+
+// Duplicate the last selected element
+function duplicateElement() {
+    // If the last selected element is null, return
+    if (!lastSelectedDesignerElement || !lastSelectedListElement) {
+        return;
+    }
+
+    // save the last selected element with a new name ( + " Copy")
+    txtElementName.value = txtElementName.value + " Copy";
+    saveDeviceConfig();
+}
+
+// Selects the previous element in the list
+function selectPreviousElement() {
+    // If the last selected element is null, return
+    if (!lastSelectedDesignerElement || !lastSelectedListElement) {
+        return;
+    }
+
+    // Get the previous element
+    let previousElement = lastSelectedListElement.previousElementSibling;
+
+    // If the previous element is null, return
+    if (!previousElement) {
+        return;
+    }
+
+    // Select the previous element
+    setSelectedElement(previousElement);
+}
+
+// Selects the next element in the list
+function selectNextElement() {
+    // If the last selected element is null, return
+    if (!lastSelectedDesignerElement || !lastSelectedListElement) {
+        return;
+    }
+
+    // Get the next element
+    let nextElement = lastSelectedListElement.nextElementSibling;
+
+    // If the next element is null, return
+    if (!nextElement) {
+        return;
+    }
+
+    // Select the next element
+    setSelectedElement(nextElement);
+}
+
+// Handles the arrow keydown events on application level
+function handleArrowKeydownEvent(event) {
     // Check if the arrow keys are pressed
     const isArrowUpPressed = event.key === "ArrowUp";
     const isArrowDownPressed = event.key === "ArrowDown";
     const isArrowLeftPressed = event.key === "ArrowLeft";
     const isArrowRightPressed = event.key === "ArrowRight";
 
-    const moveBy = parseInt(btnControlPadChangeMoveUnit.getAttribute("data-move-unit"));
-
     // Check if the user pressed an arrow key
     if (isArrowUpPressed || isArrowDownPressed || isArrowLeftPressed || isArrowRightPressed) {
+        // If target is an input element, prevent moving an designer element by keyboard
+        if (event.target.tagName === "INPUT") {
+            return;
+        }
+
         // If target is body then prevent default
         if (event.target.tagName === "BODY") {
             event.preventDefault();
         }
 
         const direction = event.key.replace("Arrow", "").toLowerCase();
+        const moveBy = parseInt(btnControlPadChangeMoveUnit.getAttribute("data-move-unit"));
         moveSelectedElementBy(moveBy, direction);
     }
 }
 
+// Moves the selected element by the specified number in the specified direction
 function moveSelectedElementBy(moveBy, direction) {
     // Get the current position of the selected element
     let xPos = parseInt(lastSelectedDesignerElement.style.left);
@@ -1012,6 +1102,7 @@ function moveSelectedElementBy(moveBy, direction) {
     lastSelectedListElement.setAttribute("data-element-position-y", yPos);
 }
 
+// Updates the element details of the last selected element
 function updateElement(calculatedId) {
     // Update element in the list
     let listEntryElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
@@ -1435,6 +1526,7 @@ function saveDeviceConfig() {
     saveConfig();
 }
 
+// Removes the last selected element from the designer
 function removeElement() {
     if (lastSelectedListElement === null) {
         alert("Please select a element first.");
@@ -1447,18 +1539,17 @@ function removeElement() {
         return;
     }
 
+    // Determine the list index of the last selected element in the lstDesignerPlacedElements
+    const i = Array.from(lstDesignerPlacedElements.children).indexOf(lastSelectedListElement);
+
     // Remove element from list
     lstDesignerPlacedElements.removeChild(lastSelectedListElement);
 
     // Remove element from designer
     designerPane.removeChild(lastSelectedDesignerElement);
 
-    // Select the first element in the list
-    setSelectedElement(lstDesignerPlacedElements.firstChild);
-}
-
-function onListElementClick(event) {
-    setSelectedElement(event.target);
+    // Select the previous element in the list of the last selected element
+    setSelectedElement(lstDesignerPlacedElements.children[i - 1]);
 }
 
 function showLastSelectedElementDetail() {

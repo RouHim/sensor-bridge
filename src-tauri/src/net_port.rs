@@ -291,17 +291,12 @@ pub fn verify_network_address(address: &str) -> bool {
 
 /// Pings the specified ip address
 pub fn check_ip(ip: &str) -> bool {
-    // Ensure tcp ping on the NETWORK_PORT is working
-    let (handler, _listener) = message_io::node::split::<()>();
-
-    let address = format!("{ip}:{NETWORK_PORT}");
-
     info!("Testing IP '{ip}' on TCP port '{NETWORK_PORT}'");
 
-    // Blocks until the connection is established
+    let (handler, _) = message_io::node::split::<()>();
     let endpoint = handler
         .network()
-        .connect_sync(Transport::FramedTcp, address);
+        .connect_sync(Transport::FramedTcp, format!("{ip}:{NETWORK_PORT}"));
 
     endpoint.is_ok()
 }
