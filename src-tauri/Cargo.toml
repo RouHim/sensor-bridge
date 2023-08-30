@@ -23,7 +23,7 @@ base64 = "0.21.3"                                                               
 message-io = { version = "0.17.0", default-features = false, features = ["tcp"] }                                   # TCPSocket communication
 uuid = { version = "1.4.1", features = ["v4"] }                                                                     # Generate UUID v4
 image = "0.24.7"                                                                                                    # Image processing
-chrono = "0.4.27"                                                                                                   # Time handling
+chrono = "0.4.28"                                                                                                   # Time handling
 log = "0.4.20"                                                                                                      # Logging
 env_logger = "0.10.0"                                                                                               # Logging
 super-shell = "1.2.0"                                                                                               # Privileged shell execution
