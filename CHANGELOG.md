@@ -1,3 +1,10 @@
+## [0.19.2](https://github.com/RouHim/sensor-bridge/compare/v0.19.1...v0.19.2) (2023-08-30)
+
+
+### Bug Fixes
+
+* **ui:** reduce sensor values calls ([bb67c75](https://github.com/RouHim/sensor-bridge/commit/bb67c75764364ccfd6963b45410569f2c0185a75))
+
 ## [0.19.1](https://github.com/RouHim/sensor-bridge/compare/v0.19.0...v0.19.1) (2023-08-30)
 
 
