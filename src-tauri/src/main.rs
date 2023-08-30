@@ -321,11 +321,6 @@ async fn get_graph_preview_image(
     sensor_id: String,
     mut graph_config: GraphConfig,
 ) -> Result<String, ()> {
-    sensor::read_all_sensor_values(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-    );
-
     // Read and prepare sensor values
     graph_config.sensor_values = sensor_core::extract_value_sequence(
         app_state.sensor_value_history.lock().unwrap().deref(),
@@ -344,10 +339,7 @@ async fn get_conditional_image_preview_image(
     sensor_id: String,
     mut conditional_image_config: ConditionalImageConfig,
 ) -> Result<String, ()> {
-    let sensor_values = sensor::read_all_sensor_values(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-    );
+    let sensor_values = &app_state.sensor_value_history.lock().unwrap()[0];
 
     // Filter sensor values for provided sensor id
     let sensor_value = sensor_values
