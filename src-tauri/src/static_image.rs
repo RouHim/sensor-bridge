@@ -3,15 +3,15 @@ use std::fs;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sensor_core::{
-    ElementType, ImageConfig, LcdConfig, LcdElement, PrepareStaticImageData, TransportMessage,
-    TransportType,
+    DisplayConfig, ElementConfig, ElementType, ImageConfig, PrepareStaticImageData,
+    TransportMessage, TransportType,
 };
 
 use crate::utils;
 
 /// Pre-renders static images and saves them into the cache folder.
 /// Thus they can be loaded without modification from filesystem in the render loop.
-pub fn prepare(element: &LcdElement) {
+pub fn prepare(element: &ElementConfig) {
     // Pre-Render image to desired size
     let image_config = element.image_config.as_ref().unwrap();
     let image = image::open(&image_config.image_path).unwrap();
@@ -25,7 +25,7 @@ pub fn prepare(element: &LcdElement) {
 
     // ensure folder exists and is empty
     let static_image_cache_folder =
-        sensor_core::get_cache_dir(&element.id, ElementType::StaticImage);
+        sensor_core::get_cache_dir(&element.id, &ElementType::StaticImage);
     fs::remove_dir_all(&static_image_cache_folder).unwrap_or_default(); // Ignore errors
     fs::create_dir_all(&static_image_cache_folder).unwrap();
 
@@ -35,17 +35,15 @@ pub fn prepare(element: &LcdElement) {
 }
 
 /// Pre-renders static images and serializes the render data to bytes using messagepack
-pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareStaticImageData {
-    let image_data: HashMap<String, Vec<u8>> = lcd_config
+pub fn prepare_images(lcd_config: &DisplayConfig) -> PrepareStaticImageData {
+    let images_data: HashMap<String, Vec<u8>> = lcd_config
         .elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .map(|element| prepare_image(&element.id, element.image_config.as_ref().unwrap()))
         .collect();
 
-    PrepareStaticImageData {
-        images_data: image_data,
-    }
+    PrepareStaticImageData { images_data }
 }
 
 /// Serializes the render data to bytes using messagepack

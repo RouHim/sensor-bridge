@@ -148,19 +148,23 @@
 
                 <div id="lcd-sensor-entry-config" style="width: 75%">
 
-                    <button class="icon-button" id="lcd-btn-move-element-up" title="Move element up in the list (CTRL+UP)">
+                    <button class="icon-button" id="lcd-btn-move-element-up"
+                            title="Move element up in the list (CTRL+UP)">
                         <i data-feather="arrow-up"></i>
                     </button>
-                    <button class="icon-button" id="lcd-btn-move-element-down" title="Move element down in the list (CTRL+DOWN)">
+                    <button class="icon-button" id="lcd-btn-move-element-down"
+                            title="Move element down in the list (CTRL+DOWN)">
                         <i data-feather="arrow-down"></i>
                     </button>
-                    <button class="icon-button" id="lcd-btn-remove-element" title="Remove sensor configuration (CTRL+DEL)">
+                    <button class="icon-button" id="lcd-btn-remove-element"
+                            title="Remove sensor configuration (CTRL+DEL)">
                         <i data-feather="trash"></i>
                     </button>
                     <button class="icon-button" id="lcd-btn-save-element" title="Save sensor configuration (CTRL+S)">
                         <i data-feather="save"></i>
                     </button>
-                    <button class="icon-button" id="lcd-btn-duplicate-element" title="Duplicate sensor configuration (CTRL+D)">
+                    <button class="icon-button" id="lcd-btn-duplicate-element"
+                            title="Duplicate sensor configuration (CTRL+D)">
                         <i data-feather="copy"></i>
                     </button>
 
@@ -175,6 +179,15 @@
                             <td><input id="lcd-txt-element-name" type="text" value=""></td>
                         </tr>
                         <tr>
+                            <td>Typ:</td>
+                            <td><select id="lcd-cmb-element-type">
+                                <option selected value="text">Text</option>
+                                <option value="static-image">Static image</option>
+                                <option value="graph">Graph</option>
+                                <option value="conditional-image">Conditional image (Gauge)</option>
+                            </select></td>
+                        </tr>
+                        <tr>
                             <td>Position X:</td>
                             <td><input id="lcd-txt-element-position-x" max="2147483647" min="0" type="number"
                                        value="0"></td>
@@ -183,15 +196,6 @@
                             <td>Position Y:</td>
                             <td><input id="lcd-txt-element-position-y" max="2147483647" min="0" type="number"
                                        value="0"></td>
-                        </tr>
-                        <tr>
-                            <td>Typ:</td>
-                            <td><select id="lcd-cmb-element-type">
-                                <option selected value="text">Text</option>
-                                <option value="static-image">Static image</option>
-                                <option value="graph">Graph</option>
-                                <option value="conditional-image">Conditional image (Gauge)</option>
-                            </select></td>
                         </tr>
                         </tbody>
                     </table>
@@ -218,14 +222,28 @@
                             <td><input id="lcd-txt-element-text-format" type="text" value="{value} {unit}"></td>
                         </tr>
                         <tr>
+                            <td>Font:</td>
+                            <td><select id="lcd-cmb-element-font-family"></select></td>
+                        </tr>
+                        <tr>
                             <td>Font size:</td>
-                            <td><input id="lcd-txt-element-font-size" max="100" min="0" type="number" value="20">
+                            <td><input id="lcd-txt-element-font-size" max="2147483647" min="0" type="number" value="12">
                             </td>
                         </tr>
                         <tr>
                             <td>Font color:</td>
                             <td>
                                 <input data-coloris id="lcd-txt-element-font-color" type="text" value="#ffffffff">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Width:</td>
+                            <td><input id="lcd-txt-element-width" max="2147483647" min="0" type="number" value="100">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Height:</td>
+                            <td><input id="lcd-txt-element-height" max="2147483647" min="0" type="number" value="20">
                             </td>
                         </tr>
                         </tbody>

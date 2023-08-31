@@ -8,10 +8,10 @@ use std::time::{Duration, Instant};
 use log::{debug, error, info, warn};
 use message_io::network::{Endpoint, SendStatus, Transport};
 use message_io::node::NodeHandler;
-use sensor_core::{LcdConfig, RenderData, SensorValue, TransportMessage, TransportType};
+use sensor_core::{DisplayConfig, RenderData, SensorValue, TransportMessage, TransportType};
 
 use crate::config::NetworkDeviceConfig;
-use crate::{conditional_image, sensor, static_image, utils};
+use crate::{conditional_image, sensor, static_image, text, utils};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
@@ -73,6 +73,9 @@ fn prepare_static_data(
     net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
+    // Prepare text data
+    prepare_static_text_data_on_display(net_port_config, net_port);
+
     // Prepare static image data
     prepare_static_image_data_on_display(net_port_config, net_port);
 
@@ -138,7 +141,7 @@ pub fn start_sync(
 
             // Serialize the transport struct to bytes using messagepack
             let data_to_send =
-                serialize_render_data(net_port_config.lcd_config.clone(), last_sensor_values);
+                serialize_render_data(net_port_config.display_config.clone(), last_sensor_values);
 
             // Send to actual data to the remote tcp socket
             send_tcp_data(&net_port_config, &mut net_port, data_to_send);
@@ -175,11 +178,21 @@ fn try_open_tcp_socket(
 }
 
 /// Prepares the render data for the remote tcp socket
+fn prepare_static_text_data_on_display(
+    net_port_config: &NetworkDeviceConfig,
+    net_port: &mut (NodeHandler<()>, Endpoint),
+) {
+    let text_data = text::prepare_display(&net_port_config.display_config);
+    let data_to_send = text::serialize(text_data);
+    send_tcp_data(net_port_config, net_port, data_to_send);
+}
+
+/// Prepares the render data for the remote tcp socket
 fn prepare_static_image_data_on_display(
     net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
-    let static_image_data = static_image::prepare_images(&net_port_config.lcd_config);
+    let static_image_data = static_image::prepare_images(&net_port_config.display_config);
     let data_to_send = static_image::serialize(static_image_data);
     send_tcp_data(net_port_config, net_port, data_to_send);
 }
@@ -189,7 +202,7 @@ fn prepare_conditional_image_data_on_display(
     net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
-    let conditional_image_data = conditional_image::prepare_images(&net_port_config.lcd_config);
+    let conditional_image_data = conditional_image::prepare_images(&net_port_config.display_config);
     let data_to_send = conditional_image::serialize_preparation_data(conditional_image_data);
     send_tcp_data(net_port_config, net_port, data_to_send);
 }
@@ -241,13 +254,16 @@ fn send_tcp_data(
     }
 }
 
-/// Serializes the sensor values and lcd config to a transport message.
+/// Serializes the sensor values and display config to a transport message.
 /// The transport message is then serialized to a byte vector.
 /// The byte vector is then sent to the remote tcp socket.
-fn serialize_render_data(lcd_config: LcdConfig, last_sensor_values: Vec<SensorValue>) -> Vec<u8> {
+fn serialize_render_data(
+    display_config: DisplayConfig,
+    last_sensor_values: Vec<SensorValue>,
+) -> Vec<u8> {
     // Serialize data to render
     let render_data = RenderData {
-        lcd_config,
+        display_config,
         sensor_values: last_sensor_values,
     };
     let render_data = bincode::serialize(&render_data).unwrap();

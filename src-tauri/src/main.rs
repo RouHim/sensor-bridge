@@ -11,7 +11,7 @@ use std::{fs, thread};
 use log::error;
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementType, GraphConfig,
-    SensorValue,
+    SensorValue, TextConfig,
 };
 use super_shell::RootShell;
 use tauri::State;
@@ -32,6 +32,7 @@ mod net_port;
 mod sensor;
 mod static_image;
 mod system_stat_sensor;
+mod text;
 mod utils;
 mod windows_libre_hardware_monitor_sensor;
 
@@ -54,6 +55,9 @@ const WINDOW_NAME: &str = "main";
 pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
 
 fn main() {
+    // Set the app name for the dynamic cache folder detection
+    std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge");
+
     // Initialize the logger
     env_logger::init();
 
@@ -118,11 +122,13 @@ fn main() {
             disable_sync,
             show_lcd_live_preview,
             get_lcd_preview_image,
+            get_text_preview_image,
             get_graph_preview_image,
             get_conditional_image_preview_image,
             verify_network_address,
             import_config,
             export_config,
+            get_system_fonts,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -175,7 +181,7 @@ async fn save_app_config(
     id: String,
     name: String,
     address: String,
-    lcd_config: String,
+    display_config: String,
 ) -> Result<(), String> {
     let mut network_device_config = match config::read(&id) {
         Some(config) => config,
@@ -186,7 +192,7 @@ async fn save_app_config(
 
     network_device_config.name = name;
     network_device_config.address = address;
-    network_device_config.lcd_config = serde_json::from_str(lcd_config.as_str()).unwrap();
+    network_device_config.display_config = serde_json::from_str(display_config.as_str()).unwrap();
 
     verify_config(&network_device_config)?;
 
@@ -296,7 +302,7 @@ async fn get_lcd_preview_image(
             return Err("Config not found".to_string());
         }
     };
-    let lcd_config = network_device_config.lcd_config;
+    let display_config = network_device_config.display_config;
 
     // If the window is not visible, return an empty string
     let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
@@ -310,21 +316,43 @@ async fn get_lcd_preview_image(
     lcd_preview::render(
         &app_state.sensor_value_history,
         &app_state.static_sensor_values,
-        lcd_config,
+        display_config,
     )
     .map_err(|_| "Error rendering preview image".to_string())
 }
 
 #[tauri::command]
+async fn get_text_preview_image(
+    app_state: State<'_, AppState>,
+    image_width: u32,
+    image_height: u32,
+    text_config: TextConfig,
+) -> Result<String, ()> {
+    let sensor_values = &app_state.sensor_value_history.lock().unwrap()[0];
+    let sensor_id = &text_config.sensor_id;
+
+    let sensor_value = sensor_values
+        .iter()
+        .find(|sensor_value| sensor_value.id.eq(sensor_id))
+        .unwrap();
+
+    let text_image_data =
+        text::render_preview(sensor_value, image_width, image_height, &text_config);
+
+    let engine = base64::engine::general_purpose::STANDARD;
+    Ok(base64::Engine::encode(&engine, text_image_data))
+}
+
+#[tauri::command]
 async fn get_graph_preview_image(
     app_state: State<'_, AppState>,
-    sensor_id: String,
     mut graph_config: GraphConfig,
 ) -> Result<String, ()> {
-    // Read and prepare sensor values
+    let sensor_id = &graph_config.sensor_id;
+
     graph_config.sensor_values = sensor_core::extract_value_sequence(
         app_state.sensor_value_history.lock().unwrap().deref(),
-        &sensor_id,
+        sensor_id,
     );
 
     let graph_data = graph_renderer::render(&graph_config);
@@ -336,28 +364,25 @@ async fn get_graph_preview_image(
 async fn get_conditional_image_preview_image(
     app_state: State<'_, AppState>,
     element_id: String,
-    sensor_id: String,
     mut conditional_image_config: ConditionalImageConfig,
 ) -> Result<String, ()> {
     let sensor_values = &app_state.sensor_value_history.lock().unwrap()[0];
+    let sensor_id = &conditional_image_config.sensor_id;
 
     // Filter sensor values for provided sensor id
     let sensor_value = sensor_values
         .iter()
-        .find(|sensor_value| sensor_value.id == sensor_id)
+        .find(|sensor_value| sensor_value.id.eq(sensor_id))
         .unwrap();
 
     conditional_image_config.sensor_value = sensor_value.value.clone();
-
-    // Extract zip to local cache folder
-
     conditional_image_config.images_path =
         conditional_image::prepare_element(&element_id, &conditional_image_config);
 
     let graph_data: Vec<u8> = match conditional_image_renderer::render(
         &element_id,
         &sensor_value.sensor_type,
-        conditional_image_config,
+        &conditional_image_config,
     ) {
         Some(data) => data,
         None => {
@@ -403,6 +428,11 @@ async fn import_config(file_path: String) -> Result<(), tauri::Error> {
             .for_each(config::write);
         Ok(())
     }
+}
+
+#[tauri::command]
+async fn get_system_fonts() -> Result<String, String> {
+    serde_json::to_string(&text::get_system_fonts()).map_err(|err| err.to_string())
 }
 
 /// Handle tauri window events
@@ -492,7 +522,7 @@ fn build_system_tray() -> SystemTray {
 /// Verifies the config for the specified network device
 fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
     // Verify all static image path
-    for element in config.lcd_config.elements.iter() {
+    for element in config.display_config.elements.iter() {
         // Ensure that the image file exists
         if element.element_type == ElementType::StaticImage {
             let image_path = &element.image_config.as_ref().unwrap().image_path;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 
-use sensor_core::LcdConfig;
+use sensor_core::DisplayConfig;
 use serde::Deserialize;
 use serde::Serialize;
 use uuid::Uuid;
@@ -20,7 +20,7 @@ pub struct NetworkDeviceConfig {
     pub name: String,
     pub address: String,
     pub active: bool,
-    pub lcd_config: LcdConfig,
+    pub display_config: DisplayConfig,
 }
 
 impl NetworkDeviceConfig {
@@ -30,7 +30,7 @@ impl NetworkDeviceConfig {
             name: "A new device".to_string(),
             address: "".to_string(),
             active: false,
-            lcd_config: Default::default(),
+            display_config: Default::default(),
         }
     }
 }

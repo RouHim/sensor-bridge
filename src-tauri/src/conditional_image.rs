@@ -7,7 +7,7 @@ use image::ImageFormat;
 
 use rayon::prelude::*;
 use sensor_core::{
-    is_image, ConditionalImageConfig, ElementType, LcdConfig, LcdElement,
+    is_image, ConditionalImageConfig, DisplayConfig, ElementConfig, ElementType,
     PrepareConditionalImageData, TransportMessage, TransportType,
 };
 
@@ -25,7 +25,7 @@ pub fn prepare_element(
 ) -> String {
     // Determine paths
     let zip_file_path = &conditional_image_config.images_path;
-    let cache_folder_path = sensor_core::get_cache_dir(element_id, ElementType::ConditionalImage);
+    let cache_folder_path = sensor_core::get_cache_dir(element_id, &ElementType::ConditionalImage);
 
     // Ensure that the cache folder exists and is empty
     fs::remove_dir_all(&cache_folder_path).unwrap_or_default();
@@ -129,8 +129,8 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
 }
 
 /// Pre-renders conditional images and returns the data to send.
-pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareConditionalImageData {
-    let conditional_image_elements: Vec<&LcdElement> = lcd_config
+pub fn prepare_images(lcd_config: &DisplayConfig) -> PrepareConditionalImageData {
+    let conditional_image_elements: Vec<&ElementConfig> = lcd_config
         .elements
         .iter()
         .filter(|element| element.element_type == ElementType::ConditionalImage)
@@ -145,14 +145,12 @@ pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareConditionalImageData {
     });
 
     // Pre-process / Pre-render and prepare for display transport
-    let image_data: HashMap<String, HashMap<String, Vec<u8>>> = conditional_image_elements
+    let images_data: HashMap<String, HashMap<String, Vec<u8>>> = conditional_image_elements
         .par_iter()
         .map(|element| (element.id.clone(), get_image_series(&element.id)))
         .collect();
 
-    PrepareConditionalImageData {
-        images_data: image_data,
-    }
+    PrepareConditionalImageData { images_data }
 }
 
 /// Collects conditional image data for the specified element.
@@ -160,7 +158,7 @@ pub fn prepare_images(lcd_config: &LcdConfig) -> PrepareConditionalImageData {
 fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
     let mut image_series: HashMap<String, Vec<u8>> = HashMap::new();
 
-    let cache_dir = sensor_core::get_cache_dir(element_id, ElementType::ConditionalImage);
+    let cache_dir = sensor_core::get_cache_dir(element_id, &ElementType::ConditionalImage);
 
     for image_path in fs::read_dir(&cache_dir).unwrap() {
         let image_path = image_path.unwrap().path();

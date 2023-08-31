@@ -4,26 +4,26 @@ use std::thread;
 
 use log::info;
 use rayon::prelude::*;
-use sensor_core::{ElementType, LcdConfig, LcdElement, SensorValue};
+use sensor_core::{DisplayConfig, ElementConfig, ElementType, SensorValue};
 use tauri::AppHandle;
 
 use crate::config::NetworkDeviceConfig;
-use crate::{conditional_image, sensor, static_image, utils};
+use crate::{conditional_image, sensor, static_image, text, utils};
 
 /// Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd_preview";
 
-/// Shows the lcd preview window
+/// Shows the display preview window
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
 pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
     let network_device_id = port_config.id.clone();
-    let width = port_config.lcd_config.resolution_width;
-    let height = port_config.lcd_config.resolution_height;
-    let lcd_elements = port_config.lcd_config.elements.clone();
+    let width = port_config.display_config.resolution_width;
+    let height = port_config.display_config.resolution_height;
+    let lcd_elements = port_config.display_config.elements.clone();
 
-    info!("Showing lcd preview for '{}'", port_config.name);
+    info!("Showing display preview for '{}'", port_config.name);
 
     thread::spawn(move || {
         // Prepare static assets
@@ -56,8 +56,13 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
 }
 
 /// Prepares the static assets for the lcd preview window
-fn prepare_assets(elements: Vec<LcdElement>) {
-    // Ensure data folder exists and is empty
+fn prepare_assets(elements: Vec<ElementConfig>) {
+    elements
+        .par_iter()
+        .filter(|element| element.element_type == ElementType::Text)
+        .for_each(|element| {
+            text::prepare(element);
+        });
 
     elements
         .par_iter()
@@ -83,7 +88,7 @@ fn prepare_assets(elements: Vec<LcdElement>) {
 pub fn render(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
-    lcd_config: LcdConfig,
+    lcd_config: DisplayConfig,
 ) -> std::thread::Result<String> {
     let static_sensor_values = static_sensor_values.clone();
     let sensor_value_history = sensor_value_history.clone();
