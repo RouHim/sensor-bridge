@@ -29,6 +29,7 @@ const btnSaveElement = document.getElementById("lcd-btn-save-element");
 const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
 const btnMoveElementUp = document.getElementById("lcd-btn-move-element-up");
 const btnMoveElementDown = document.getElementById("lcd-btn-move-element-down");
+const btnDuplicateElement = document.getElementById("lcd-btn-duplicate-element");
 
 // Control pad
 const btnControlPadUp = document.getElementById("lcd-btn-designer-control-pad-up");
@@ -133,6 +134,7 @@ window.addEventListener("DOMContentLoaded", () => {
     btnRemoveElement.addEventListener("click", removeElement);
     btnMoveElementUp.addEventListener("click", moveElementUp);
     btnMoveElementDown.addEventListener("click", moveElementDown);
+    btnDuplicateElement.addEventListener("click", duplicateElement);
     cmbElementType.addEventListener("change", onElementTypeChange);
     btnElementSelectStaticImage.addEventListener("click", selectStaticImage);
     btnElementConditionalImageInfo.addEventListener("click", showConditionalImageInfo);
@@ -897,6 +899,7 @@ function loadSensorValues() {
     );
 }
 
+// Sets the selected element
 function setSelectedElement(listHtmlElement) {
     // If elementId is undefined or null, return
     if (!listHtmlElement || !listHtmlElement.id) {

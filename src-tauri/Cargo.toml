@@ -29,6 +29,7 @@ env_logger = "0.10.0"                                                           
 super-shell = "1.2.0"                                                                                               # Privileged shell execution
 dns-lookup = "2.0.2"                                                                                                # DNS lookup
 zip-extract = "0.1.2"                                                                                               # Zip file handling
+font-loader = {git = "https://github.com/matprec/rust-font-loader"}                                                 # System font loading
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
