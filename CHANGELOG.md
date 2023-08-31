@@ -1,3 +1,10 @@
+# [0.22.0](https://github.com/RouHim/sensor-bridge/compare/v0.21.0...v0.22.0) (2023-08-31)
+
+
+### Features
+
+* very big refactoring and font selection ([6939195](https://github.com/RouHim/sensor-bridge/commit/6939195be8dc8fdf4f3229fa2b6a4f23eb3bb43d))
+
 # [0.21.0](https://github.com/RouHim/sensor-bridge/compare/v0.20.1...v0.21.0) (2023-08-31)
 
 
