@@ -148,6 +148,9 @@ const ATTR_CONDITIONAL_IMAGE_HEIGHT = "data-conditional-image-height";
 const ATTR_CONDITIONAL_IMAGE_MIN_VALUE = "data-conditional-image-min-value";
 const ATTR_CONDITIONAL_IMAGE_MAX_VALUE = "data-conditional-image-max-value";
 
+// Other attributes
+const ATTR_MOVE_UNIT = "data-move-unit";
+
 window.addEventListener("DOMContentLoaded", () => {
     // Configure color picker
     window.Coloris && (Coloris({
@@ -392,7 +395,7 @@ function importConfig() {
 
 /// Moves the current selected element with the move unit of btnControlPadChangeMoveUnit
 function moveElementControlPad(direction) {
-    const moveUnit = parseInt(btnControlPadChangeMoveUnit.getAttribute("data-move-unit"));
+    const moveUnit = parseInt(btnControlPadChangeMoveUnit.getAttribute(ATTR_MOVE_UNIT));
 
     // If the selected element is null, return
     if (!selectedDesignerElement || !selectedListElement) {
@@ -404,22 +407,22 @@ function moveElementControlPad(direction) {
 
 /// Toggle move unit between: 1, 5, 25, 50
 function changeMoveUnit() {
-    let currentMoveUnit = btnControlPadChangeMoveUnit.getAttribute("data-move-unit");
+    let currentMoveUnit = btnControlPadChangeMoveUnit.getAttribute(ATTR_MOVE_UNIT);
     switch (currentMoveUnit) {
         case "1":
-            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "5");
+            btnControlPadChangeMoveUnit.setAttribute(ATTR_MOVE_UNIT, "5");
             btnControlPadChangeMoveUnit.innerText = "5px";
             break;
         case "5":
-            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "25");
+            btnControlPadChangeMoveUnit.setAttribute(ATTR_MOVE_UNIT, "25");
             btnControlPadChangeMoveUnit.innerText = "25px";
             break;
         case "25":
-            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "50");
+            btnControlPadChangeMoveUnit.setAttribute(ATTR_MOVE_UNIT, "50");
             btnControlPadChangeMoveUnit.innerText = "50px";
             break;
         case "50":
-            btnControlPadChangeMoveUnit.setAttribute("data-move-unit", "1");
+            btnControlPadChangeMoveUnit.setAttribute(ATTR_MOVE_UNIT, "1");
             btnControlPadChangeMoveUnit.innerText = "1px";
             break;
     }
@@ -771,12 +774,12 @@ function onNetDeviceSelected(element) {
 // Toggles the sync for the selected net port
 function toggleSync(checked) {
     if (checked) {
-        invoke('enable_sync', {networkDeviceId: currentNetworkDeviceId})
+        invoke('enable_display', {networkDeviceId: currentNetworkDeviceId})
             .catch((error) => {
                 alert("Error while enabling network device. " + error);
             });
     } else {
-        invoke('disable_sync', {networkDeviceId: currentNetworkDeviceId})
+        invoke('disable_display', {networkDeviceId: currentNetworkDeviceId})
             .catch((error) => {
                 alert("Error while disabling network device. " + error);
             });
@@ -1087,7 +1090,7 @@ function handleArrowKeydownEvent(event) {
         }
 
         const direction = event.key.replace("Arrow", "").toLowerCase();
-        const moveBy = parseInt(btnControlPadChangeMoveUnit.getAttribute("data-move-unit"));
+        const moveBy = parseInt(btnControlPadChangeMoveUnit.getAttribute(ATTR_MOVE_UNIT));
         moveSelectedElementBy(moveBy, direction);
     }
 }
@@ -1615,7 +1618,7 @@ function showSelectedElementDetail() {
 
     // Conditional image
     if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
-        cmbConditionalImageSensorIdSelection.value = selectedListElement.getAttribute("data-sensor-id");
+        cmbConditionalImageSensorIdSelection.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_SENSOR_ID);
         txtConditionalImageImagesPath.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_IMAGES_PATH);
         txtConditionalImageMinValue.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_MIN_VALUE);
         txtConditionalImageMaxValue.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_MAX_VALUE);
