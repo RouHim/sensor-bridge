@@ -5,8 +5,9 @@
 
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, MutexGuard};
 use std::{fs, thread};
+
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use log::error;
 use sensor_core::{
@@ -118,8 +119,8 @@ fn main() {
             get_network_device_config,
             remove_network_device_config,
             save_app_config,
-            enable_sync,
-            disable_sync,
+            enable_display,
+            disable_display,
             show_lcd_live_preview,
             get_lcd_preview_image,
             get_text_preview_image,
@@ -178,6 +179,7 @@ async fn get_app_config() -> Result<String, String> {
 /// If the address config does not exist, it will be created.
 #[tauri::command]
 async fn save_app_config(
+    app_state: State<'_, AppState>,
     id: String,
     name: String,
     address: String,
@@ -198,13 +200,15 @@ async fn save_app_config(
 
     config::write(&network_device_config);
 
+    reconnect_displays(app_state).await;
+
     Ok(())
 }
 
 /// Enables the sync for the specified address and port.
 /// Also set the config for the port to active and save it
 #[tauri::command]
-async fn enable_sync(
+async fn enable_display(
     app_state: State<'_, AppState>,
     network_device_id: String,
 ) -> Result<(), String> {
@@ -241,7 +245,7 @@ async fn enable_sync(
 /// Disables the sync for the specified address and port.
 /// Also set the config for the port to inactive and save it
 #[tauri::command]
-async fn disable_sync(
+async fn disable_display(
     app_state: State<'_, AppState>,
     network_device_id: String,
 ) -> Result<(), String> {
@@ -551,4 +555,32 @@ fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Reconnects all active displays.
+/// This is done by disable the sync and re-enable it again (only active displays)
+async fn reconnect_displays(app_state: State<'_, AppState>) {
+    // Find all active network devices
+    let active_network_device_ids = app_state
+        .port_handle
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|(_, handle)| *handle.running.lock().unwrap())
+        .map(|(id, _)| id.clone())
+        .collect::<Vec<String>>();
+
+    // Disable the sync for all active network devices
+    for device_id in &active_network_device_ids {
+        disable_display(app_state.clone(), device_id.clone())
+            .await
+            .unwrap_or_default();
+    }
+
+    // Re-enable the sync for all active network devices
+    for device_id in &active_network_device_ids {
+        enable_display(app_state.clone(), device_id.clone())
+            .await
+            .unwrap_or_default();
+    }
 }
