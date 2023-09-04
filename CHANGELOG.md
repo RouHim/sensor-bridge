@@ -1,3 +1,10 @@
+# [0.25.0](https://github.com/RouHim/sensor-bridge/compare/v0.24.1...v0.25.0) (2023-09-04)
+
+
+### Features
+
+* **ui:** add text alignment ([3422f5b](https://github.com/RouHim/sensor-bridge/commit/3422f5bfe8dc73b63203d73d25295c5db759a23c))
+
 ## [0.24.1](https://github.com/RouHim/sensor-bridge/compare/v0.24.0...v0.24.1) (2023-09-04)
 
 
