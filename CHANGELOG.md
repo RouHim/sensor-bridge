@@ -1,3 +1,10 @@
+## [0.24.1](https://github.com/RouHim/sensor-bridge/compare/v0.24.0...v0.24.1) (2023-09-04)
+
+
+### Bug Fixes
+
+* **sensors:** more graceful sensor reading ([a6181ac](https://github.com/RouHim/sensor-bridge/commit/a6181ac021f4530fc24b002e3bf25142253d37ba))
+
 # [0.24.0](https://github.com/RouHim/sensor-bridge/compare/v0.23.0...v0.24.0) (2023-09-04)
 
 
