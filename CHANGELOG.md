@@ -1,3 +1,10 @@
+# [0.24.0](https://github.com/RouHim/sensor-bridge/compare/v0.23.0...v0.24.0) (2023-09-04)
+
+
+### Features
+
+* **ui:** abort on windows when libre hardware mon is not running ([0e8d158](https://github.com/RouHim/sensor-bridge/commit/0e8d1584a1f4d8a81e55af440464e68d07f8dd3d))
+
 # [0.23.0](https://github.com/RouHim/sensor-bridge/compare/v0.22.0...v0.23.0) (2023-09-04)
 
 
