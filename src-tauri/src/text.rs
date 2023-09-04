@@ -2,9 +2,6 @@ use std::fs;
 use std::io::{BufWriter, Cursor};
 
 use font_loader::system_fonts;
-use image::Rgba;
-use imageproc::drawing;
-use rusttype::Scale;
 use sensor_core::{
     DisplayConfig, ElementConfig, ElementType, PrepareTextData, SensorValue, TextConfig,
     TransportMessage, TransportType,
@@ -55,6 +52,12 @@ pub fn get_system_fonts() -> Vec<String> {
 /// Renders the preview image for the specified text element.
 /// First renders the "full sized" image and then crops it to the text element desired size.
 /// This is needed to get the correct text scaled.
+/// Render Pipeline:
+///     1. Draw text on empty rgba buffer on display size
+///     2. Calculate bounding box of text
+///     3. Crop buffer to the visible bounding box of the text
+///     4. Create a new Image buffer in the size of the text element
+///     5. Overlay the text image on the new image buffer according to the text alignment
 pub fn render_preview(
     sensor_value: Option<&SensorValue>,
     image_width: u32,
@@ -62,46 +65,23 @@ pub fn render_preview(
     text_config: &TextConfig,
 ) -> Vec<u8> {
     // Initialize image buffer
-    let mut image = image::RgbaImage::new(image_width, image_height);
-
-    let font_scale = Scale::uniform(text_config.font_size as f32);
-    let font_color: Rgba<u8> = sensor_core::hex_to_rgba(&text_config.font_color);
-    let text_format = &text_config.format;
-
-    let (value, unit): (&str, &str) = match sensor_value {
-        Some(sensor_value) => (&sensor_value.value, &sensor_value.unit),
-        _ => ("N/A", ""),
-    };
-
-    // Replace placeholders in text format
-    let text = text_format
-        .replace("{value}", value)
-        .replace("{unit}", unit);
-
     let font_family = system_fonts::FontPropertyBuilder::new()
         .family(&text_config.font_family)
         .build();
     let font_data = system_fonts::get(&font_family).unwrap().0;
     let font = rusttype::Font::try_from_bytes(&font_data).unwrap();
 
-    // Draw text on image
-    drawing::draw_text_mut(
-        &mut image,
-        font_color,
-        0,
-        0,
-        font_scale,
+    let text_image = sensor_core::text_renderer::render(
+        image_width,
+        image_height,
+        text_config,
+        sensor_value,
         &font,
-        text.as_str(),
     );
-
-    // Crop image buffer to desired size text element size
-    let cropped_image =
-        image::imageops::crop_imm(&image, 0, 0, text_config.width, text_config.height).to_image();
 
     // Render to png
     let mut writer = BufWriter::new(Cursor::new(Vec::new()));
-    cropped_image
+    text_image
         .write_to(&mut writer, image::ImageOutputFormat::Png)
         .unwrap();
 

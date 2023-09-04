@@ -59,6 +59,7 @@ const txtTextFontSize = document.getElementById("lcd-txt-element-font-size");
 const txtTextFontColor = document.getElementById("lcd-txt-element-font-color");
 const txtTextWidth = document.getElementById("lcd-txt-element-width");
 const txtTextHeight = document.getElementById("lcd-txt-element-height");
+const cmbTextAlignment = document.getElementById("lcd-cmb-element-text-alignment");
 
 // Static image
 const btnSelectStaticImage = document.getElementById("lcd-btn-static-image-select");
@@ -122,6 +123,7 @@ const ATTR_TEXT_FONT_SIZE = "data-text-text-font-size";
 const ATTR_TEXT_FONT_COLOR = "data-text-font-color";
 const ATTR_TEXT_WIDTH = "data-text-text-width";
 const ATTR_TEXT_HEIGHT = "data-text-text-height";
+const ATTR_TEXT_ALIGNMENT = "data-text-text-alignment";
 
 // Graph element attributes
 const ATTR_STATIC_IMAGE_PATH = "data-static-image-path";
@@ -660,6 +662,7 @@ function buildTextConfigFromAttributes(listItem) {
         font_color: listItem.getAttribute(ATTR_TEXT_FONT_COLOR),
         width: parseInt(listItem.getAttribute(ATTR_TEXT_WIDTH)),
         height: parseInt(listItem.getAttribute(ATTR_TEXT_HEIGHT)),
+        alignment: listItem.getAttribute(ATTR_TEXT_ALIGNMENT),
     };
 }
 
@@ -853,6 +856,7 @@ function addElementToList(elementId, positionX, positionY, elementName, elementT
         liElement.setAttribute(ATTR_TEXT_FONT_SIZE, elementTextConfig.font_size);
         liElement.setAttribute(ATTR_TEXT_WIDTH, elementTextConfig.width);
         liElement.setAttribute(ATTR_TEXT_HEIGHT, elementTextConfig.height);
+        liElement.setAttribute(ATTR_TEXT_ALIGNMENT, elementTextConfig.alignment);
     }
 
     // Image config
@@ -1165,6 +1169,7 @@ function updateElement(calculatedId) {
         listEntryElement.setAttribute(ATTR_TEXT_FONT_COLOR, txtTextFontColor.value);
         listEntryElement.setAttribute(ATTR_TEXT_WIDTH, txtTextWidth.value);
         listEntryElement.setAttribute(ATTR_TEXT_HEIGHT, txtTextHeight.value);
+        listEntryElement.setAttribute(ATTR_TEXT_ALIGNMENT, cmbTextAlignment.value);
     }
 
     // Image config
@@ -1380,6 +1385,10 @@ function validateUi() {
             alert("Please select a font family for the text element.");
             return false;
         }
+        if (cmbTextAlignment.value === "") {
+            alert("Please select an alignment for the text element.");
+            return false;
+        }
     }
 
     // Static image
@@ -1480,6 +1489,7 @@ function createElement(calculatedId) {
         font_color: txtTextFontColor.value,
         width: txtTextWidth.value,
         height: txtTextHeight.value,
+        alignment: cmbTextAlignment.value,
     }
 
     // build image config object
@@ -1590,6 +1600,7 @@ function showSelectedElementDetail() {
         txtTextFontColor.dispatchEvent(new Event('input', {bubbles: true}));
         txtTextWidth.value = selectedListElement.getAttribute(ATTR_TEXT_WIDTH);
         txtTextHeight.value = selectedListElement.getAttribute(ATTR_TEXT_HEIGHT);
+        cmbTextAlignment.value = selectedListElement.getAttribute(ATTR_TEXT_ALIGNMENT);
     }
 
     // Static image
