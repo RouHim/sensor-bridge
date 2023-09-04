@@ -62,6 +62,9 @@ fn main() {
     // Initialize the logger
     env_logger::init();
 
+    // Check on windows if libre hardware monitor is running
+    windows_libre_hardware_monitor_sensor::check_running();
+
     // Cleanup cache dir
     fs::remove_dir_all(sensor_core::get_cache_base_dir()).unwrap_or_default();
     fs::create_dir_all(sensor_core::get_cache_base_dir()).unwrap();

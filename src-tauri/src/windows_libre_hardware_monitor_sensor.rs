@@ -1,13 +1,11 @@
 #[cfg(target_os = "windows")]
-use log::error;
-#[cfg(target_os = "windows")]
 use std::collections::HashMap;
 
 #[cfg(target_os = "windows")]
+use log::error;
+#[cfg(target_os = "windows")]
 use sensor_core::SensorType;
-
 use sensor_core::SensorValue;
-
 #[cfg(target_os = "windows")]
 use wmi::*;
 
@@ -145,4 +143,59 @@ fn to_hardware_entry(entry: &HashMap<String, Variant>) -> Option<(String, String
     };
 
     Some((identifier, name))
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) fn check_running() {
+    let mut error_message = String::new();
+
+    let wmi_con = match WMIConnection::with_namespace_path(
+        "ROOT\\LibreHardwareMonitor",
+        COMLibrary::new().unwrap(),
+    ) {
+        Ok(wmi_con) => wmi_con,
+        _ => {
+            error_message.push_str("WMI namespace ROOT\\LibreHardwareMonitor not found. Is LibreHardwareMonitor running?\n");
+            return;
+        }
+    };
+
+    let hardware_list: Vec<HashMap<String, Variant>> =
+        match wmi_con.raw_query("SELECT * FROM Hardware") {
+            Ok(entries) => entries,
+            _ => return,
+        };
+
+    if hardware_list.is_empty() {
+        error_message
+            .push_str("No LibreHardwareMonitor sensors found. Is LibreHardwareMonitor running?\n");
+    }
+
+    // Use powershell to display the error message as a popup
+    if !error_message.is_empty() {
+        display_error_message(error_message);
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn check_running() {}
+
+#[cfg(target_os = "windows")]
+fn display_error_message(message: String) {
+    unsafe {
+        use std::ffi::OsStr;
+        use std::os::windows::ffi::OsStrExt;
+        use winapi::um::winuser::{MessageBoxW, MB_OK};
+
+        let title: *const u16 = OsStr::new("LibreHardwareMonitorSensor")
+            .encode_wide()
+            .chain(Some(0))
+            .collect::<Vec<_>>()
+            .as_ptr();
+
+        let wide: Vec<u16> = OsStr::new(&message).encode_wide().chain(Some(0)).collect();
+        MessageBoxW(std::ptr::null_mut(), wide.as_ptr(), title, MB_OK);
+    }
+
+    panic!("{message}");
 }
