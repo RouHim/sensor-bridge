@@ -56,7 +56,7 @@ pub fn get_system_fonts() -> Vec<String> {
 /// First renders the "full sized" image and then crops it to the text element desired size.
 /// This is needed to get the correct text scaled.
 pub fn render_preview(
-    sensor_value: &SensorValue,
+    sensor_value: Option<&SensorValue>,
     image_width: u32,
     image_height: u32,
     text_config: &TextConfig,
@@ -68,9 +68,15 @@ pub fn render_preview(
     let font_color: Rgba<u8> = sensor_core::hex_to_rgba(&text_config.font_color);
     let text_format = &text_config.format;
 
+    let (value, unit): (&str, &str) = match sensor_value {
+        Some(sensor_value) => (&sensor_value.value, &sensor_value.unit),
+        _ => ("N/A", ""),
+    };
+
+    // Replace placeholders in text format
     let text = text_format
-        .replace("{value}", &sensor_value.value)
-        .replace("{unit}", &sensor_value.unit);
+        .replace("{value}", value)
+        .replace("{unit}", unit);
 
     let font_family = system_fonts::FontPropertyBuilder::new()
         .family(&text_config.font_family)

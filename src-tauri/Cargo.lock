@@ -3420,7 +3420,6 @@ dependencies = [
  "tauri",
  "tauri-build",
  "uuid",
- "winapi",
  "wmi",
  "zip-extract",
 ]

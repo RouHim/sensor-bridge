@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use log::error;
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementType, GraphConfig,
-    SensorValue, TextConfig,
+    SensorType, SensorValue, TextConfig,
 };
 use super_shell::RootShell;
 use tauri::State;
@@ -61,9 +61,6 @@ fn main() {
 
     // Initialize the logger
     env_logger::init();
-
-    // Check on windows if libre hardware monitor is running
-    windows_libre_hardware_monitor_sensor::check_running();
 
     // Cleanup cache dir
     fs::remove_dir_all(sensor_core::get_cache_base_dir()).unwrap_or_default();
@@ -340,8 +337,7 @@ async fn get_text_preview_image(
 
     let sensor_value = sensor_values
         .iter()
-        .find(|sensor_value| sensor_value.id.eq(sensor_id))
-        .unwrap();
+        .find(|sensor_value| sensor_value.id.eq(sensor_id));
 
     let text_image_data =
         text::render_preview(sensor_value, image_width, image_height, &text_config);
@@ -379,21 +375,25 @@ async fn get_conditional_image_preview_image(
     // Filter sensor values for provided sensor id
     let sensor_value = sensor_values
         .iter()
-        .find(|sensor_value| sensor_value.id.eq(sensor_id))
-        .unwrap();
+        .find(|sensor_value| sensor_value.id.eq(sensor_id));
 
-    conditional_image_config.sensor_value = sensor_value.value.clone();
+    let (value, sensor_type): (&str, &SensorType) = match sensor_value {
+        Some(sensor_value) => (&sensor_value.value, &sensor_value.sensor_type),
+        _ => ("N/A", &SensorType::Text),
+    };
+
+    conditional_image_config.sensor_value = value.to_string();
     conditional_image_config.images_path =
         conditional_image::prepare_element(&element_id, &conditional_image_config);
 
     let graph_data: Vec<u8> = match conditional_image_renderer::render(
         &element_id,
-        &sensor_value.sensor_type,
+        sensor_type,
         &conditional_image_config,
     ) {
         Some(data) => data,
         None => {
-            error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {}", sensor_value.value);
+            error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {value}");
             return Err(());
         }
     };
