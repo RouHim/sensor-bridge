@@ -1,3 +1,15 @@
+# [0.23.0](https://github.com/RouHim/sensor-bridge/compare/v0.22.0...v0.23.0) (2023-09-04)
+
+
+### Bug Fixes
+
+* **ui:** fix cond image loading ([25fc0d4](https://github.com/RouHim/sensor-bridge/commit/25fc0d4e284bcf9c56df3811252e760d0e4ac139))
+
+
+### Features
+
+* **ui:** reload display on save ([cd4330d](https://github.com/RouHim/sensor-bridge/commit/cd4330dcc1bd599c76d0551126d67e925e9e2577))
+
 # [0.22.0](https://github.com/RouHim/sensor-bridge/compare/v0.21.0...v0.22.0) (2023-08-31)
 
 
