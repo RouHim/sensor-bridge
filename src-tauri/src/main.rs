@@ -342,12 +342,6 @@ async fn get_text_preview_image(
     let text_image_data =
         text::render_preview(sensor_value, image_width, image_height, &text_config);
 
-    // Save image to downloads folder
-    let downloads_dir = "/home/rouven/Downloads";
-    let file_name = format!("{}.png", text_config.sensor_id);
-    let file_path = format!("{}/{}", downloads_dir, file_name);
-    fs::write(file_path, &text_image_data).unwrap();
-
     let engine = base64::engine::general_purpose::STANDARD;
     Ok(base64::Engine::encode(&engine, text_image_data))
 }
