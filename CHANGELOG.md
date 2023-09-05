@@ -1,3 +1,10 @@
+## [0.26.1](https://github.com/RouHim/sensor-bridge/compare/0.26.0...0.26.1) (2023-09-05)
+
+
+### Bug Fixes
+
+* **fonts:** improve font loading ([03a4b6c](https://github.com/RouHim/sensor-bridge/commit/03a4b6ca82633459f2315fb1cd03e007392053c3))
+
 # [0.26.0](https://github.com/RouHim/sensor-bridge/compare/v0.25.2...0.26.0) (2023-09-05)
 
 
