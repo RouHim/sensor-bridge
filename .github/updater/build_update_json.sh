@@ -25,12 +25,12 @@ echo "NOTES: $NOTES"
 echo "Repo: $REPO_BASE_URL"
 
 # Collect linux AppImage data
-APPIMAGE_URL="${REPO_BASE_URL}/releases/download/v${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz"
-APPIMAGE_SIG=$(curl -L --silent "${REPO_BASE_URL}/releases/download/v${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz.sig")
+APPIMAGE_URL="${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz"
+APPIMAGE_SIG=$(curl -L --silent "${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz.sig")
 
 # Collect windows MSI data
-MSI_URL=${REPO_BASE_URL}/releases/download/v${VERSION}/sensor-bridge_${VERSION}_x64_en-US.msi.zip
-MSI_SIG=$(curl -L --silent "${REPO_BASE_URL}/releases/download/v${VERSION}/sensor-bridge_${VERSION}_x64_en-US.msi.zip.sig")
+MSI_URL=${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_x64_en-US.msi.zip
+MSI_SIG=$(curl -L --silent "${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_x64_en-US.msi.zip.sig")
 
 # Set the generic version, notes and pub_date
 cat <<<$(jq --arg VERSION "$VERSION" '.version = "\($VERSION)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
