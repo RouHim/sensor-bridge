@@ -1,3 +1,10 @@
+## [0.25.1](https://github.com/RouHim/sensor-bridge/compare/v0.25.0...v0.25.1) (2023-09-05)
+
+
+### Bug Fixes
+
+* **renderer:** remove debug code ([ca4fda3](https://github.com/RouHim/sensor-bridge/commit/ca4fda3fc78566a446ecfb03951220fd3a7beac4))
+
 # [0.25.0](https://github.com/RouHim/sensor-bridge/compare/v0.24.1...v0.25.0) (2023-09-04)
 
 
