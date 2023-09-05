@@ -35,7 +35,7 @@ pub fn prepare(element: &ElementConfig) {
 }
 
 /// Pre-renders static images and serializes the render data to bytes using messagepack
-pub fn prepare_images(lcd_config: &DisplayConfig) -> PrepareStaticImageData {
+pub fn get_preparation_data(lcd_config: &DisplayConfig) -> PrepareStaticImageData {
     let images_data: HashMap<String, Vec<u8>> = lcd_config
         .elements
         .par_iter()

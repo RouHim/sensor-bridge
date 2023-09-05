@@ -1,47 +1,17 @@
-use std::fs;
+use std::collections::HashMap;
 use std::io::{BufWriter, Cursor};
 
 use font_loader::system_fonts;
 use sensor_core::{
-    DisplayConfig, ElementConfig, ElementType, PrepareTextData, SensorValue, TextConfig,
-    TransportMessage, TransportType,
+    DisplayConfig, ElementType, PrepareTextData, SensorValue, TextConfig, TransportMessage,
+    TransportType,
 };
 
-/// Prepares the static font assets for the lcd preview window.
-pub fn prepare(element: &ElementConfig) {
-    // Pre-Render image to desired size
-    let text_config = element.text_config.as_ref().unwrap();
-    let font_family = system_fonts::FontPropertyBuilder::new()
-        .family(&text_config.font_family)
-        .build();
-    let font_data = system_fonts::get(&font_family).unwrap().0;
-
-    // ensure folder exists and is empty
-    let text_cache_folder = sensor_core::get_cache_dir(&element.id, &ElementType::Text);
-    fs::remove_dir_all(&text_cache_folder).unwrap_or_default(); // Ignore errors
-    fs::create_dir_all(&text_cache_folder).unwrap();
-
-    // Save to cache folder
-    let cache_file = text_cache_folder.join(&element.id);
-    fs::write(cache_file, font_data).unwrap();
-}
-
-pub fn prepare_display(display_config: &DisplayConfig) -> PrepareTextData {
-    let font_data = display_config
-        .elements
-        .iter()
-        .filter(|element| element.element_type == ElementType::Text)
-        .map(|text_element| {
-            let text_config = text_element.text_config.as_ref().unwrap();
-            let font_family = system_fonts::FontPropertyBuilder::new()
-                .family(&text_config.font_family)
-                .build();
-            let font_data = system_fonts::get(&font_family).unwrap().0;
-            (text_element.id.clone(), font_data)
-        })
-        .collect();
-
-    PrepareTextData { font_data }
+/// Creates the PrepareTextData struct which contains the font data for each text element.
+pub fn get_preparation_data(display_config: &DisplayConfig) -> PrepareTextData {
+    PrepareTextData {
+        font_data: build_fonts_data(display_config),
+    }
 }
 
 /// Get all system fonts.
@@ -97,4 +67,22 @@ pub fn serialize(text_data: PrepareTextData) -> Vec<u8> {
         data: bincode::serialize(&text_data).unwrap(),
     };
     bincode::serialize(&transport_message).unwrap()
+}
+
+/// Builds the font data hashmap for all text elements.
+pub fn build_fonts_data(display_config: &DisplayConfig) -> HashMap<String, Vec<u8>> {
+    display_config
+        .elements
+        .iter()
+        .filter(|element| element.element_type == ElementType::Text)
+        .map(|text_element| {
+            let text_config = text_element.text_config.as_ref().unwrap();
+            let font_family_name = &text_config.font_family;
+            let font_family = system_fonts::FontPropertyBuilder::new()
+                .family(font_family_name)
+                .build();
+            let font_data = system_fonts::get(&font_family).unwrap().0;
+            (font_family_name.clone(), font_data)
+        })
+        .collect()
 }

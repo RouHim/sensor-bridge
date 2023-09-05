@@ -6,6 +6,7 @@ use log::error;
 #[cfg(target_os = "windows")]
 use sensor_core::SensorType;
 use sensor_core::SensorValue;
+
 #[cfg(target_os = "windows")]
 use wmi::*;
 

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -59,13 +60,6 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
 fn prepare_assets(elements: Vec<ElementConfig>) {
     elements
         .par_iter()
-        .filter(|element| element.element_type == ElementType::Text)
-        .for_each(|element| {
-            text::prepare(element);
-        });
-
-    elements
-        .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .for_each(|element| {
             static_image::prepare(element);
@@ -98,9 +92,15 @@ pub fn render(
         // Read the sensor values
         sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
 
+        // Build font data hashmap
+        let fonts_data: HashMap<String, Vec<u8>> = text::build_fonts_data(&lcd_config);
+
         // Render the image
-        let image =
-            sensor_core::render_lcd_image(lcd_config, sensor_value_history.lock().unwrap().deref());
+        let image = sensor_core::render_lcd_image(
+            lcd_config,
+            sensor_value_history.lock().unwrap().deref(),
+            &fonts_data,
+        );
 
         let buf = utils::rgb_to_jpeg_bytes(image);
 

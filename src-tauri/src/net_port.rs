@@ -182,7 +182,11 @@ fn prepare_static_text_data_on_display(
     net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
-    let text_data = text::prepare_display(&net_port_config.display_config);
+    let text_data = text::get_preparation_data(&net_port_config.display_config);
+    // Print text data entries
+    for (key, value) in &text_data.font_data {
+        println!("{}: {}", key, value.len());
+    }
     let data_to_send = text::serialize(text_data);
     send_tcp_data(net_port_config, net_port, data_to_send);
 }
@@ -192,7 +196,7 @@ fn prepare_static_image_data_on_display(
     net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
-    let static_image_data = static_image::prepare_images(&net_port_config.display_config);
+    let static_image_data = static_image::get_preparation_data(&net_port_config.display_config);
     let data_to_send = static_image::serialize(static_image_data);
     send_tcp_data(net_port_config, net_port, data_to_send);
 }
@@ -202,7 +206,8 @@ fn prepare_conditional_image_data_on_display(
     net_port_config: &NetworkDeviceConfig,
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
-    let conditional_image_data = conditional_image::prepare_images(&net_port_config.display_config);
+    let conditional_image_data =
+        conditional_image::get_preparation_data(&net_port_config.display_config);
     let data_to_send = conditional_image::serialize_preparation_data(conditional_image_data);
     send_tcp_data(net_port_config, net_port, data_to_send);
 }

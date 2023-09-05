@@ -5,9 +5,8 @@
 
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::{fs, thread};
-
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::{fs, thread};
 
 use log::error;
 use sensor_core::{

@@ -4,7 +4,6 @@ use std::io::Cursor;
 use std::path::PathBuf;
 
 use image::ImageFormat;
-
 use rayon::prelude::*;
 use sensor_core::{
     is_image, ConditionalImageConfig, DisplayConfig, ElementConfig, ElementType,
@@ -129,7 +128,7 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
 }
 
 /// Pre-renders conditional images and returns the data to send.
-pub fn prepare_images(lcd_config: &DisplayConfig) -> PrepareConditionalImageData {
+pub fn get_preparation_data(lcd_config: &DisplayConfig) -> PrepareConditionalImageData {
     let conditional_image_elements: Vec<&ElementConfig> = lcd_config
         .elements
         .iter()
