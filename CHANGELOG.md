@@ -1,3 +1,10 @@
+# [0.26.0](https://github.com/RouHim/sensor-bridge/compare/v0.25.2...0.26.0) (2023-09-05)
+
+
+### Features
+
+* **release:** remove v infront of version ([91cdc38](https://github.com/RouHim/sensor-bridge/commit/91cdc38f08bae329df8920c6c9e163536959af81))
+
 ## [0.25.2](https://github.com/RouHim/sensor-bridge/compare/v0.25.1...v0.25.2) (2023-09-05)
 
 ## [0.25.1](https://github.com/RouHim/sensor-bridge/compare/v0.25.0...v0.25.1) (2023-09-05)
