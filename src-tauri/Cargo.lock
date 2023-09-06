@@ -3814,9 +3814,9 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "super-shell"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea293b4764d8a5216016f568d41494b805077c6f11035b2b8c20bbb22fa2f793"
+checksum = "3ca4a2060dda1f3db1c97dfe4cfda724e29407b7cd06a12dc48cff71e97d05e1"
 
 [[package]]
 name = "syn"
