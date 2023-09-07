@@ -1,3 +1,10 @@
+# [0.27.0](https://github.com/RouHim/sensor-bridge/compare/0.26.4...0.27.0) (2023-09-07)
+
+
+### Features
+
+* **gauge:** added access to online repository ([c17b219](https://github.com/RouHim/sensor-bridge/commit/c17b2195bebf58559c5f413070ab53cf7883b4c6))
+
 ## [0.26.4](https://github.com/RouHim/sensor-bridge/compare/0.26.3...0.26.4) (2023-09-07)
 
 ## [0.26.3](https://github.com/RouHim/sensor-bridge/compare/0.26.2...0.26.3) (2023-09-06)
