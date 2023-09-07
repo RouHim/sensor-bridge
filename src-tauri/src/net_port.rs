@@ -183,10 +183,6 @@ fn prepare_static_text_data_on_display(
     net_port: &mut (NodeHandler<()>, Endpoint),
 ) {
     let text_data = text::get_preparation_data(&net_port_config.display_config);
-    // Print text data entries
-    for (key, value) in &text_data.font_data {
-        println!("{}: {}", key, value.len());
-    }
     let data_to_send = text::serialize(text_data);
     send_tcp_data(net_port_config, net_port, data_to_send);
 }

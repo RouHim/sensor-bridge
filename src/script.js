@@ -90,6 +90,8 @@ const txtConditionalImageMaxValue = document.getElementById("lcd-txt-element-con
 const txtConditionalImageWidth = document.getElementById("lcd-txt-element-conditional-image-width");
 const txtConditionalImageHeight = document.getElementById("lcd-txt-element-conditional-image-height");
 const btnConditionalImageInfo = document.getElementById("lcd-btn-conditional-image-info");
+const cmbConditionalImageCatalogEntrySelection = document.getElementById("lcd-cmb-conditional-image-catalog-entry-selection");
+const btnConditionalImageApplyCatalogEntry = document.getElementById("lcd-btn-conditional-apply-catalog-entry");
 
 // Global variables
 let sensorValues = [];
@@ -149,6 +151,8 @@ const ATTR_CONDITIONAL_IMAGE_WIDTH = "data-conditional-image-width";
 const ATTR_CONDITIONAL_IMAGE_HEIGHT = "data-conditional-image-height";
 const ATTR_CONDITIONAL_IMAGE_MIN_VALUE = "data-conditional-image-min-value";
 const ATTR_CONDITIONAL_IMAGE_MAX_VALUE = "data-conditional-image-max-value";
+const ATTR_CONDITIONAL_IMAGE_REPO_URL = "data-conditional-image-repo-url";
+const ATTR_CONDITIONAL_IMAGE_RESOLUTION = "data-conditional-image-resolution";
 
 // Other attributes
 const ATTR_MOVE_UNIT = "data-move-unit";
@@ -198,6 +202,7 @@ window.addEventListener("DOMContentLoaded", () => {
     btnTextSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
     btnGraphSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
     btnConditionalImageSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
+    btnConditionalImageApplyCatalogEntry.addEventListener("click", applyConditionalImageCatalogEntry);
 
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
@@ -230,7 +235,37 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Load system fonts
     loadSystemFonts();
+
+    // Load repo entries
+    loadConditionalImageRepoEntries();
 });
+
+// Applies the selected conditional image catalog entry to the current selected conditional image element
+function applyConditionalImageCatalogEntry() {
+    const selectedOption = cmbConditionalImageCatalogEntrySelection.options[cmbConditionalImageCatalogEntrySelection.selectedIndex];
+    txtConditionalImageImagesPath.value = selectedOption.getAttribute(ATTR_CONDITIONAL_IMAGE_REPO_URL);
+    let resolution = selectedOption.getAttribute(ATTR_CONDITIONAL_IMAGE_RESOLUTION).split("x");
+    txtConditionalImageWidth.value = resolution[0];
+    txtConditionalImageHeight.value = resolution[1];
+}
+
+function loadConditionalImageRepoEntries() {
+    invoke('get_conditional_image_repo_entries').then((entries) => {
+        JSON.parse(entries).forEach((entry) => {
+            const entryName = entry.name;
+            const entryUrl = entry.url;
+            const entryResolution = entry.resolution;
+
+            const option = document.createElement("option");
+            option.value = entryName;
+            option.innerText = entryName;
+            option.setAttribute(ATTR_CONDITIONAL_IMAGE_REPO_URL, entryUrl);
+            option.setAttribute(ATTR_CONDITIONAL_IMAGE_RESOLUTION, entryResolution);
+
+            cmbConditionalImageCatalogEntrySelection.appendChild(option);
+        });
+    });
+}
 
 function loadSystemFonts() {
     invoke('get_system_fonts').then((fonts) => {

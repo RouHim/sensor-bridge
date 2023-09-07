@@ -3,12 +3,17 @@ use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
 
+use crate::utils;
 use image::ImageFormat;
 use rayon::prelude::*;
 use sensor_core::{
     is_image, ConditionalImageConfig, DisplayConfig, ElementConfig, ElementType,
     PrepareConditionalImageData, TransportMessage, TransportType,
 };
+use serde::{Deserialize, Serialize};
+
+const REPO_METADATA_URL: &str =
+    "https://raw.githubusercontent.com/RouHim/sensor-asset-catalog/main/content.json";
 
 /// Unpacks the zip file to the .cache folder of the system for the current sensor_id.
 /// Cleans up the folder after unpacking.
@@ -31,7 +36,19 @@ pub fn prepare_element(
     fs::create_dir_all(&cache_folder_path).unwrap();
 
     // Unzip to cache folder
-    let zip_file_data = fs::read(zip_file_path).unwrap();
+    let zip_file_data = if utils::is_url(zip_file_path) {
+        let mut zip_data = vec![];
+        ureq::get(zip_file_path)
+            .call()
+            .unwrap()
+            .into_reader()
+            .read_to_end(&mut zip_data)
+            .unwrap();
+        zip_data
+    } else {
+        fs::read(zip_file_path).unwrap()
+    };
+
     zip_extract::extract(Cursor::new(zip_file_data), &cache_folder_path, true).unwrap();
 
     // Make sure that the cache folder path only contains supported images
@@ -185,4 +202,20 @@ pub fn serialize_preparation_data(data: PrepareConditionalImageData) -> Vec<u8> 
     };
 
     bincode::serialize(&transport_message).unwrap()
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ConditionalImageRepoEntry {
+    name: String,
+    url: String,
+    resolution: String,
+}
+
+/// Returns a list of all available conditional image repos.
+pub fn get_repo_entries() -> Vec<ConditionalImageRepoEntry> {
+    ureq::get(REPO_METADATA_URL)
+        .call()
+        .unwrap()
+        .into_json()
+        .unwrap()
 }

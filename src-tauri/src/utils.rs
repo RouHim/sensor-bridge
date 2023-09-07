@@ -36,3 +36,8 @@ pub fn rgba_to_png_bytes(image: DynamicImage) -> Vec<u8> {
         .unwrap();
     buf
 }
+
+/// Checks if the given file uri is a url.
+pub fn is_url(file_uri: &str) -> bool {
+    file_uri.starts_with("http://") || file_uri.starts_with("https://")
+}

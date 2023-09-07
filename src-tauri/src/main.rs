@@ -129,6 +129,7 @@ fn main() {
             import_config,
             export_config,
             get_system_fonts,
+            get_conditional_image_repo_entries,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -441,6 +442,12 @@ async fn get_system_fonts() -> Result<String, String> {
     serde_json::to_string(&text::get_system_fonts()).map_err(|err| err.to_string())
 }
 
+#[tauri::command]
+async fn get_conditional_image_repo_entries() -> Result<String, String> {
+    let repo_entries = conditional_image::get_repo_entries();
+    serde_json::to_string(&repo_entries).map_err(|err| err.to_string())
+}
+
 /// Handle tauri window events
 fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
     |event| {
@@ -547,7 +554,14 @@ fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
                 .as_ref()
                 .unwrap()
                 .images_path;
-            if fs::metadata(zip_path).is_err() {
+
+            let exists = if utils::is_url(zip_path) {
+                ureq::head(zip_path).call().is_ok()
+            } else {
+                fs::metadata(zip_path).is_ok()
+            };
+
+            if !exists {
                 return Err(format!(
                     "'{}': Filepath '{}' does not exist.",
                     element.name, zip_path
