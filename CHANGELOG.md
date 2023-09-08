@@ -1,3 +1,10 @@
+# [0.28.0](https://github.com/RouHim/sensor-bridge/compare/0.27.1...0.28.0) (2023-09-08)
+
+
+### Features
+
+* **ui:** improve icons for import and export config ([aecad2a](https://github.com/RouHim/sensor-bridge/commit/aecad2a798dd705ba6ca4665e636b36d0c0ac9e1))
+
 ## [0.27.1](https://github.com/RouHim/sensor-bridge/compare/0.27.0...0.27.1) (2023-09-07)
 
 # [0.27.0](https://github.com/RouHim/sensor-bridge/compare/0.26.4...0.27.0) (2023-09-07)
