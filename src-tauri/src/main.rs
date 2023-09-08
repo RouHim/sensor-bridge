@@ -22,6 +22,7 @@ use crate::config::{AppConfig, NetworkDeviceConfig};
 
 mod conditional_image;
 pub(crate) mod config;
+mod export_import;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
 mod linux_lm_sensors;
@@ -409,21 +410,13 @@ async fn verify_network_address(address: String) -> bool {
 
 #[tauri::command]
 async fn export_config(file_path: String) -> Result<(), ()> {
-    let app_config: AppConfig = config::read_from_app_config();
-    let json_config = serde_json::to_string_pretty(&app_config).unwrap();
-    let file_path = if file_path.ends_with(".json") {
-        file_path
-    } else {
-        format!("{}.json", file_path)
-    };
-    fs::write(file_path, json_config).unwrap();
+    export_import::export_configuration(file_path);
     Ok(())
 }
 
 #[tauri::command]
 async fn import_config(file_path: String) -> Result<(), tauri::Error> {
-    let json_config = fs::read_to_string(file_path).unwrap();
-    let app_config: Result<AppConfig, serde_json::Error> = serde_json::from_str(&json_config);
+    let app_config = export_import::import_configuration(file_path);
 
     if app_config.is_err() {
         Err(app_config.err().unwrap().into())
