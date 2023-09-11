@@ -1,3 +1,10 @@
+# [0.29.0](https://github.com/RouHim/sensor-bridge/compare/0.28.2...0.29.0) (2023-09-11)
+
+
+### Features
+
+* **ui:** disable gui when no network device is selected ([7d46ab5](https://github.com/RouHim/sensor-bridge/commit/7d46ab5dbd4ebe85445235b3f6d40674dc1c3fe3))
+
 ## [0.28.2](https://github.com/RouHim/sensor-bridge/compare/0.28.1...0.28.2) (2023-09-10)
 
 ## [0.28.1](https://github.com/RouHim/sensor-bridge/compare/0.28.0...0.28.1) (2023-09-10)
