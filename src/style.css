@@ -69,6 +69,15 @@ td {
     color: var(--selection);
 }
 
+.icon-button:disabled {
+    cursor: auto;
+}
+
+.icon-button:disabled:hover {
+    color: inherit;
+    cursor: auto;
+}
+
 .kill-switch {
     position: relative;
     display: inline-block;

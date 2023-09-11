@@ -8,15 +8,17 @@ const txtSensorSelectionTableFilterInput = document.getElementById("sensor-selec
 
 // Network port selection
 const cmbNetworkPorts = document.getElementById("main-network-ports-select");
+const lcdBasePanel = document.getElementById("lcd-panel");
 
 // Main buttons
 const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
 const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
 const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
 const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
-const btnTransferActive = document.getElementById("main-chk-transfer-active");
 const btnExportConfig = document.getElementById("btn-export-config");
 const btnImportConfig = document.getElementById("btn-import-config");
+const panelKillSwitch = document.getElementById("kill-switch-input");
+const btnActivateSync = document.getElementById("main-chk-transfer-active");
 
 // LCD designer
 const txtDeviceName = document.getElementById("lcd-txt-device-name");
@@ -180,12 +182,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Register button click events
     btnAddNetworkDevice.addEventListener("click", createNetworkPort);
-    btnRemoveNetworkDevice.addEventListener("click", removeDevice);
+    btnRemoveNetworkDevice.addEventListener("click", removeNetworkDevice);
     btnExportConfig.addEventListener("click", exportConfig);
     btnImportConfig.addEventListener("click", importConfig);
     btnSaveNetworkDevice.addEventListener("click", onSave);
     btnSaveElement.addEventListener("click", onSave);
-    btnTransferActive.addEventListener("click", () => toggleSync(btnTransferActive.checked));
+    btnActivateSync.addEventListener("click", () => toggleSync(btnActivateSync.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
     btnRemoveElement.addEventListener("click", removeElement);
     btnMoveElementUp.addEventListener("click", moveElementUp);
@@ -553,7 +555,8 @@ function onElementTypeChange() {
     }
 }
 
-function removeDevice() {
+// Removes the current selected network device
+function removeNetworkDevice() {
     // Get selected net port id
     let networkDeviceId = currentNetworkDeviceId;
 
@@ -568,24 +571,31 @@ function removeDevice() {
 
     // Remove net port from backend
     invoke('remove_network_device_config', {networkDeviceId: networkDeviceId}).then(() => {
-            // If is at least one net port, select the first / next one
-            if (cmbNetworkPorts.options.length > 0) {
-                onNetDeviceSelected(cmbNetworkPorts.options[0]);
-            } else {
-                clearForm();
-            }
+            onNetDeviceSelected(cmbNetworkPorts.options[0]);
         }
     ).catch((error) => {
         alert("Error while removing network device. " + error);
     });
 }
 
-function clearForm() {
-    txtDeviceName.value = "";
-    txtDeviceNetworkAddress.value = "";
-    txtDisplayResolutionWidth.value = "";
-    txtDisplayResolutionHeight.value = "";
-    lstDesignerPlacedElements.innerHTML = "";
+// Disables the device interaction
+function disableDeviceInteraction() {
+    lcdBasePanel.style.display = "none";
+    btnSaveNetworkDevice.disabled = true;
+    btnRemoveNetworkDevice.disabled = true;
+    btnToggleLivePreview.disabled = true;
+    btnExportConfig.disabled = true;
+    panelKillSwitch.style.display = "none";
+}
+
+// Enables device interaction usually when a network device was selected
+function enableDeviceInteraction() {
+    lcdBasePanel.style.display = "block";
+    btnSaveNetworkDevice.disabled = false;
+    btnRemoveNetworkDevice.disabled = false;
+    btnToggleLivePreview.disabled = false;
+    btnExportConfig.disabled = false;
+    panelKillSwitch.style.display = "block";
 }
 
 function createNetworkPort() {
@@ -631,9 +641,7 @@ async function loadDeviceConfigs() {
         }
 
         // Select first net port
-        if (cmbNetworkPorts.options.length > 0) {
-            onNetDeviceSelected(cmbNetworkPorts.options[0]);
-        }
+        onNetDeviceSelected(cmbNetworkPorts.options[0]);
     });
 }
 
@@ -778,7 +786,16 @@ function saveConfig() {
     )
 }
 
+// Selects the current network device and loads its config
 function onNetDeviceSelected(element) {
+    if (element === null || element === undefined) {
+        disableDeviceInteraction();
+        currentNetworkDeviceId = undefined;
+        return;
+    }
+
+    enableDeviceInteraction();
+
     let networkDeviceId = element.id;
     currentNetworkDeviceId = networkDeviceId;
 
@@ -792,7 +809,7 @@ function onNetDeviceSelected(element) {
             txtDeviceNetworkAddress.value = portConfig.address;
 
             // Set active sync state
-            btnTransferActive.checked = portConfig.active;
+            btnActivateSync.checked = portConfig.active;
 
             // Set as selected net port combobox
             cmbNetworkPorts.value = networkDeviceId;

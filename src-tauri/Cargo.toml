@@ -32,7 +32,7 @@ dns-lookup = "2.0.2"                                                            
 zip-extract = "0.1.2"                                                                                               # Zip file handling
 font-loader = { git = "https://github.com/matprec/rust-font-loader" }                                               # System font loading
 rusttype = "0.9.3"                                                                                                  # Font parsing
-ureq = { version = "2.7.1", features = ["json"] }                                                                     # HTTP client requests
+ureq = { version = "2.7.1", features = ["json"] }                                                                   # HTTP client requests
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
