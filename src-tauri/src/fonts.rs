@@ -60,6 +60,6 @@ fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
 }
 
 #[cfg(target_os = "windows")]
-fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
-    info!("Installing a font on windows is not supported.");
+fn install_font_internal(_: &str, _: &Vec<u8>) {
+    log::info!("Installing a font on windows is not supported.");
 }

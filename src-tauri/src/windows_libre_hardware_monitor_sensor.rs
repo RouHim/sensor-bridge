@@ -10,9 +10,6 @@ use sensor_core::SensorValue;
 #[cfg(target_os = "windows")]
 use wmi::*;
 
-#[cfg(target_os = "windows")]
-use log::info;
-
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
 }
