@@ -1,3 +1,4 @@
+#[cfg(target_os = "linux")]
 use std::fs;
 
 use font_loader::system_fonts;
