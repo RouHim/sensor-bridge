@@ -51,12 +51,11 @@ fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
     // Install font file
     fs::write(font_file_path, font_data).unwrap();
 
-    // Run sc-cache -f to update the font cache
+    // Run sc-cache to update the font cache
     let _ = std::process::Command::new("fc-cache")
         .arg("--force")
         .arg("--really-force")
-        .output()
-        .expect("failed to execute process");
+        .output();
 }
 
 #[cfg(target_os = "windows")]
