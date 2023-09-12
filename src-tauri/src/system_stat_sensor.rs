@@ -125,8 +125,8 @@ fn get_network_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
         let rx_delta = (rx - prev_rx) * 4;
         let tx_delta = (tx - prev_tx) * 4;
 
-        let (dl_rate, dl_rate_format) = utils::pretty_bytes(rx_delta as usize);
-        let (ul_rate, ul_rate_format) = utils::pretty_bytes(tx_delta as usize);
+        let (dl_rate, dl_rate_format) = utils::pretty_bytes(rx_delta as f64);
+        let (ul_rate, ul_rate_format) = utils::pretty_bytes(tx_delta as f64);
 
         // Add RX and TX to the vector
         sensor_values.push(SensorValue {
@@ -244,9 +244,9 @@ fn get_memory_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
     let mem_free = mem.free.as_u64();
     let mem_used = mem_total - mem_free;
 
-    let (mem_total, mem_total_unit) = utils::pretty_bytes(mem_total as usize);
-    let (mem_used, mem_used_unit) = utils::pretty_bytes(mem_used as usize);
-    let (mem_free, mem_free_unit) = utils::pretty_bytes(mem_free as usize);
+    let (mem_total, mem_total_unit) = utils::pretty_bytes(mem_total as f64);
+    let (mem_used, mem_used_unit) = utils::pretty_bytes(mem_used as f64);
+    let (mem_free, mem_free_unit) = utils::pretty_bytes(mem_free as f64);
 
     // Collect sensors and use pretty_bytes to convert the values
     vec![
@@ -317,8 +317,8 @@ fn get_disk_rw_sensors(system_stat: &PlatformImpl) -> Vec<SensorValue> {
             let write =
                 (disk.1.write_sectors - write_ios.get(&disk.1.name).unwrap()) * sector_size * 4;
 
-            let (read, read_unit) = utils::pretty_bytes(read);
-            let (write, write_unit) = utils::pretty_bytes(write);
+            let (read, read_unit) = utils::pretty_bytes(read as f64);
+            let (write, write_unit) = utils::pretty_bytes(write as f64);
 
             vec![
                 SensorValue {

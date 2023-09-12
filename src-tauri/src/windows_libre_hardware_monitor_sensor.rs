@@ -88,7 +88,7 @@ fn to_sensor_value(
 
     // For sensor types: "Throughput", "Data", "SmallData" convert to human readable value and unit
     let (value, unit) = if sensor_type.eq("Throughput") {
-        let (value, unit) = crate::utils::pretty_bytes(*value as usize);
+        let (value, unit) = crate::utils::pretty_bytes(*value as f64);
         (value, format!("{unit}/s"))
     } else {
         (*value as f64, unit)

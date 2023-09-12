@@ -46,6 +46,12 @@ fn inline_files(app_config: &mut AppConfig) {
                 ElementType::StaticImage => {
                     let img_config = element.image_config.as_mut().unwrap();
                     let file_path = &img_config.image_path;
+
+                    // Skip if the image path is a url
+                    if utils::is_url(file_path) {
+                        continue;
+                    }
+
                     let img_data = fs::read(file_path).unwrap();
                     let img_base64 = to_base64_string(img_data);
                     img_config.image_path = img_base64;
@@ -55,11 +61,15 @@ fn inline_files(app_config: &mut AppConfig) {
                 }
                 ElementType::ConditionalImage => {
                     let cond_image_config = element.conditional_image_config.as_mut().unwrap();
-                    if utils::is_not_url(&cond_image_config.images_path) {
-                        let img_data = fs::read(&cond_image_config.images_path).unwrap();
-                        let img_base64 = to_base64_string(img_data);
-                        cond_image_config.images_path = img_base64;
+
+                    // Skip if the image path is a url
+                    if utils::is_url(&cond_image_config.images_path) {
+                        continue;
                     };
+
+                    let img_data = fs::read(&cond_image_config.images_path).unwrap();
+                    let img_base64 = to_base64_string(img_data);
+                    cond_image_config.images_path = img_base64;
                 }
             }
         }
@@ -89,6 +99,12 @@ pub fn import_configuration(file_path: String) -> Result<AppConfig, Error> {
                 }
                 ElementType::StaticImage => {
                     let img_config = element.image_config.as_mut().unwrap();
+
+                    // Skip if the image path is a url
+                    if utils::is_url(&img_config.image_path) {
+                        continue;
+                    }
+
                     let img_string = &img_config.image_path;
                     let img_data = from_base64_string(img_string.to_string());
                     if let Some(img_data) = img_data {
@@ -106,20 +122,24 @@ pub fn import_configuration(file_path: String) -> Result<AppConfig, Error> {
                 }
                 ElementType::ConditionalImage => {
                     let cond_image_config = element.conditional_image_config.as_mut().unwrap();
-                    if utils::is_not_url(&cond_image_config.images_path) {
-                        let img_base64 = &cond_image_config.images_path;
-                        let img_data = from_base64_string(img_base64.to_string());
-                        if let Some(img_data) = img_data {
-                            let img_file_path = sensor_core::get_config_dir()
-                                .join("conditional-image")
-                                .join(&element.id)
-                                .with_extension("png");
-                            let _ = fs::create_dir_all(img_file_path.parent().unwrap());
-                            fs::write(&img_file_path, img_data).unwrap();
-                            cond_image_config.images_path =
-                                img_file_path.to_str().unwrap().to_string();
-                        }
+
+                    // Skip if the image path is a url
+                    if utils::is_url(&cond_image_config.images_path) {
+                        continue;
                     };
+
+                    let base64_string = &cond_image_config.images_path;
+                    let img_data = from_base64_string(base64_string.to_string());
+
+                    if let Some(img_data) = img_data {
+                        let img_file_path = sensor_core::get_config_dir()
+                            .join("conditional-image")
+                            .join(&element.id)
+                            .with_extension("png");
+                        let _ = fs::create_dir_all(img_file_path.parent().unwrap());
+                        fs::write(&img_file_path, img_data).unwrap();
+                        cond_image_config.images_path = img_file_path.to_str().unwrap().to_string();
+                    }
                 }
             }
         }

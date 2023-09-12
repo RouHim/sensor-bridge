@@ -36,7 +36,7 @@ pub fn prepare_element(
     fs::create_dir_all(&cache_folder_path).unwrap();
 
     // Unzip to cache folder
-    let zip_file_data = if utils::is_url(zip_file_path) {
+    let zip_file_data = if utils::is_reachable_url(zip_file_path) {
         let mut zip_data = vec![];
         ureq::get(zip_file_path)
             .call()

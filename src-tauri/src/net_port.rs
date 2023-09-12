@@ -215,7 +215,7 @@ fn send_tcp_data(
     data_to_send: Vec<u8>,
 ) {
     // Log data to send
-    let data_len = utils::pretty_bytes(data_to_send.len());
+    let data_len = utils::pretty_bytes(data_to_send.len() as f64);
     info!(
         "Sending data {} {} to '{}'...",
         data_len.0, data_len.1, net_port_config.name

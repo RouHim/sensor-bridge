@@ -1388,7 +1388,12 @@ function addElementToDesignerPane(zIndex, elementId, sensorType, positionX, posi
 }
 
 // Converts an absolute file path, to a tauri compatible path using https://tauri.app/v1/api/js/tauri/#convertfilesrc
+// If the image path is a http or https url, it will be returned as is
 function toTauriAssetPath(image_path) {
+    if (image_path.startsWith("http://") || image_path.startsWith("https://")) {
+        return image_path;
+    }
+
     return convertFileSrc(image_path);
 }
 

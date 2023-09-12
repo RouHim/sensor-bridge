@@ -1,3 +1,4 @@
+use image::DynamicImage;
 use std::collections::HashMap;
 use std::fs;
 
@@ -14,7 +15,8 @@ use crate::utils;
 pub fn prepare(element: &ElementConfig) {
     // Pre-Render image to desired size
     let image_config = element.image_config.as_ref().unwrap();
-    let image = image::open(&image_config.image_path).unwrap();
+    let image = load_image(&image_config.image_path);
+
     let image = image.resize_exact(
         image_config.width,
         image_config.height,
@@ -59,7 +61,7 @@ pub fn serialize(static_image_data: PrepareStaticImageData) -> Vec<u8> {
 
 /// Reads each image into memory, scales it to the desired resolution, and returns it
 pub fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, Vec<u8>) {
-    let image = image::open(&image_config.image_path).unwrap();
+    let image = load_image(&image_config.image_path);
     let image = image.resize_exact(
         image_config.width,
         image_config.height,
@@ -70,4 +72,22 @@ pub fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, V
 
     // Build response entry
     (element_id.to_string(), image_data)
+}
+
+/// Reads an image from the filesystem or from a url and returns it as a DynamicImage
+/// # Arguments
+/// * `path_to_image` - A string that either contains a local path to an image file or a image url
+fn load_image(path_to_image: &str) -> DynamicImage {
+    if utils::is_reachable_url(path_to_image) {
+        let mut image_data = vec![];
+        ureq::get(path_to_image)
+            .call()
+            .unwrap()
+            .into_reader()
+            .read_to_end(&mut image_data)
+            .unwrap();
+        image::load_from_memory(&image_data).unwrap()
+    } else {
+        image::open(path_to_image).unwrap()
+    }
 }

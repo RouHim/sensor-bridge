@@ -4,8 +4,10 @@ use image::{DynamicImage, ImageBuffer, Rgba};
 
 /// Pretty print bytes, e.g. 534 MB
 /// Returns a tuple of (value, unit)
-pub fn pretty_bytes(value: usize) -> (f64, String) {
-    let mut value = value as f64;
+/// # Arguments
+/// * `value` - The value to pretty print in bytes
+pub fn pretty_bytes(value: f64) -> (f64, String) {
+    let mut value = value;
     let mut unit = 0;
     let units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
@@ -37,12 +39,12 @@ pub fn rgba_to_png_bytes(image: DynamicImage) -> Vec<u8> {
     buf
 }
 
+/// Checks if the given file uri is a url AND reachable.
+pub fn is_reachable_url(file_uri: &str) -> bool {
+    is_url(file_uri) && ureq::head(file_uri).call().is_ok()
+}
+
 /// Checks if the given file uri is a url.
 pub fn is_url(file_uri: &str) -> bool {
     file_uri.starts_with("http://") || file_uri.starts_with("https://")
-}
-
-/// Checks if the given file uri is NOT a url.
-pub fn is_not_url(file_uri: &str) -> bool {
-    !is_url(file_uri)
 }

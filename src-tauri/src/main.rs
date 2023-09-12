@@ -543,7 +543,11 @@ fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
         // Ensure that the image file exists
         if element.element_type == ElementType::StaticImage {
             let image_path = &element.image_config.as_ref().unwrap().image_path;
-            if fs::metadata(image_path).is_err() {
+
+            let is_file = fs::metadata(image_path).is_ok();
+            let is_url = utils::is_reachable_url(image_path);
+
+            if !is_file && !is_url {
                 return Err(format!(
                     "'{}': Image path '{}' does not exist.",
                     element.name, image_path
@@ -559,7 +563,7 @@ fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
                 .unwrap()
                 .images_path;
 
-            let exists = if utils::is_url(zip_path) {
+            let exists = if utils::is_reachable_url(zip_path) {
                 ureq::head(zip_path).call().is_ok()
             } else {
                 fs::metadata(zip_path).is_ok()
