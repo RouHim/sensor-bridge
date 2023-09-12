@@ -1,3 +1,18 @@
+# [0.30.0](https://github.com/RouHim/sensor-bridge/compare/0.29.0...0.30.0) (2023-09-12)
+
+
+### Bug Fixes
+
+* **tests:** install missing arial font ([b658b9a](https://github.com/RouHim/sensor-bridge/commit/b658b9ab867725c7ee92e240fdc4398145c6ccf4))
+* **tests:** use first existing font ([2eb9c1f](https://github.com/RouHim/sensor-bridge/commit/2eb9c1f8016ebd5831eaeffe8e0c81a36005ab48))
+
+
+### Features
+
+* **config:** allow config import and export ([cbec070](https://github.com/RouHim/sensor-bridge/commit/cbec0703366c376f9d1d30a059ff3c959ce91c48))
+* **config:** create transportable exportable config file ([edb4bbb](https://github.com/RouHim/sensor-bridge/commit/edb4bbbcb85053a3b774ac74d157f61e84bb9e79))
+* **ui:** disable gui when no network device is selected ([f7ba828](https://github.com/RouHim/sensor-bridge/commit/f7ba8289fa37837340aec8e7b269b15d49615dda))
+
 # [0.29.0](https://github.com/RouHim/sensor-bridge/compare/0.28.2...0.29.0) (2023-09-11)
 
 
