@@ -1,22 +1,18 @@
 use std::collections::HashMap;
 use std::io::{BufWriter, Cursor};
 
-use font_loader::system_fonts;
 use sensor_core::{
     DisplayConfig, ElementType, PrepareTextData, SensorValue, TextConfig, TransportMessage,
     TransportType,
 };
+
+use crate::fonts;
 
 /// Creates the PrepareTextData struct which contains the font data for each text element.
 pub fn get_preparation_data(display_config: &DisplayConfig) -> PrepareTextData {
     PrepareTextData {
         font_data: build_fonts_data(display_config),
     }
-}
-
-/// Get all system fonts.
-pub fn get_system_fonts() -> Vec<String> {
-    system_fonts::query_all()
 }
 
 /// Renders the preview image for the specified text element.
@@ -35,10 +31,7 @@ pub fn render_preview(
     text_config: &TextConfig,
 ) -> Vec<u8> {
     // Initialize image buffer
-    let font_family = system_fonts::FontPropertyBuilder::new()
-        .family(&text_config.font_family)
-        .build();
-    let font_data = system_fonts::get(&font_family).unwrap().0;
+    let font_data = fonts::load_data(&text_config.font_family);
     let font = rusttype::Font::try_from_bytes(&font_data).unwrap();
 
     let text_image = sensor_core::text_renderer::render(
@@ -78,10 +71,7 @@ pub fn build_fonts_data(display_config: &DisplayConfig) -> HashMap<String, Vec<u
         .map(|text_element| {
             let text_config = text_element.text_config.as_ref().unwrap();
             let font_family_name = &text_config.font_family;
-            let font_family = system_fonts::FontPropertyBuilder::new()
-                .family(font_family_name)
-                .build();
-            let font_data = system_fonts::get(&font_family).unwrap().0;
+            let font_data = fonts::load_data(font_family_name);
             (font_family_name.clone(), font_data)
         })
         .collect()

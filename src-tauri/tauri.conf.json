@@ -31,8 +31,13 @@
         "all": true,
         "asset": true,
         "assetScope": [
+          "*",
           "**",
-          "**/*"
+          "**/*",
+          "$HOME/*",
+          "$DATA/**",
+          "$CACHE/**",
+          "$CONFIG/**"
         ]
       }
     },
