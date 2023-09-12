@@ -1,3 +1,10 @@
+## [0.31.2](https://github.com/RouHim/sensor-bridge/compare/0.31.1...0.31.2) (2023-09-12)
+
+
+### Bug Fixes
+
+* **imports:** fix windows imports ([dcdc491](https://github.com/RouHim/sensor-bridge/commit/dcdc491144e6e8bd592c1213b3840a1668906ec2))
+
 ## [0.31.1](https://github.com/RouHim/sensor-bridge/compare/0.31.0...0.31.1) (2023-09-12)
 
 
