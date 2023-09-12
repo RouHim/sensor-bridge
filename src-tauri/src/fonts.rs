@@ -49,33 +49,17 @@ fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
     let _ = fs::create_dir_all(&font_dir);
 
     // Install font file
-    fs::write(&font_file_path, font_data).unwrap();
-
-    println!(
-        " #### Instlaled font to {}",
-        font_file_path.to_str().unwrap()
-    );
+    fs::write(font_file_path, font_data).unwrap();
 
     // Run sc-cache -f to update the font cache
-    let output = std::process::Command::new("fc-cache")
+    let _output = std::process::Command::new("fc-cache")
         .arg("--force")
         .arg("--really-force")
         .output()
         .expect("failed to execute process");
-
-    println!(" #### Installed font {}", font_family_name);
-    println!(
-        " #### Does file exist: {}",
-        fs::metadata(&font_file_path).is_ok()
-    );
-    println!(" #### Does font exist: {}", exists(font_family_name));
-    println!(
-        " #### fc-cache output: {}",
-        String::from_utf8_lossy(&output.stdout)
-    );
 }
 
 #[cfg(target_os = "windows")]
 fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
-    // Not supported :(
+    println!("Installing font on windows is not supported.");
 }
