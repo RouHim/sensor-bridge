@@ -23,6 +23,7 @@ use crate::config::{AppConfig, NetworkDeviceConfig};
 mod conditional_image;
 pub(crate) mod config;
 mod export_import;
+mod fonts;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
 mod linux_lm_sensors;
@@ -36,6 +37,9 @@ mod system_stat_sensor;
 mod text;
 mod utils;
 mod windows_libre_hardware_monitor_sensor;
+
+#[cfg(test)]
+mod fonts_test;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
@@ -131,6 +135,7 @@ fn main() {
             export_config,
             get_system_fonts,
             get_conditional_image_repo_entries,
+            restart_app,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -432,13 +437,19 @@ async fn import_config(file_path: String) -> Result<(), tauri::Error> {
 
 #[tauri::command]
 async fn get_system_fonts() -> Result<String, String> {
-    serde_json::to_string(&text::get_system_fonts()).map_err(|err| err.to_string())
+    serde_json::to_string(&fonts::get_all()).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
 async fn get_conditional_image_repo_entries() -> Result<String, String> {
     let repo_entries = conditional_image::get_repo_entries();
     serde_json::to_string(&repo_entries).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
+    app_handle.restart();
+    Ok(())
 }
 
 /// Handle tauri window events

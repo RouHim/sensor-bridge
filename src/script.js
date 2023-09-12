@@ -236,7 +236,8 @@ window.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("keydown", handleKeydownEvent);
 
     // Load system fonts
-    loadSystemFonts();
+    loadSystemFonts().then(() => {
+    });
 
     // Load repo entries
     loadConditionalImageRepoEntries();
@@ -269,17 +270,18 @@ function loadConditionalImageRepoEntries() {
     });
 }
 
-function loadSystemFonts() {
-    invoke('get_system_fonts').then((fonts) => {
-        JSON.parse(fonts)
-            .forEach((font) => {
-                const option = document.createElement("option");
-                option.value = font;
-                option.innerText = font;
-                option.style.fontFamily = font;
-                cmbTextFontFamily.appendChild(option);
-            });
-    });
+async function loadSystemFonts() {
+    return invoke('get_system_fonts')
+        .then((fonts) => {
+            JSON.parse(fonts)
+                .forEach((font) => {
+                    const option = document.createElement("option");
+                    option.value = font;
+                    option.innerText = font;
+                    option.style.fontFamily = font;
+                    cmbTextFontFamily.appendChild(option);
+                });
+        });
 }
 
 function buildSensorSelectionDialogTable(filterValue) {
@@ -416,11 +418,19 @@ function importConfig() {
             if (typeof selected === "string" && selected !== "") {
                 invoke('import_config', {filePath: selected}).then(
                     () => {
-                        // Reload all devices from config
-                        loadDeviceConfigs().catch((error) => {
-                                alert("Error while loading device configs. " + error);
-                            }
-                        )
+                        // Show yes no dialog, that a restart is required
+                        confirm("The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?")
+                            .then((pressedOk) => {
+                                if (pressedOk) {
+                                    invoke('restart_app');
+                                } else {
+                                    loadDeviceConfigs()
+                                        .catch((error) => {
+                                                alert("Error while loading device configs. " + error);
+                                            }
+                                        )
+                                }
+                            });
                     }
                 ).catch((error) => {
                     alert("Error while importing config. " + error);
@@ -619,30 +629,31 @@ function createNetworkPort() {
 
 async function loadDeviceConfigs() {
     // Load config from backend
-    return invoke('get_app_config').then((appConfig) => {
-        // Map config to JSON
-        appConfig = JSON.parse(appConfig);
+    return invoke('get_app_config')
+        .then((appConfig) => {
+            // Map config to JSON
+            appConfig = JSON.parse(appConfig);
 
-        // Clear net port combobox
-        cmbNetworkPorts.innerHTML = "";
+            // Clear net port combobox
+            cmbNetworkPorts.innerHTML = "";
 
-        // Add net ports to list
-        let networkDevices = appConfig.network_devices;
+            // Add net ports to list
+            let networkDevices = appConfig.network_devices;
 
-        // If network devices is undefined or null or empty, return
-        if (networkDevices === undefined || networkDevices === null || networkDevices.length === 0) {
-            return;
-        }
+            // If network devices is undefined or null or empty, return
+            if (networkDevices === undefined || networkDevices === null || networkDevices.length === 0) {
+                return;
+            }
 
-        // Iterate json array and add net ports to list
-        for (const deviceId in networkDevices) {
-            const device = networkDevices[deviceId];
-            addNetworkDeviceToList(device.id, device.name);
-        }
+            // Iterate json array and add net ports to list
+            for (const deviceId in networkDevices) {
+                const device = networkDevices[deviceId];
+                addNetworkDeviceToList(device.id, device.name);
+            }
 
-        // Select first net port
-        onNetDeviceSelected(cmbNetworkPorts.options[0]);
-    });
+            // Select first net port
+            onNetDeviceSelected(cmbNetworkPorts.options[0]);
+        });
 }
 
 function addNetworkDeviceToList(id, name) {
