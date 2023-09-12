@@ -1,3 +1,10 @@
+# [0.31.0](https://github.com/RouHim/sensor-bridge/compare/0.30.0...0.31.0) (2023-09-12)
+
+
+### Features
+
+* **ui:** allow urls as image path ([28883ea](https://github.com/RouHim/sensor-bridge/commit/28883eafa149507f8bff791667cd5686ec031c97))
+
 # [0.30.0](https://github.com/RouHim/sensor-bridge/compare/0.29.0...0.30.0) (2023-09-12)
 
 
