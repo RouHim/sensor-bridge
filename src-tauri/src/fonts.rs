@@ -52,7 +52,7 @@ fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
     fs::write(font_file_path, font_data).unwrap();
 
     // Run sc-cache -f to update the font cache
-    let _output = std::process::Command::new("fc-cache")
+    let _ = std::process::Command::new("fc-cache")
         .arg("--force")
         .arg("--really-force")
         .output()
