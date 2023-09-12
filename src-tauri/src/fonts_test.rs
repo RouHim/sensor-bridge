@@ -5,15 +5,8 @@ use crate::fonts;
 #[test]
 fn test_font_installed() {
     // GIVEN is font that is already known to the system
-    let font_name = "Arial";
-    let mut font_data = vec![];
-    ureq::get("https://raw.githubusercontent.com/root-project/root/master/fonts/arial.ttf")
-        .call()
-        .unwrap()
-        .into_reader()
-        .read_to_end(&mut font_data)
-        .unwrap();
-    fonts::install_font(font_name, &font_data);
+    let all_fonts = fonts::get_all();
+    let font_name = all_fonts.get(0).unwrap();
 
     // WHEN looking for the font
     let font_exists = fonts::exists(font_name);
