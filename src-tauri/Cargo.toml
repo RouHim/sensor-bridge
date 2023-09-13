@@ -20,7 +20,7 @@ tauri = { version = "1.4.1", features = ["updater", "protocol-all", "dialog-all"
 systemstat = "0.2.3"                                                                                                # read common system sensor values
 rayon = "1.7.0"                                                                                                     # Parallel processing
 base64 = "0.21.4"                                                                                                   # Base64 encoding
-message-io = { version = "0.17.0", default-features = false, features = ["tcp"] }                                   # TCPSocket communication
+message-io = { version = "0.18.0", default-features = false, features = ["tcp"] }                                   # TCPSocket communication
 uuid = { version = "1.4.1", features = ["v4"] }                                                                     # Generate UUID v4
 image = "0.24.7"                                                                                                    # Image processing
 imageproc = { version = "0.23.0", features = ["rayon"] }                                                            # More image processing
