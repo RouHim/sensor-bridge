@@ -42,6 +42,7 @@ The software is still in a very early and immature state. If you want to use it,
 * RTSS support
 * Android app
 * Aquacomputer aqua suite sensor support
+* Local display 
 
 ## Motivation
 
