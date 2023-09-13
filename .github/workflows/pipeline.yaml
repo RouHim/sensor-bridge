@@ -352,12 +352,8 @@ jobs:
       - name: Update README download links
         run: |
           # Get the asset urls
-          LINUX_ASSET_URL=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r ".assets[] | select(.name | contains(\"AppImage\")) | .browser_download_url")
-          WINDOWS_ASSET_URL=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r ".assets[] | select(.name | contains(\"msi\")) | .browser_download_url")
-          
-          # Only use the first asset url
-          LINUX_ASSET_URL=$(echo $LINUX_ASSET_URL | head -n 1)
-          WINDOWS_ASSET_URL=$(echo $WINDOWS_ASSET_URL | head -n 1)
+          LINUX_ASSET_URL=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r '.assets[] | select(.name | endswith(".AppImage")) | .browser_download_url')
+          WINDOWS_ASSET_URL=$(curl --silent "https://api.github.com/repos/RouHim/sensor-bridge/releases/latest" | jq -r '.assets[] | select(.name | endswith(".msi")) | .browser_download_url')
           
           # Set the asset urls in the README
           bash .github/helper/set-asset-url-to-readme.sh $LINUX_ASSET_URL $WINDOWS_ASSET_URL

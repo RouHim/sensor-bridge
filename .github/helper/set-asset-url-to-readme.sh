@@ -24,9 +24,14 @@ WINDOWS_HTML_TAG_ID="sensor-bridge-download-windows"
 
 # Ensure README.md exists
 if [ ! -f "${FILE_TO_EDIT}" ]; then
-    echo "Error: ${FILE_TO_EDIT} does not exist!"
-    exit 1
+  echo "Error: ${FILE_TO_EDIT} does not exist!"
+  exit 1
 fi
+
+# Debug output
+echo "Updating ${FILE_TO_EDIT} with new asset urls:"
+echo "  * Linux: ${NEW_LINUX_ASSET_URL}"
+echo "  * Windows: ${NEW_WINDOWS_ASSET_URL}"
 
 # Update the linux asset url
 sed -i "s#<a id=\"${LINUX_HTML_TAG_ID}\" href=\".*\">#<a id=\"${LINUX_HTML_TAG_ID}\" href=\"${NEW_LINUX_ASSET_URL}\">#g" "${FILE_TO_EDIT}"
