@@ -1,3 +1,10 @@
+## [0.32.2](https://github.com/RouHim/sensor-bridge/compare/0.32.1...0.32.2) (2023-09-13)
+
+
+### Bug Fixes
+
+* **pipeline:** broken readme update ([69f583e](https://github.com/RouHim/sensor-bridge/commit/69f583e5cc49e693c93fca9329a4e5c890d8a3dd))
+
 ## [0.32.1](https://github.com/RouHim/sensor-bridge/compare/0.32.0...0.32.1) (2023-09-13)
 
 
