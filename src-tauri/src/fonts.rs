@@ -47,7 +47,7 @@ fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
     let font_file_path = font_dir.join(font_family_name).with_extension("ttf");
 
     // Ensure font directory exists
-    let _ = fs::create_dir_all(&font_dir);
+    fs::create_dir_all(&font_dir).unwrap_or_default();
 
     // Install font file
     fs::write(font_file_path, font_data).unwrap();
