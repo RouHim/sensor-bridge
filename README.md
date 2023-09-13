@@ -1,6 +1,42 @@
-# sensor bridge
+<p align="center">
+    <img src=".github/readme/banner.png" width="300"/>
+</p>
 
-## Optional runtime dependencies
+<p align="center">
+    <img alt="GitHub release (with filter)" src="https://img.shields.io/github/v/release/rouhim/sensor-bridge">
+    <img alt="GitHub Release Date - Published_At" src="https://img.shields.io/github/release-date/rouhim/sensor-bridge">
+    <img alt="GitHub Workflow Status (with event)" src="https://img.shields.io/github/actions/workflow/status/rouhim/sensor-bridge/pipeline.yaml">
+</p>
+
+<p align="center">
+    <i>Sensor bridge is a cross-platform desktop application that allows you to display sensor information on anothers device screen.</i>
+</p>
+
+<p align="center">
+    <a href="https://github.com/RouHim/sensor-bridge/releases/latest">
+        <img src=".github/readme/download.png" width="250"/>
+    </a>
+</p>
+
+## Features
+
+* Display sensor information of your computer on another device screen
+* Design your display using an intuitive user interface
+* Works on Windows and Linux
+* Rendering is offloaded to the other device, reducing memory and CPU consumption on your computer
+* Supports display devices at the same time
+* Custom fonts
+* Display your data as: Text, Graph or Gauge
+* Export and import your designs
+* Live preview of your design
+
+## Screenshot
+
+TBD
+
+## Prerequisites
+
+The following software is required to be installed on your system:
 
 ### Windows
 
@@ -11,10 +47,10 @@
 ### Linux
 
 * [lm-sensors](https://github.com/lm-sensors/lm-sensors)
-* [MangoHud](https://github.com/flightlessmango/MangoHud) (Make sure
-  to [enable logging](https://github.com/flightlessmango/MangoHud#fps-logging))
+* (optional) [MangoHud](https://github.com/flightlessmango/MangoHud) | Make sure
+  to [enable stats logging](https://github.com/flightlessmango/MangoHud#fps-logging)
 
-## Build instructions
+## Build
 
 ### Prerequisites
 
