@@ -1,3 +1,13 @@
+# [0.32.0](https://github.com/RouHim/sensor-bridge/compare/0.31.2...0.32.0) (2023-09-13)
+
+
+### Features
+
+* **readme:** add download buttons ([ff8acdd](https://github.com/RouHim/sensor-bridge/commit/ff8acdd87e5c06ba87b48ce1a8627045c2be12a1))
+* **readme:** add download buttons ([f58700c](https://github.com/RouHim/sensor-bridge/commit/f58700c4ca9f54c3d724c9dbcd334620fc18e6d8))
+* **readme:** add screenshot and architecture ([1437b34](https://github.com/RouHim/sensor-bridge/commit/1437b34e599915110c1b70d8cb88e809dab9d920))
+* **readme:** improve readme ([b439dc1](https://github.com/RouHim/sensor-bridge/commit/b439dc1f4cdba7916e2b806c66ce932c3a982642))
+
 ## [0.31.2](https://github.com/RouHim/sensor-bridge/compare/0.31.1...0.31.2) (2023-09-12)
 
 
