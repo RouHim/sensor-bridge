@@ -13,8 +13,11 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/RouHim/sensor-bridge/releases/latest">
-        <img src=".github/readme/download.png" width="250"/>
+    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases">
+        <img src=".github/readme/dl-linux.png" width="250"/>
+    </a>
+    <a id="sensor-bridge-download-windows" href="https://github.com/RouHim/sensor-bridge/releases">
+        <img src=".github/readme/dl-windows.png" width="250"/>
     </a>
 </p>
 
@@ -31,6 +34,10 @@
 * Live preview of your design
 
 ## Screenshot
+
+TBD
+
+## Architecture
 
 TBD
 
