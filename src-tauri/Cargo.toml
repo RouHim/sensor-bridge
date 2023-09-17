@@ -28,7 +28,7 @@ chrono = "0.4.31"                                                               
 log = "0.4.20"                                                                                                      # Logging
 env_logger = "0.10.0"                                                                                               # Logging
 super-shell = "1.2.1"                                                                                               # Privileged shell execution
-dns-lookup = "2.0.2"                                                                                                # DNS lookup
+dns-lookup = "2.0.3"                                                                                                # DNS lookup
 zip-extract = "0.1.2"                                                                                               # Zip file handling
 font-loader = { git = "https://github.com/matprec/rust-font-loader" }                                               # System font loading
 rusttype = "0.9.3"                                                                                                  # Font parsing
