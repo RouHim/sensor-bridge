@@ -1323,7 +1323,8 @@ function addElementToDesignerPane(zIndex, elementId, sensorType, positionX, posi
         default:
         case ELEMENT_TYPE_TEXT:
             designerElement = document.createElement("img");
-            designerElement.style.height = elementTextConfig.font_size + "px";
+            designerElement.style.height = elementTextConfig.height + "px";
+            designerElement.style.width = elementTextConfig.width + "px";
 
             invoke('get_text_preview_image', {
                 imageWidth: parseInt(txtDisplayResolutionWidth.value),
