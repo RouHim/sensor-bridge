@@ -1,3 +1,10 @@
+## [0.32.8](https://github.com/RouHim/sensor-bridge/compare/0.32.7...0.32.8) (2023-09-19)
+
+
+### Bug Fixes
+
+* **ui:** wrong text element dimensions when duplicating an element ([51afbd8](https://github.com/RouHim/sensor-bridge/commit/51afbd836ff5e55e93041dda647a67bb0729bb75))
+
 ## [0.32.7](https://github.com/RouHim/sensor-bridge/compare/0.32.6...0.32.7) (2023-09-17)
 
 ## [0.32.6](https://github.com/RouHim/sensor-bridge/compare/0.32.5...0.32.6) (2023-09-15)
