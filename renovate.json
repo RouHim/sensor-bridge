@@ -1,4 +1,5 @@
 {
+  "schedule": ["every saturday at 05:00"],
   "packageRules": [
     {
       "matchUpdateTypes": [
