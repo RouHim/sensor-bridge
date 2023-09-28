@@ -1,3 +1,10 @@
+## [0.32.14](https://github.com/RouHim/sensor-bridge/compare/0.32.13...0.32.14) (2023-09-28)
+
+
+### Bug Fixes
+
+* **renderer:** int overflow if text font is larger than text field height ([b4762ec](https://github.com/RouHim/sensor-bridge/commit/b4762ec7b54d46f05455cf6b327abbf83872f32e))
+
 ## [0.32.13](https://github.com/RouHim/sensor-bridge/compare/0.32.12...0.32.13) (2023-09-28)
 
 ## [0.32.12](https://github.com/RouHim/sensor-bridge/compare/0.32.11...0.32.12) (2023-09-27)
