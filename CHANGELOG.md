@@ -1,3 +1,11 @@
+## [0.32.18](https://github.com/RouHim/sensor-bridge/compare/0.32.17...0.32.18) (2023-09-29)
+
+
+### Bug Fixes
+
+* **renderer:** fix font rendering ([7b6acf2](https://github.com/RouHim/sensor-bridge/commit/7b6acf2ea90a77e0084e712bda8b0734ce9dc81e))
+* **renderer:** fix font rendering ([8e3d3d7](https://github.com/RouHim/sensor-bridge/commit/8e3d3d752f76e23b66c08f9ede35a3f3b0230213))
+
 ## [0.32.17](https://github.com/RouHim/sensor-bridge/compare/0.32.16...0.32.17) (2023-09-29)
 
 ## [0.32.16](https://github.com/RouHim/sensor-bridge/compare/0.32.15...0.32.16) (2023-09-28)
