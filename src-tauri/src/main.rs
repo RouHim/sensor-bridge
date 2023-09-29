@@ -19,6 +19,7 @@ use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 use crate::config::{AppConfig, NetworkDeviceConfig};
+use crate::utils::LockResultExt;
 
 mod conditional_image;
 pub(crate) mod config;
@@ -338,7 +339,7 @@ async fn get_text_preview_image(
     image_height: u32,
     text_config: TextConfig,
 ) -> Result<String, ()> {
-    let sensor_values = &app_state.sensor_value_history.lock().unwrap()[0];
+    let sensor_values = &app_state.sensor_value_history.lock().ignore_poison()[0];
     let sensor_id = &text_config.sensor_id;
 
     let sensor_value = sensor_values
@@ -360,7 +361,7 @@ async fn get_graph_preview_image(
     let sensor_id = &graph_config.sensor_id;
 
     graph_config.sensor_values = sensor_core::extract_value_sequence(
-        app_state.sensor_value_history.lock().unwrap().deref(),
+        app_state.sensor_value_history.lock().ignore_poision().deref(),
         sensor_id,
     );
 
@@ -375,7 +376,7 @@ async fn get_conditional_image_preview_image(
     element_id: String,
     mut conditional_image_config: ConditionalImageConfig,
 ) -> Result<String, ()> {
-    let sensor_values = &app_state.sensor_value_history.lock().unwrap()[0];
+    let sensor_values = &app_state.sensor_value_history.lock().ignore_poision()[0];
     let sensor_id = &conditional_image_config.sensor_id;
 
     // Filter sensor values for provided sensor id
