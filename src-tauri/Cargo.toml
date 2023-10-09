@@ -41,7 +41,7 @@ pretty_assertions = "1.4.0"
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
-lm-sensors = "0.1.7"                                                                                                  # Read sensor values from lm-sensors
+lm-sensors = "0.2.0"                                                                                                  # Read sensor values from lm-sensors
 csv = "1.3.0"                                                                                                         # CSV parsing
 rev_buf_reader = "0.3.0"                                                                                              # Reverse buffer reader
 dmidecode = "0.7.6"                                                                                                   # Read linux system information from dmidecode
