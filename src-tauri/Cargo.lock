@@ -2107,9 +2107,9 @@ checksum = "1a9bad9f94746442c783ca431b22403b519cd7fbeed0533fdd6328b2f2212128"
 
 [[package]]
 name = "lm-sensors"
-version = "0.1.7"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acee27e7aab97265108481231201d279031c0487ae7f44f828d7f951c416ccf7"
+checksum = "fd81a47f820305465ff69496ee8a7c422277fb43bba774d781dfad0b9a24cbbf"
 dependencies = [
  "bitflags 2.4.0",
  "libc",
