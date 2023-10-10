@@ -1,6 +1,4 @@
 #[cfg(target_os = "linux")]
-use lm_sensors::prelude::*;
-#[cfg(target_os = "linux")]
 use sensor_core::SensorType;
 use sensor_core::SensorValue;
 

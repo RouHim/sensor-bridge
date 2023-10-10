@@ -428,15 +428,11 @@ async fn export_config(file_path: String) -> Result<(), ()> {
 async fn import_config(file_path: String) -> Result<(), tauri::Error> {
     let app_config = export_import::import_configuration(file_path);
 
-    if app_config.is_err() {
-        Err(app_config.err().unwrap().into())
-    } else {
-        app_config
-            .unwrap()
-            .network_devices
-            .values()
-            .for_each(config::write);
+    if let Ok(app_config) = app_config {
+        app_config.network_devices.values().for_each(config::write);
         Ok(())
+    } else {
+        Err(app_config.err().unwrap().into())
     }
 }
 
