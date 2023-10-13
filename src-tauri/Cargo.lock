@@ -843,9 +843,9 @@ checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
 
 [[package]]
 name = "dmidecode"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3acc3cd34e435dc08291f164de81cb78cac9e3d3eb12be89c0c6a4555935445a"
+checksum = "f0ad90ceba14514cfb0de5e1a65df5289e8228796eb56d617ce9146d7bd026dd"
 dependencies = [
  "aho-corasick 0.6.10",
  "bitflags 1.3.2",
