@@ -13,10 +13,10 @@
 </p>
 
 <p align="center">
-    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.32.26/sensor-bridge_0.32.26_amd64.AppImage">
+    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.32.27/sensor-bridge_0.32.27_amd64.AppImage">
         <img src=".github/readme/dl-linux.png" width="250"/>
     </a>
-    <a id="sensor-bridge-download-windows" href="https://github.com/RouHim/sensor-bridge/releases/download/0.32.26/sensor-bridge_0.32.26_x64_en-US.msi">
+    <a id="sensor-bridge-download-windows" href="https://github.com/RouHim/sensor-bridge/releases/download/0.32.27/sensor-bridge_0.32.27_x64_en-US.msi">
         <img src=".github/readme/dl-windows.png" width="250"/>
     </a>
 </p>
