@@ -27,7 +27,7 @@ imageproc = { version = "0.23.0", features = ["rayon"] }                        
 chrono = "0.4.31"                                                                                                      # Time handling
 log = "0.4.20"                                                                                                         # Logging
 env_logger = "0.10.0"                                                                                                 # Logging
-super-shell = "1.2.2"                                                                                                 # Privileged shell execution
+super-shell = "1.2.3"                                                                                                 # Privileged shell execution
 dns-lookup = "2.0.4"                                                                                                  # DNS lookup
 zip-extract = "0.1.2"                                                                                                 # Zip file handling
 font-loader = { git = "https://github.com/matprec/rust-font-loader" }                                               # System font loading
