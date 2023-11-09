@@ -1,3 +1,10 @@
+## [0.32.37](https://github.com/RouHim/sensor-bridge/compare/0.32.36...0.32.37) (2023-11-09)
+
+
+### Bug Fixes
+
+* **readme:** remove space between download buttons ([1b67d0a](https://github.com/RouHim/sensor-bridge/commit/1b67d0a8805284150df30aff3b5ebe029d37e8af))
+
 ## [0.32.36](https://github.com/RouHim/sensor-bridge/compare/0.32.35...0.32.36) (2023-11-07)
 
 ## [0.32.35](https://github.com/RouHim/sensor-bridge/compare/0.32.34...0.32.35) (2023-11-06)
