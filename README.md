@@ -47,7 +47,7 @@ The software is still in a very early and immature state. If you want to use it,
 ## Motivation
 
 Since I recently switched my gaming computer from windows to linux I was desperately looking for a way to display sensor
-data (FPS, CPU load, GPU load, etc...) from my computer on a display. On windows i always did this with AIDA64, but
+data (FPS, CPU load, GPU load, etc...) from my computer on a display. On windows I always did this with AIDA64, but
 unfortunately it costs money and doesn't run on linux.
 So the following problems had to be solved:
 
