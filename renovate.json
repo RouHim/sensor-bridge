@@ -1,7 +1,6 @@
 {
   "packageRules": [
     {
-      "automergeSchedule": [ "every saturday at 05:00" ],
       "matchUpdateTypes": [
         "major",
         "minor",
