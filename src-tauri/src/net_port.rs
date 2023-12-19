@@ -83,7 +83,7 @@ fn prepare_static_data(
     prepare_conditional_image_data_on_display(net_port_config, net_port);
 
     // Wait 1 seconds for the assets to be loaded
-    info!("Waiting 1s for assets to be loaded...");
+    info!("Waiting 1s for assets to be processed by the display...");
     thread::sleep(Duration::from_secs(1));
 }
 
