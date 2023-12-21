@@ -1,3 +1,10 @@
+# [0.33.0](https://github.com/RouHim/sensor-bridge/compare/0.32.48...0.33.0) (2023-12-21)
+
+
+### Features
+
+* **pipeline:** use ubuntu latest for pipeline ([4de5339](https://github.com/RouHim/sensor-bridge/commit/4de533938422617fd814b4dbe85e1ebb731b6626))
+
 ## [0.32.48](https://github.com/RouHim/sensor-bridge/compare/0.32.47...0.32.48) (2023-12-21)
 
 ## [0.32.47](https://github.com/RouHim/sensor-bridge/compare/0.32.46...0.32.47) (2023-12-20)
