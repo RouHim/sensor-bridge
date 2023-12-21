@@ -1,3 +1,11 @@
+## [0.34.1](https://github.com/RouHim/sensor-bridge/compare/0.34.0...0.34.1) (2023-12-21)
+
+
+### Bug Fixes
+
+* **tauri:** revert broken tauri release ([0d79a9e](https://github.com/RouHim/sensor-bridge/commit/0d79a9e34f74b6458b1f0eeb8836d970901869d2))
+* **tauri:** revert broken tauri release ([9ba08f7](https://github.com/RouHim/sensor-bridge/commit/9ba08f7551e89cf0ccec1102e845c2529f487916))
+
 # [0.34.0](https://github.com/RouHim/sensor-bridge/compare/0.33.0...0.34.0) (2023-12-21)
 
 
