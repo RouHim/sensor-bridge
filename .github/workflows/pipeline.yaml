@@ -186,7 +186,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ ubuntu-20.04, windows-latest ]
+        platform: [ ubuntu-latest, windows-latest ]
     runs-on: ${{ matrix.platform }}
     env:
       REPO_OWNER: RouHim
