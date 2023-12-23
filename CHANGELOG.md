@@ -1,3 +1,10 @@
+## [0.34.4](https://github.com/RouHim/sensor-bridge/compare/0.34.3...0.34.4) (2023-12-23)
+
+
+### Bug Fixes
+
+* **ui:** streamline element buttons and fix non unique names / ids ([b3f138e](https://github.com/RouHim/sensor-bridge/commit/b3f138e31c80e32bfcdec64940c6025443caaf84))
+
 ## [0.34.3](https://github.com/RouHim/sensor-bridge/compare/0.34.2...0.34.3) (2023-12-22)
 
 ## [0.34.2](https://github.com/RouHim/sensor-bridge/compare/0.34.1...0.34.2) (2023-12-21)
