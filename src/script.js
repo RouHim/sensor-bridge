@@ -27,10 +27,11 @@ const txtDisplayResolutionWidth = document.getElementById("lcd-txt-resolution-wi
 const txtDisplayResolutionHeight = document.getElementById("lcd-txt-resolution-height");
 const designerPane = document.getElementById("lcd-designer-pane");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
-const btnSaveElement = document.getElementById("lcd-btn-save-element");
-const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
 const btnMoveElementUp = document.getElementById("lcd-btn-move-element-up");
 const btnMoveElementDown = document.getElementById("lcd-btn-move-element-down");
+const btnAddElement = document.getElementById("lcd-btn-add-element");
+const btnRemoveElement = document.getElementById("lcd-btn-remove-element");
+const btnSaveElement = document.getElementById("lcd-btn-save-element");
 const btnDuplicateElement = document.getElementById("lcd-btn-duplicate-element");
 
 // Control pad
@@ -189,6 +190,7 @@ window.addEventListener("DOMContentLoaded", () => {
     btnSaveElement.addEventListener("click", onSave);
     btnActivateSync.addEventListener("click", () => toggleSync(btnActivateSync.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
+    btnAddElement.addEventListener("click", addNewElement);
     btnRemoveElement.addEventListener("click", removeElement);
     btnMoveElementUp.addEventListener("click", moveElementUp);
     btnMoveElementDown.addEventListener("click", moveElementDown);
@@ -1060,6 +1062,11 @@ function handleKeydownEvent(event) {
         duplicateElement();
         return;
     }
+    if (event.ctrlKey && event.key === "n") {
+        event.preventDefault();
+        addNewElement();
+        return;
+    }
     if (event.ctrlKey && event.key === "ArrowUp") {
         event.preventDefault();
         moveElementUp();
@@ -1091,11 +1098,20 @@ function duplicateElement() {
         return;
     }
 
-    // save the selected element with a new name ( + " Copy")
-    txtElementName.value = txtElementName.value + " Copy";
-    const calculatedId = txtElementName.value.replace(" ", "-").toLowerCase();
+    // Current selected index in list
+    const selectedIndex = Array.from(lstDesignerPlacedElements.children).indexOf(selectedListElement);
 
-    createElement(calculatedId);
+    // save the selected element with a new name
+    txtElementName.value = getNewUniqueNameFor(txtElementName.value);
+
+    createElementByInputs();
+
+    // Move the new created item (currently selected) to the position of the old selected item +1
+    const newIndex = selectedIndex + 1;
+    const newListItem = lstDesignerPlacedElements.children[newIndex];
+    const newDesignerElement = designerPane.children[newIndex];
+    lstDesignerPlacedElements.insertBefore(selectedListElement, newListItem);
+    designerPane.insertBefore(selectedDesignerElement, newDesignerElement);
 }
 
 // Selects the previous element in the list
@@ -1212,12 +1228,13 @@ function moveSelectedElementBy(moveBy, direction) {
 }
 
 // Updates the element details of the selected element
-function updateElement(calculatedId) {
-    // Update element in the list
-    let listEntryElement = document.getElementById(LIST_ID_PREFIX + calculatedId);
+function updateCurrentElement() {
+    // Update the currently selected element in the list
+    let listEntryElement = selectedListElement;
+
+    const elementId = listEntryElement.getAttribute(ATTR_ELEMENT_ID);
 
     // Update element config
-    listEntryElement.setAttribute(ATTR_ELEMENT_ID, calculatedId);
     listEntryElement.setAttribute(ATTR_ELEMENT_NAME, txtElementName.value);
     listEntryElement.setAttribute(ATTR_ELEMENT_TYPE, cmbElementType.value);
     listEntryElement.setAttribute(ATTR_ELEMENT_POSITION_X, txtElementPositionX.value);
@@ -1270,7 +1287,7 @@ function updateElement(calculatedId) {
     listEntryElement.innerHTML = txtElementName.value;
 
     // Update element in the designer
-    let designerElement = document.getElementById(DESIGNER_ID_PREFIX + calculatedId);
+    let designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
     designerElement.style.left = txtElementPositionX.value + "px";
     designerElement.style.top = txtElementPositionY.value + "px";
 
@@ -1307,7 +1324,7 @@ function updateElement(calculatedId) {
             designerElement.style.width = txtConditionalImageWidth.value + "px";
             designerElement.style.height = txtConditionalImageHeight.value + "px";
             invoke('get_conditional_image_preview_image', {
-                elementId: calculatedId,
+                elementId: elementId,
                 conditionalImageConfig: buildConditionalImageConfigFromAttributes(listEntryElement)
             })
                 .then(response => {
@@ -1434,16 +1451,16 @@ function validateUi() {
 
     // Text config
     if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
-        if (txtTextWidth.value === "" || isNaN(txtTextWidth.value)) {
-            alert("Please enter a width for the text element.");
+        if (txtTextWidth.value === "" || (isNaN(txtTextWidth.value) && txtTextWidth.value <= 0)) {
+            alert("Please enter a width larger than 0 for the text element.");
             return false;
         }
-        if (txtTextHeight.value === "" || isNaN(txtTextHeight.value)) {
-            alert("Please enter a height for the text element.");
+        if (txtTextHeight.value === "" || (isNaN(txtTextHeight.value) && txtTextHeight.value <= 0)) {
+            alert("Please enter a height larger than 0 for the text element.");
             return false;
         }
-        if (txtTextFontSize.value === "" || isNaN(txtTextFontSize.value)) {
-            alert("Please enter a font size for the text element.");
+        if (txtTextFontSize.value === "" || (isNaN(txtTextFontSize.value) && txtTextFontSize.value <= 0)) {
+            alert("Please enter a font size larger than 0 for the text element.");
             return false;
         }
         if (!/^#[0-9A-F]{8}$/i.test(txtTextFontColor.value)) {
@@ -1542,8 +1559,19 @@ function validateUi() {
     return true;
 }
 
+// Generate a random uuid v4
+function generateUuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (char) {
+        const random = Math.random() * 16 | 0;
+        const value = char === 'x' ? random : (random & 0x3 | 0x8);
+        return value.toString(16);
+    });
+}
+
 // Creates a new element
-function createElement(calculatedId) {
+function createElementByInputs() {
+    const elementId = generateUuidv4();
+
     // Read generic element values
     const elementName = txtElementName.value;
     const elementType = cmbElementType.value;
@@ -1593,14 +1621,14 @@ function createElement(calculatedId) {
     }
 
     // Create new li element
-    addElementToList(calculatedId, positionX, positionY, elementName, elementType, textConfig, imageConfig, graphConfig, conditionalImageConfig);
+    addElementToList(elementId, positionX, positionY, elementName, elementType, textConfig, imageConfig, graphConfig, conditionalImageConfig);
 
     // Build designer element
     const index = lstDesignerPlacedElements.childElementCount;
-    addElementToDesignerPane(index, calculatedId, elementType, positionX, positionY, textConfig, imageConfig, graphConfig, conditionalImageConfig);
+    addElementToDesignerPane(index, elementId, elementType, positionX, positionY, textConfig, imageConfig, graphConfig, conditionalImageConfig);
 
     // Set the new li element as selected
-    setSelectedElement(document.getElementById(LIST_ID_PREFIX + calculatedId));
+    setSelectedElement(document.getElementById(LIST_ID_PREFIX + elementId));
 }
 
 function onSave() {
@@ -1608,14 +1636,7 @@ function onSave() {
         return;
     }
 
-    const calculatedId = txtElementName.value.replace(" ", "-").toLowerCase();
-
-    // Check if element is already exists, if so, update the sensor
-    if (document.getElementById(LIST_ID_PREFIX + calculatedId) !== null) {
-        updateElement(calculatedId);
-    } else {
-        createElement(calculatedId);
-    }
+    updateCurrentElement();
 
     // Update the device name in list
     let deviceNameElement = document.getElementById(currentNetworkDeviceId);
@@ -1623,6 +1644,48 @@ function onSave() {
 
     // Writes config to backend
     saveConfig();
+}
+
+
+// Uses a random name for the element
+// Adds a new element to the designer
+// Adds the new element at the end of the list
+function addNewElement() {
+    // Set the generic values
+    txtElementName.value = getNewUniqueNameFor("New Element");
+    cmbElementType.value = ELEMENT_TYPE_TEXT;
+    txtElementPositionX.value = 0;
+    txtElementPositionY.value = 0;
+
+    // Set the text values
+    txtTextFormat.value = "{value} {unit}";
+    cmbTextFontFamily.value = cmbTextFontFamily.children[0].value;
+    txtTextFontSize.value = 20;
+    txtTextFontColor.value = "#ffffffff";
+    txtTextFontColor.dispatchEvent(new Event('input', {bubbles: true}));
+    txtTextWidth.value = 150;
+    txtTextHeight.value = 25;
+    cmbTextAlignment.value = cmbTextAlignment.children[0].value;
+
+    // Select first sensor
+    cmbTextSensorIdSelection.value = cmbTextSensorIdSelection.children[0].value;
+
+    // Create new element
+    createElementByInputs();
+}
+
+// Checks if the ATTR_ELEMENT_NAME already exists in the list
+// If so append a number to the name
+// Ensure that the number is also unique
+function getNewUniqueNameFor(elementName) {
+    let i = 1;
+    let newName = elementName;
+    while (document.querySelector(`#lcd-designer-placed-elements li[${ATTR_ELEMENT_NAME}="${newName}"]`) !== null) {
+        newName = elementName + " " + i;
+        i++;
+    }
+
+    return newName;
 }
 
 // Removes the selected element from the designer
@@ -1647,8 +1710,14 @@ function removeElement() {
     // Remove element from designer
     designerPane.removeChild(selectedDesignerElement);
 
-    // Select the previous element in the list of the selected element
-    setSelectedElement(lstDesignerPlacedElements.children[i - 1]);
+    // Select the next element in the list of the selected element if available, if not select the previous element
+    if (lstDesignerPlacedElements.children.length > 0) {
+        if (i < lstDesignerPlacedElements.children.length) {
+            setSelectedElement(lstDesignerPlacedElements.children[i]);
+        } else {
+            setSelectedElement(lstDesignerPlacedElements.children[i - 1]);
+        }
+    }
 }
 
 function showSelectedElementDetail() {

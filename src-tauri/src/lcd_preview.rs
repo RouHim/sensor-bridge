@@ -9,6 +9,7 @@ use sensor_core::{DisplayConfig, ElementConfig, ElementType, SensorValue};
 use tauri::AppHandle;
 
 use crate::config::NetworkDeviceConfig;
+use crate::utils::LockResultExt;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
 /// Constant for the window label
@@ -98,7 +99,7 @@ pub fn render(
         // Render the image
         let image = sensor_core::render_lcd_image(
             lcd_config,
-            sensor_value_history.lock().unwrap().deref(),
+            sensor_value_history.lock().ignore_poison().deref(),
             &fonts_data,
         );
 
