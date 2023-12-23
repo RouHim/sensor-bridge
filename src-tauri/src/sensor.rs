@@ -6,6 +6,7 @@ use sensor_core::SensorValue;
 use super_shell::RootShell;
 
 use crate::linux_dmidecode_sensors::DmiDecodeSensors;
+use crate::utils::LockResultExt;
 use crate::{
     linux_lm_sensors, linux_system_sensors, misc_sensor, windows_libre_hardware_monitor_sensor,
     SENSOR_VALUE_HISTORY_SIZE,
@@ -44,7 +45,7 @@ pub fn read_all_sensor_values(
 
     // Insert the collected sensor values at the beginning of the history
     // and remove the last element if the history is too long
-    let mut sensor_value_history = sensor_value_history.lock().unwrap();
+    let mut sensor_value_history = sensor_value_history.lock().ignore_poison();
     sensor_value_history.insert(0, collected_sensor_values.clone());
     while sensor_value_history.len() > SENSOR_VALUE_HISTORY_SIZE {
         sensor_value_history.pop();
