@@ -28,7 +28,6 @@ mod fonts;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
 mod linux_lm_sensors;
-mod linux_mangohud;
 mod linux_system_sensors;
 mod misc_sensor;
 mod net_port;
