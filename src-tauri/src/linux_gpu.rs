@@ -1,4 +1,3 @@
-use log::debug;
 use std::fs;
 
 use sensor_core::{SensorType, SensorValue};
@@ -29,50 +28,71 @@ fn get_gpu_cards() -> Vec<String> {
     cards
 }
 
-fn read_sensor_file(card: &str, file: &str) -> std::io::Result<String> {
+fn read_sensor_file(card: &str, file: &str, multi_line_output: bool) -> std::io::Result<String> {
     let path = format!("/sys/class/drm/{}/device/{}", card, file);
-    let contents = fs::read_to_string(path)?;
-    Ok(contents.trim().to_string())
+    let file_content = fs::read_to_string(path)?;
+
+    // If we got a multi line output, we need to find the active sensor value
+    // This is usually the line that ends with a '*'
+    if multi_line_output {
+        return get_active_line(&file_content);
+    }
+
+    Ok(file_content.trim().to_string())
+}
+
+fn get_active_line(file_content: &str) -> std::io::Result<String> {
+    // Filter out the line that ends with *
+    let active_line = file_content
+        .split('\n')
+        .find(|line| line.trim().ends_with('*'))
+        .unwrap_or("");
+
+    // Get only the value after the ":" (Example: "0: 500Mhz *")
+    let contents = active_line.split(':').collect::<Vec<&str>>()[1].trim();
+
+    // Extract number from string (Example: " 500Mhz *" -> "500")
+    let extracted_number = contents
+        .chars()
+        .filter(|c| c.is_numeric())
+        .collect::<String>();
+
+    Ok(extracted_number.trim().to_string())
 }
 
 fn read_sensors(card_name: &str) -> Vec<SensorValue> {
-    // TODO: For mhz lines grep lines with * at the end
-    // It is the current frequency
-    // Cleanup strings to only get the number of the line
-
     let card_sensors = vec![
-        ("GPU utilization", "gpu_busy_percent", "%"),
-        ("GPU frequency", "pp_dpm_sclk", "Mhz"),
-        ("VRAM frequency", "pp_dpm_mclk", "Mhz"),
-        ("VRAM usage", "mem_info_vram_used", "B"),
-        ("VRAM total", "mem_info_vram_total", "B"),
+        ("GPU utilization", "gpu_busy_percent", "%", false),
+        ("GPU frequency", "pp_dpm_sclk", "Mhz", true),
+        ("VRAM frequency", "pp_dpm_mclk", "Mhz", true),
+        ("VRAM usage", "mem_info_vram_used", "B", false),
+        ("VRAM total", "mem_info_vram_total", "B", false),
     ];
-    let mut sensor_values = Vec::new();
 
-    for card_sensor in card_sensors {
-        let value = read_sensor_file(card_name, card_sensor.1);
+    card_sensors
+        .iter()
+        .flat_map(|sensor| get_gpu_card_sensor_values(card_name, *sensor).ok())
+        .collect()
+}
 
-        if value.is_err() {
-            debug!(
-                "Could not read sensor file {}: {:?}",
-                card_sensor.1,
-                value.err()
-            );
-            continue;
-        }
+fn get_gpu_card_sensor_values(
+    card_name: &str,
+    card_sensor: (&str, &str, &str, bool),
+) -> std::io::Result<SensorValue> {
+    let sensor_name = card_sensor.0;
+    let sensor_id = card_sensor.1;
+    let sensor_unit = card_sensor.2;
+    let multi_line_output = card_sensor.3;
 
-        let sensor_value = SensorValue {
-            id: format!("gpu_{}_{}", card_name, card_sensor.1),
-            value: value.unwrap(),
-            unit: card_sensor.2.to_string(),
-            label: format!("GPU {} {}", card_name, card_sensor.0),
-            sensor_type: SensorType::Number,
-        };
+    let value = read_sensor_file(card_name, sensor_id, multi_line_output)?;
 
-        sensor_values.push(sensor_value);
-    }
-
-    sensor_values
+    Ok(SensorValue {
+        id: format!("gpu_{}_{}", card_name, sensor_id),
+        value,
+        unit: sensor_unit.to_string(),
+        label: format!("GPU {} {}", card_name, sensor_name),
+        sensor_type: SensorType::Number,
+    })
 }
 
 fn read_all_sensors() -> Vec<SensorValue> {
