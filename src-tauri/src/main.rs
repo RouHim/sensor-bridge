@@ -40,7 +40,7 @@ mod windows_libre_hardware_monitor_sensor;
 
 #[cfg(test)]
 mod fonts_test;
-mod linux_gpu;
+mod linux_amdgpu;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,

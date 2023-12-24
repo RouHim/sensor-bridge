@@ -3493,6 +3493,7 @@ dependencies = [
  "font-loader",
  "image",
  "imageproc",
+ "lazy_static",
  "lm-sensors",
  "log",
  "message-io",

@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use std::fs;
 
 use crate::utils;
@@ -26,8 +27,12 @@ fn get_gpu_cards() -> Vec<String> {
 }
 
 /// Reads the specified sensor file from the specified gpu card
-fn read_sensor_file(card: &str, file: &str, multi_line_output: bool) -> std::io::Result<String> {
-    let path = format!("/sys/class/drm/{}/device/{}", card, file);
+fn read_sensor_file(
+    card_name: &str,
+    sensor_id: &str,
+    multi_line_output: bool,
+) -> std::io::Result<String> {
+    let path = format!("/sys/class/drm/{}/device/{}", card_name, sensor_id);
     let file_content = fs::read_to_string(path)?;
 
     // If we got a multi line output, we need to find the active sensor value
@@ -59,33 +64,68 @@ fn get_active_line(file_content: &str) -> std::io::Result<String> {
     Ok(extracted_number.trim().to_string())
 }
 
+struct AmdGpuSensor {
+    label: String,
+    file_name: String,
+    unit: String,
+    multi_line_output: bool,
+}
+
 /// Reads all available sensors for the specified gpu card
 fn read_sensors(card_name: &str) -> Vec<SensorValue> {
-    let card_sensors = vec![
-        ("GPU utilization", "gpu_busy_percent", "%", false),
-        ("GPU frequency", "pp_dpm_sclk", "Mhz", true),
-        ("VRAM frequency", "pp_dpm_mclk", "Mhz", true),
-        ("VRAM usage", "mem_info_vram_used", "B", false),
-        ("VRAM total", "mem_info_vram_total", "B", false),
-    ];
+    lazy_static! {
+        static ref CARD_SENSORS: Vec<AmdGpuSensor> = vec![
+            AmdGpuSensor {
+                label: "GPU utilization".to_string(),
+                file_name: "gpu_busy_percent".to_string(),
+                unit: "%".to_string(),
+                multi_line_output: false
+            },
+            AmdGpuSensor {
+                label: "GPU frequency".to_string(),
+                file_name: "pp_dpm_sclk".to_string(),
+                unit: "Mhz".to_string(),
+                multi_line_output: true
+            },
+            AmdGpuSensor {
+                label: "VRAM frequency".to_string(),
+                file_name: "pp_dpm_mclk".to_string(),
+                unit: "Mhz".to_string(),
+                multi_line_output: true
+            },
+            AmdGpuSensor {
+                label: "VRAM usage".to_string(),
+                file_name: "mem_info_vram_used".to_string(),
+                unit: "B".to_string(),
+                multi_line_output: false
+            },
+            AmdGpuSensor {
+                label: "VRAM total".to_string(),
+                file_name: "mem_info_vram_total".to_string(),
+                unit: "B".to_string(),
+                multi_line_output: false
+            },
+        ];
+    }
 
-    card_sensors
+    CARD_SENSORS
         .iter()
-        .flat_map(|card_sensor| get_gpu_card_sensor_values(card_name, *card_sensor).ok())
+        .flat_map(|card_sensor| get_gpu_card_sensor_values(card_name, card_sensor).ok())
         .collect()
 }
 
 /// Returns the sensor value for the specified gpu card and sensor
 fn get_gpu_card_sensor_values(
     card_name: &str,
-    card_sensor: (&str, &str, &str, bool),
+    card_sensor: &AmdGpuSensor,
 ) -> std::io::Result<SensorValue> {
-    let sensor_name = card_sensor.0;
-    let sensor_id = card_sensor.1;
-    let mut sensor_unit = card_sensor.2.to_string().clone();
-    let multi_line_output = card_sensor.3;
+    let mut sensor_unit = card_sensor.unit.to_string().clone();
 
-    let mut sensor_value = read_sensor_file(card_name, sensor_id, multi_line_output)?;
+    let mut sensor_value = read_sensor_file(
+        card_name,
+        &card_sensor.file_name,
+        card_sensor.multi_line_output,
+    )?;
 
     if sensor_unit.eq("B") {
         // Pretty bytes
@@ -95,10 +135,10 @@ fn get_gpu_card_sensor_values(
     }
 
     Ok(SensorValue {
-        id: format!("gpu_{}_{}", card_name, sensor_id),
+        id: format!("gpu_{}_{}", card_name, card_sensor.file_name),
         value: sensor_value,
         unit: sensor_unit,
-        label: format!("GPU {} {}", card_name, sensor_name),
+        label: format!("GPU {} {}", card_name, card_sensor.label),
         sensor_type: SensorType::Number,
     })
 }
