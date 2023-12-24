@@ -3,32 +3,29 @@ use std::fs;
 use crate::utils;
 use sensor_core::{SensorType, SensorValue};
 
+/// Returns all available sensor values for the linux gpu found
 pub fn get_sensor_values() -> Vec<SensorValue> {
     read_all_sensors()
 }
 
+/// Returns all available gpu cards in the system
 fn get_gpu_cards() -> Vec<String> {
-    let paths = if let Ok(paths) = fs::read_dir("/sys/class/drm") {
-        paths
-    } else {
-        return Vec::new();
-    };
+    let sys_class_drm = fs::read_dir("/sys/class/drm");
 
-    let mut cards = Vec::new();
-    for path in paths {
-        let path_str = if let Ok(path) = path {
-            path.file_name().into_string().unwrap()
-        } else {
-            continue;
-        };
-        if path_str.starts_with("card") {
-            cards.push(path_str);
-        }
+    if sys_class_drm.is_err() {
+        return vec![];
     }
 
-    cards
+    sys_class_drm
+        .unwrap()
+        .flat_map(|path| path.ok())
+        .flat_map(|path| path.file_name().into_string().ok())
+        .filter(|path_str| path_str.starts_with("card"))
+        .filter(|path_str| path_str.chars().last().unwrap().is_numeric())
+        .collect()
 }
 
+/// Reads the specified sensor file from the specified gpu card
 fn read_sensor_file(card: &str, file: &str, multi_line_output: bool) -> std::io::Result<String> {
     let path = format!("/sys/class/drm/{}/device/{}", card, file);
     let file_content = fs::read_to_string(path)?;
@@ -42,6 +39,7 @@ fn read_sensor_file(card: &str, file: &str, multi_line_output: bool) -> std::io:
     Ok(file_content.trim().to_string())
 }
 
+/// Returns the active line from the specified file content
 fn get_active_line(file_content: &str) -> std::io::Result<String> {
     // Filter out the line that ends with *
     let active_line = file_content
@@ -61,6 +59,7 @@ fn get_active_line(file_content: &str) -> std::io::Result<String> {
     Ok(extracted_number.trim().to_string())
 }
 
+/// Reads all available sensors for the specified gpu card
 fn read_sensors(card_name: &str) -> Vec<SensorValue> {
     let card_sensors = vec![
         ("GPU utilization", "gpu_busy_percent", "%", false),
@@ -72,10 +71,11 @@ fn read_sensors(card_name: &str) -> Vec<SensorValue> {
 
     card_sensors
         .iter()
-        .flat_map(|sensor| get_gpu_card_sensor_values(card_name, *sensor).ok())
+        .flat_map(|card_sensor| get_gpu_card_sensor_values(card_name, *card_sensor).ok())
         .collect()
 }
 
+/// Returns the sensor value for the specified gpu card and sensor
 fn get_gpu_card_sensor_values(
     card_name: &str,
     card_sensor: (&str, &str, &str, bool),
@@ -103,12 +103,10 @@ fn get_gpu_card_sensor_values(
     })
 }
 
+/// Reads all available sensors from all gpu cards
 fn read_all_sensors() -> Vec<SensorValue> {
-    let cards = get_gpu_cards();
-    let mut all_sensors = Vec::new();
-    for card in cards {
-        let sensors = read_sensors(&card);
-        all_sensors.extend(sensors);
-    }
-    all_sensors
+    get_gpu_cards()
+        .iter()
+        .flat_map(|card| read_sensors(card))
+        .collect()
 }
