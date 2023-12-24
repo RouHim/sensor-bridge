@@ -1,5 +1,6 @@
 use std::fs;
 
+use crate::utils;
 use sensor_core::{SensorType, SensorValue};
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
@@ -81,15 +82,22 @@ fn get_gpu_card_sensor_values(
 ) -> std::io::Result<SensorValue> {
     let sensor_name = card_sensor.0;
     let sensor_id = card_sensor.1;
-    let sensor_unit = card_sensor.2;
+    let mut sensor_unit = card_sensor.2.to_string().clone();
     let multi_line_output = card_sensor.3;
 
-    let value = read_sensor_file(card_name, sensor_id, multi_line_output)?;
+    let mut sensor_value = read_sensor_file(card_name, sensor_id, multi_line_output)?;
+
+    if sensor_unit.eq("B") {
+        // Pretty bytes
+        let (value, unit) = utils::pretty_bytes(sensor_value.parse::<f64>().unwrap());
+        sensor_unit = unit;
+        sensor_value = format!("{:.2}", value);
+    }
 
     Ok(SensorValue {
         id: format!("gpu_{}_{}", card_name, sensor_id),
-        value,
-        unit: sensor_unit.to_string(),
+        value: sensor_value,
+        unit: sensor_unit,
         label: format!("GPU {} {}", card_name, sensor_name),
         sensor_type: SensorType::Number,
     })
