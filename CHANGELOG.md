@@ -1,3 +1,16 @@
+# [0.35.0](https://github.com/RouHim/sensor-bridge/compare/0.34.4...0.35.0) (2023-12-26)
+
+
+### Features
+
+* **gpu:** improve sensor detection ([1579cac](https://github.com/RouHim/sensor-bridge/commit/1579cac2d22bb9c2e66dddad877bc046fa7aab0e))
+* **gpu:** pretty byte gpu sensor values ([33a90b6](https://github.com/RouHim/sensor-bridge/commit/33a90b68f97642a05f59b0993c72c1b9b7b569f0))
+* **gpu:** read linux gpu sensors from /sys/class/drm ([31bf383](https://github.com/RouHim/sensor-bridge/commit/31bf3830a04fdafaeaadc8b6e32ae611650a04a5))
+* **gpu:** read multi line gpu sensors ([81dd089](https://github.com/RouHim/sensor-bridge/commit/81dd089dca913919684ace50ee6be8d5b6fb22fa))
+* **gpu:** refactor code to improve readability ([340cbc0](https://github.com/RouHim/sensor-bridge/commit/340cbc03993c313ec3f0e85cc6644fc9e1b45370))
+* **gpu:** refactor code to improve readability ([a05bc33](https://github.com/RouHim/sensor-bridge/commit/a05bc33c4db3180498f2002ca71d3729775b1d9a))
+* **gpu:** use static sensor info ([c9ac8f6](https://github.com/RouHim/sensor-bridge/commit/c9ac8f65d6b2f9b75bbb4989947bbf20d14f4a97))
+
 ## [0.34.4](https://github.com/RouHim/sensor-bridge/compare/0.34.3...0.34.4) (2023-12-23)
 
 
