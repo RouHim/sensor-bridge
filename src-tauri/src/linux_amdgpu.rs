@@ -4,6 +4,50 @@ use std::fs;
 use crate::utils;
 use sensor_core::{SensorType, SensorValue};
 
+/// Represents a sensor of the amdgpu driver
+struct AmdGpuSensor {
+    label: String,
+    file_name: String,
+    unit: String,
+    multi_line_output: bool,
+}
+
+lazy_static! {
+    /// Set of sensors to read from the amdgpu driver
+    static ref CARD_SENSORS: Vec<AmdGpuSensor> = vec![
+        AmdGpuSensor {
+            label: "GPU utilization".to_string(),
+            file_name: "gpu_busy_percent".to_string(),
+            unit: "%".to_string(),
+            multi_line_output: false
+        },
+        AmdGpuSensor {
+            label: "GPU frequency".to_string(),
+            file_name: "pp_dpm_sclk".to_string(),
+            unit: "Mhz".to_string(),
+            multi_line_output: true
+        },
+        AmdGpuSensor {
+            label: "VRAM frequency".to_string(),
+            file_name: "pp_dpm_mclk".to_string(),
+            unit: "Mhz".to_string(),
+            multi_line_output: true
+        },
+        AmdGpuSensor {
+            label: "VRAM usage".to_string(),
+            file_name: "mem_info_vram_used".to_string(),
+            unit: "B".to_string(),
+            multi_line_output: false
+        },
+        AmdGpuSensor {
+            label: "VRAM total".to_string(),
+            file_name: "mem_info_vram_total".to_string(),
+            unit: "B".to_string(),
+            multi_line_output: false
+        },
+    ];
+}
+
 /// Returns all available sensor values for the linux gpu found
 pub fn get_sensor_values() -> Vec<SensorValue> {
     read_all_sensors()
@@ -64,50 +108,8 @@ fn get_active_line(file_content: &str) -> std::io::Result<String> {
     Ok(extracted_number.trim().to_string())
 }
 
-struct AmdGpuSensor {
-    label: String,
-    file_name: String,
-    unit: String,
-    multi_line_output: bool,
-}
-
 /// Reads all available sensors for the specified gpu card
 fn read_sensors(card_name: &str) -> Vec<SensorValue> {
-    lazy_static! {
-        static ref CARD_SENSORS: Vec<AmdGpuSensor> = vec![
-            AmdGpuSensor {
-                label: "GPU utilization".to_string(),
-                file_name: "gpu_busy_percent".to_string(),
-                unit: "%".to_string(),
-                multi_line_output: false
-            },
-            AmdGpuSensor {
-                label: "GPU frequency".to_string(),
-                file_name: "pp_dpm_sclk".to_string(),
-                unit: "Mhz".to_string(),
-                multi_line_output: true
-            },
-            AmdGpuSensor {
-                label: "VRAM frequency".to_string(),
-                file_name: "pp_dpm_mclk".to_string(),
-                unit: "Mhz".to_string(),
-                multi_line_output: true
-            },
-            AmdGpuSensor {
-                label: "VRAM usage".to_string(),
-                file_name: "mem_info_vram_used".to_string(),
-                unit: "B".to_string(),
-                multi_line_output: false
-            },
-            AmdGpuSensor {
-                label: "VRAM total".to_string(),
-                file_name: "mem_info_vram_total".to_string(),
-                unit: "B".to_string(),
-                multi_line_output: false
-            },
-        ];
-    }
-
     CARD_SENSORS
         .iter()
         .flat_map(|card_sensor| get_gpu_card_sensor_values(card_name, card_sensor).ok())
@@ -119,7 +121,7 @@ fn get_gpu_card_sensor_values(
     card_name: &str,
     card_sensor: &AmdGpuSensor,
 ) -> std::io::Result<SensorValue> {
-    let mut sensor_unit = card_sensor.unit.to_string().clone();
+    let mut sensor_unit = card_sensor.unit.clone();
 
     let mut sensor_value = read_sensor_file(
         card_name,
