@@ -6,12 +6,12 @@ use sensor_core::SensorValue;
 use super_shell::RootShell;
 
 use crate::linux_dmidecode_sensors::DmiDecodeSensors;
+use crate::system_stat_sensor;
 use crate::utils::LockResultExt;
 use crate::{
-    linux_lm_sensors, linux_system_sensors, misc_sensor, windows_libre_hardware_monitor_sensor,
-    SENSOR_VALUE_HISTORY_SIZE,
+    linux_amdgpu, linux_lm_sensors, linux_system_sensors, misc_sensor,
+    windows_libre_hardware_monitor_sensor, SENSOR_VALUE_HISTORY_SIZE,
 };
-use crate::{linux_mangohud, system_stat_sensor};
 
 pub trait SensorProvider {
     fn get_name(&self) -> String;
@@ -62,7 +62,7 @@ fn read_dynamic_sensor_values() -> Vec<SensorValue> {
         system_stat_sensor::get_sensor_values,
         misc_sensor::get_sensor_values,
         linux_lm_sensors::get_sensor_values,
-        linux_mangohud::get_sensor_values,
+        linux_amdgpu::get_sensor_values,
         linux_system_sensors::get_sensor_values,
         windows_libre_hardware_monitor_sensor::get_sensor_values,
     ];

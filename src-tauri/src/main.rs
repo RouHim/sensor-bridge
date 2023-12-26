@@ -28,7 +28,6 @@ mod fonts;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
 mod linux_lm_sensors;
-mod linux_mangohud;
 mod linux_system_sensors;
 mod misc_sensor;
 mod net_port;
@@ -41,6 +40,7 @@ mod windows_libre_hardware_monitor_sensor;
 
 #[cfg(test)]
 mod fonts_test;
+mod linux_amdgpu;
 
 pub struct AppState {
     pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
