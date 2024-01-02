@@ -3493,7 +3493,9 @@ dependencies = [
 
 [[package]]
 name = "sensor-core"
-version = "0.0.0"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3174ad834cb85850a215925a784b22fbfe8bc839cb06a748917779eb3d19c463"
 dependencies = [
  "dirs",
  "image",
