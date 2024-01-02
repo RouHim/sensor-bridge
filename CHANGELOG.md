@@ -1,3 +1,11 @@
+# [0.39.0](https://github.com/RouHim/sensor-bridge/compare/0.38.0...0.39.0) (2024-01-02)
+
+
+### Features
+
+* **pipeline:** avoid concurrent builds per branch ([234a89a](https://github.com/RouHim/sensor-bridge/commit/234a89ae49bfb4dd89276812ca88a8e64cd7215f))
+* **pipeline:** avoid concurrent builds per branch ([35141b4](https://github.com/RouHim/sensor-bridge/commit/35141b498a9ed06acda0fc980268ee343b21506f))
+
 # [0.38.0](https://github.com/RouHim/sensor-bridge/compare/0.37.1...0.38.0) (2024-01-02)
 
 
