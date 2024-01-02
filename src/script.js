@@ -57,6 +57,8 @@ const txtElementPositionY = document.getElementById("lcd-txt-element-position-y"
 const cmbTextSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
 const btnTextSensorIdSelectionDialog = document.getElementById("lcd-text-config-btn-select-sensor-id");
 const txtTextFormat = document.getElementById("lcd-txt-element-text-format");
+const btnTextFormatAddValue = document.getElementById("lcd-btn-add-value-placeholder");
+const btnTextFormatAddUnit = document.getElementById("lcd-btn-add-unit-placeholder");
 const cmbTextFontFamily = document.getElementById("lcd-cmb-element-font-family");
 const txtTextFontSize = document.getElementById("lcd-txt-element-font-size");
 const txtTextFontColor = document.getElementById("lcd-txt-element-font-color");
@@ -207,6 +209,8 @@ window.addEventListener("DOMContentLoaded", () => {
     btnGraphSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
     btnConditionalImageSensorIdSelectionDialog.addEventListener("click", showSensorSelectionDialog);
     btnConditionalImageApplyCatalogEntry.addEventListener("click", applyConditionalImageCatalogEntry);
+    btnTextFormatAddValue.addEventListener("click", () => addTextFormatPlaceholder("{value}"));
+    btnTextFormatAddUnit.addEventListener("click", () => addTextFormatPlaceholder("{unit}"));
 
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
@@ -1906,4 +1910,9 @@ function moveElementDown() {
 
     // Recalculate the z-index of all elements
     recalculateZIndex();
+}
+
+// Adds a new text format placeholder to the text format input
+function addTextFormatPlaceholder(textToAdd) {
+    txtTextFormat.value += textToAdd;
 }
