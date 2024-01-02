@@ -1,3 +1,10 @@
+# [0.37.0](https://github.com/RouHim/sensor-bridge/compare/0.36.0...0.37.0) (2024-01-02)
+
+
+### Features
+
+* **ui:** add value and unit button ([f81974e](https://github.com/RouHim/sensor-bridge/commit/f81974e03ba29248321f36ed2fc4373b37167ee8))
+
 # [0.36.0](https://github.com/RouHim/sensor-bridge/compare/0.35.3...0.36.0) (2024-01-02)
 
 
