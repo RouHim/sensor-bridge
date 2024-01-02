@@ -38,7 +38,7 @@ pub fn render_preview(
         image_width,
         image_height,
         text_config,
-        sensor_value,
+        &[vec![sensor_value.unwrap().clone()]],
         &font,
     );
 
