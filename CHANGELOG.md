@@ -1,3 +1,10 @@
+# [0.36.0](https://github.com/RouHim/sensor-bridge/compare/0.35.3...0.36.0) (2024-01-02)
+
+
+### Features
+
+* **dependencies:** Release sensor-core on crates.io ([cf9c1cf](https://github.com/RouHim/sensor-bridge/commit/cf9c1cf630ee2c58a181f5e975f79cf02b0292e9))
+
 ## [0.35.3](https://github.com/RouHim/sensor-bridge/compare/0.35.2...0.35.3) (2024-01-02)
 
 ## [0.35.2](https://github.com/RouHim/sensor-bridge/compare/0.35.1...0.35.2) (2024-01-01)
