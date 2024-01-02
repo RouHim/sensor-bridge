@@ -56,9 +56,13 @@ const txtElementPositionY = document.getElementById("lcd-txt-element-position-y"
 // Text
 const cmbTextSensorIdSelection = document.getElementById("lcd-cmb-sensor-id-selection");
 const btnTextSensorIdSelectionDialog = document.getElementById("lcd-text-config-btn-select-sensor-id");
+const cmbTextSensorValueModifier = document.getElementById("lcd-cmb-sensor-value-modifier");
 const txtTextFormat = document.getElementById("lcd-txt-element-text-format");
 const btnTextFormatAddValue = document.getElementById("lcd-btn-add-value-placeholder");
 const btnTextFormatAddUnit = document.getElementById("lcd-btn-add-unit-placeholder");
+const btnTextFormatAddValueAvg = document.getElementById("lcd-btn-add-value-avg-placeholder");
+const btnTextFormatAddValueMin = document.getElementById("lcd-btn-add-value-min-placeholder");
+const btnTextFormatAddValueMax = document.getElementById("lcd-btn-add-value-max-placeholder");
 const cmbTextFontFamily = document.getElementById("lcd-cmb-element-font-family");
 const txtTextFontSize = document.getElementById("lcd-txt-element-font-size");
 const txtTextFontColor = document.getElementById("lcd-txt-element-font-color");
@@ -124,6 +128,7 @@ const ATTR_ELEMENT_POSITION_Y = "data-element-position-y";
 
 // Text element attributes
 const ATTR_TEXT_SENSOR_ID = "data-text-sensor-id";
+const ATTR_TEXT_VALUE_MODIFIER = "data-text-value-modifier";
 const ATTR_TEXT_FORMAT = "data-text-display-format";
 const ATTR_TEXT_FONT_FAMILY = "data-text-font-family";
 const ATTR_TEXT_FONT_SIZE = "data-text-text-font-size";
@@ -211,6 +216,9 @@ window.addEventListener("DOMContentLoaded", () => {
     btnConditionalImageApplyCatalogEntry.addEventListener("click", applyConditionalImageCatalogEntry);
     btnTextFormatAddValue.addEventListener("click", () => addTextFormatPlaceholder("{value}"));
     btnTextFormatAddUnit.addEventListener("click", () => addTextFormatPlaceholder("{unit}"));
+    btnTextFormatAddValueAvg.addEventListener("click", () => addTextFormatPlaceholder("{value_avg}"));
+    btnTextFormatAddValueMin.addEventListener("click", () => addTextFormatPlaceholder("{value_min}"));
+    btnTextFormatAddValueMax.addEventListener("click", () => addTextFormatPlaceholder("{value_max}"));
 
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
@@ -716,6 +724,7 @@ function buildStaticImageConfigFromAttributes(listItem) {
 function buildTextConfigFromAttributes(listItem) {
     return {
         sensor_id: listItem.getAttribute(ATTR_TEXT_SENSOR_ID),
+        value_modifier: listItem.getAttribute(ATTR_TEXT_VALUE_MODIFIER),
         format: listItem.getAttribute(ATTR_TEXT_FORMAT),
         font_family: listItem.getAttribute(ATTR_TEXT_FONT_FAMILY),
         font_size: parseInt(listItem.getAttribute(ATTR_TEXT_FONT_SIZE)),
@@ -919,6 +928,7 @@ function addElementToList(elementId, positionX, positionY, elementName, elementT
     // Text config
     if (elementType === ELEMENT_TYPE_TEXT) {
         liElement.setAttribute(ATTR_TEXT_SENSOR_ID, elementTextConfig.sensor_id);
+        liElement.setAttribute(ATTR_TEXT_VALUE_MODIFIER, elementTextConfig.value_modifier);
         liElement.setAttribute(ATTR_TEXT_FORMAT, elementTextConfig.format);
         liElement.setAttribute(ATTR_TEXT_FONT_COLOR, elementTextConfig.font_color);
         liElement.setAttribute(ATTR_TEXT_FONT_FAMILY, elementTextConfig.font_family);
@@ -1247,6 +1257,7 @@ function updateCurrentElement() {
     // Text config
     if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
         listEntryElement.setAttribute(ATTR_TEXT_SENSOR_ID, cmbTextSensorIdSelection.value);
+        listEntryElement.setAttribute(ATTR_TEXT_VALUE_MODIFIER, cmbTextSensorValueModifier.value);
         listEntryElement.setAttribute(ATTR_TEXT_FORMAT, txtTextFormat.value);
         listEntryElement.setAttribute(ATTR_TEXT_FONT_FAMILY, cmbTextFontFamily.value);
         listEntryElement.setAttribute(ATTR_TEXT_FONT_SIZE, txtTextFontSize.value);
@@ -1585,6 +1596,7 @@ function createElementByInputs() {
     let textConfig = {
         sensor_id: cmbTextSensorIdSelection.value,
         format: txtTextFormat.value,
+        value_modifier: cmbTextSensorValueModifier.value,
         font_family: cmbTextFontFamily.value,
         font_size: txtTextFontSize.value,
         font_color: txtTextFontColor.value,
@@ -1663,6 +1675,7 @@ function addNewElement() {
 
     // Set the text values
     txtTextFormat.value = "{value} {unit}";
+    cmbTextSensorValueModifier.value = cmbTextSensorValueModifier.children[0].value;
     cmbTextFontFamily.value = cmbTextFontFamily.children[0].value;
     txtTextFontSize.value = 20;
     txtTextFontColor.value = "#ffffffff";
@@ -1735,6 +1748,7 @@ function showSelectedElementDetail() {
     // Text
     if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
         cmbTextSensorIdSelection.value = selectedListElement.getAttribute(ATTR_TEXT_SENSOR_ID);
+        cmbTextSensorValueModifier.value = selectedListElement.getAttribute(ATTR_TEXT_VALUE_MODIFIER);
         txtTextFormat.value = selectedListElement.getAttribute(ATTR_TEXT_FORMAT);
         cmbTextFontFamily.value = selectedListElement.getAttribute(ATTR_TEXT_FONT_FAMILY);
         txtTextFontSize.value = selectedListElement.getAttribute(ATTR_TEXT_FONT_SIZE);

@@ -176,7 +176,7 @@ fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
 
     let cache_dir = sensor_core::get_cache_dir(element_id, &ElementType::ConditionalImage);
 
-    for image_path in fs::read_dir(&cache_dir).unwrap() {
+    for image_path in fs::read_dir(cache_dir).unwrap() {
         let image_path = image_path.unwrap().path();
         let image_name = image_path
             .file_name()

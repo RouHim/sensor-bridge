@@ -6,7 +6,7 @@ use crate::fonts;
 fn test_font_installed() {
     // GIVEN is font that is already known to the system
     let all_fonts = fonts::get_all();
-    let font_name = all_fonts.get(0).unwrap();
+    let font_name = all_fonts.first().unwrap();
 
     // WHEN looking for the font
     let font_exists = fonts::exists(font_name);

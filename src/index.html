@@ -220,6 +220,14 @@
                                     <i data-feather="external-link"></i>
                                 </button>
                             </td>
+                            <td>
+                                <select id="lcd-cmb-sensor-value-modifier" title="Modifies the {value} placeholder">
+                                    <option selected value="none">None</option>
+                                    <option value="min">Min</option>
+                                    <option value="max">Max</option>
+                                    <option value="avg">Avg</option>
+                                </select>
+                            </td>
                         </tr>
                         <tr>
                             <td>Format:</td>
@@ -232,6 +240,18 @@
                                 <button id="lcd-btn-add-unit-placeholder"
                                         title="Add {unit} placeholder to the format string">
                                     {unit}
+                                </button>
+                                <button id="lcd-btn-add-value-avg-placeholder"
+                                        title="Add {value-avg} placeholder to the format string">
+                                    {value-avg}
+                                </button>
+                                <button id="lcd-btn-add-value-min-placeholder"
+                                        title="Add {value-min} placeholder to the format string">
+                                    {value-min}
+                                </button>
+                                <button id="lcd-btn-add-value-max-placeholder"
+                                        title="Add {value-max} placeholder to the format string">
+                                    {value-max}
                                 </button>
                             </td>
                         </tr>
