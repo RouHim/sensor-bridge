@@ -216,9 +216,9 @@ window.addEventListener("DOMContentLoaded", () => {
     btnConditionalImageApplyCatalogEntry.addEventListener("click", applyConditionalImageCatalogEntry);
     btnTextFormatAddValue.addEventListener("click", () => addTextFormatPlaceholder("{value}"));
     btnTextFormatAddUnit.addEventListener("click", () => addTextFormatPlaceholder("{unit}"));
-    btnTextFormatAddValueAvg.addEventListener("click", () => addTextFormatPlaceholder("{value_avg}"));
-    btnTextFormatAddValueMin.addEventListener("click", () => addTextFormatPlaceholder("{value_min}"));
-    btnTextFormatAddValueMax.addEventListener("click", () => addTextFormatPlaceholder("{value_max}"));
+    btnTextFormatAddValueAvg.addEventListener("click", () => addTextFormatPlaceholder("{value-avg}"));
+    btnTextFormatAddValueMin.addEventListener("click", () => addTextFormatPlaceholder("{value-min}"));
+    btnTextFormatAddValueMax.addEventListener("click", () => addTextFormatPlaceholder("{value-max}"));
 
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
