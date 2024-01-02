@@ -1,3 +1,16 @@
+# [0.38.0](https://github.com/RouHim/sensor-bridge/compare/0.37.1...0.38.0) (2024-01-02)
+
+
+### Bug Fixes
+
+* **ui:** wrong placeholder for min max avg ([baceadb](https://github.com/RouHim/sensor-bridge/commit/baceadb179065f3ee8f54c8fb28f1c32e1af4999))
+
+
+### Features
+
+* **renderer:** support of min/max/avg ([fef663d](https://github.com/RouHim/sensor-bridge/commit/fef663d2f8503d2bc2248b757d58e216dfe357f2))
+* **ui:** add min max avg functionality ([1dd288a](https://github.com/RouHim/sensor-bridge/commit/1dd288a237a8ec58f5241f2db464e0c03cafd822))
+
 ## [0.37.1](https://github.com/RouHim/sensor-bridge/compare/0.37.0...0.37.1) (2024-01-02)
 
 # [0.37.0](https://github.com/RouHim/sensor-bridge/compare/0.36.0...0.37.0) (2024-01-02)
