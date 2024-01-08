@@ -20,7 +20,7 @@ bincode = "1.3.3"                                                               
 tauri = { version = "1.5.4", features = ["updater", "protocol-all", "dialog-all", "shell-open", "system-tray", "window-all"] } # Tauri
 systemstat = "0.2.3"                                                                                                  # read common system sensor values
 rayon = "1.8.0"                                                                                                       # Parallel processing
-base64 = "0.21.5"                                                                                                     # Base64 encoding
+base64 = "0.21.6"                                                                                                     # Base64 encoding
 message-io = { version = "0.18.0", default-features = false, features = ["tcp"] }                                     # TCPSocket communication
 uuid = { version = "1.6.1", features = ["v4"] }                                                                       # Generate UUID v4
 image = "0.24.7"                                                                                                      # Image processing
