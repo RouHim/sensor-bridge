@@ -47,7 +47,7 @@ dmidecode = "0.7.7"                                                             
 
 # Windows specific dependencies
 [target.'cfg(target_os = "windows")'.dependencies]
-wmi = "0.13.1"                                                                                                        # Read sensor values from WMI
+wmi = "0.13.2"                                                                                                        # Read sensor values from WMI
 
 [features]
 # by default Tauri runs in production mode

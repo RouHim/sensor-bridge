@@ -4995,9 +4995,19 @@ version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e686886bc078bc1b0b600cac0147aadb815089b6e4da64016cbd754b6342700f"
 dependencies = [
- "windows-implement 0.48.0",
- "windows-interface",
  "windows-targets 0.48.5",
+]
+
+[[package]]
+name = "windows"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e48a53791691ab099e5e2ad123536d0fff50652600abaf43bbf952894110d0be"
+dependencies = [
+ "windows-core",
+ "windows-implement 0.52.0",
+ "windows-interface",
+ "windows-targets 0.52.0",
 ]
 
 [[package]]
@@ -5031,24 +5041,24 @@ dependencies = [
 
 [[package]]
 name = "windows-implement"
-version = "0.48.0"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e2ee588991b9e7e6c8338edf3333fbe4da35dc72092643958ebb43f0ab2c49c"
+checksum = "12168c33176773b86799be25e2a2ba07c7aab9968b37541f1094dbd7a60c8946"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.46",
 ]
 
 [[package]]
 name = "windows-interface"
-version = "0.48.0"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6fb8df20c9bcaa8ad6ab513f7b40104840c8867d5751126e4df3b08388d0cc7"
+checksum = "9d8dc32e0095a7eeccebd0e3f09e9509365ecb3fc6ac4d6f5f14a3f6392942d1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.46",
 ]
 
 [[package]]
@@ -5352,16 +5362,16 @@ dependencies = [
 
 [[package]]
 name = "wmi"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced703d10188571ce53582c2932ce640ed3c413cff7ee6e2d961f9abdb6a63d1"
+checksum = "fff298e96fd8ef6bb55dcb2a7fd2f26969f962bf428ffa6b267457dd804d64d8"
 dependencies = [
  "chrono",
  "futures",
  "log",
  "serde",
  "thiserror",
- "windows 0.48.0",
+ "windows 0.52.0",
 ]
 
 [[package]]
