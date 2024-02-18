@@ -25,7 +25,7 @@ message-io = { version = "0.18.0", default-features = false, features = ["tcp"] 
 uuid = { version = "1.7.0", features = ["v4"] }                                                                       # Generate UUID v4
 image = "0.24.8"                                                                                                      # Image processing
 imageproc = { version = "0.23.0", features = ["rayon"] }                                                              # More image processing
-chrono = "0.4.32"                                                                                                      # Time handling
+chrono = "0.4.34"                                                                                                      # Time handling
 log = "0.4.20"                                                                                                         # Logging
 env_logger = "0.11.0"                                                                                                 # Logging
 super-shell = "1.2.3"                                                                                                 # Privileged shell execution
