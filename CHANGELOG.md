@@ -1,3 +1,15 @@
+# [0.40.0](https://github.com/RouHim/sensor-bridge/compare/0.39.7...0.40.0) (2024-02-18)
+
+
+### Bug Fixes
+
+* **pipeline:** adjust node version vor release job ([63654b2](https://github.com/RouHim/sensor-bridge/commit/63654b26783068d12b2bb6f549e53949963fd705))
+
+
+### Features
+
+* **deps:** bump deps ([5319bae](https://github.com/RouHim/sensor-bridge/commit/5319baea07b03337c877928ae98e6c5a30dabeaf))
+
 ## [0.39.7](https://github.com/RouHim/sensor-bridge/compare/0.39.6...0.39.7) (2024-01-11)
 
 ## [0.39.6](https://github.com/RouHim/sensor-bridge/compare/0.39.5...0.39.6) (2024-01-08)
