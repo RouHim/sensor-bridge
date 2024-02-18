@@ -1,3 +1,10 @@
+# [0.41.0](https://github.com/RouHim/sensor-bridge/compare/0.40.0...0.41.0) (2024-02-18)
+
+
+### Features
+
+* **pipeline:** fail if no version was found ([259be3c](https://github.com/RouHim/sensor-bridge/commit/259be3c3eda06c8e395580032648e6c61561f9e2))
+
 # [0.40.0](https://github.com/RouHim/sensor-bridge/compare/0.39.7...0.40.0) (2024-02-18)
 
 
