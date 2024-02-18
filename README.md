@@ -43,7 +43,7 @@ The software is still in a very early and immature state. If you want to use it,
 ## Motivation
 
 Since I recently switched my gaming computer from windows to linux I was desperately looking for a way to display sensor
-data (FPS, CPU load, GPU load, etc...) from my computer on a display. On windows I always did this with AIDA64, but
+data (CPU load, GPU load, etc...) from my computer on a display. On windows I always did this with AIDA64, but
 unfortunately it costs money and doesn't run on linux.
 So the following problems had to be solved:
 
@@ -73,15 +73,15 @@ The following software is required to be installed on your system:
 
 ### Windows
 
-* [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (`choco install librehardwaremonitor`)
+* [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (`choco install librehardwaremonitor`
+  or `scoop install librehardwaremonitor`)
 
 [//]: # (* [RTSS]&#40;https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html&#41;)
 
 ### Linux
 
-* [lm-sensors](https://github.com/lm-sensors/lm-sensors)
-* [MangoHud](https://github.com/flightlessmango/MangoHud) (optional) | Make sure
-  to [enable stats logging](https://github.com/flightlessmango/MangoHud#fps-logging)
+* [lm-sensors](https://github.com/lm-sensors/lm-sensors) (`apt install lm-sensors` or `pacman -S lm_sensors`
+  or `dnf install lm_sensors`)
 
 ## Build
 
@@ -94,9 +94,9 @@ This section describes how to build and run the project from source.
 * clang
     * On
       Windows: [Enable the "C++ Clang tools for Windows" component in the Visual Studio Installer](https://www.wikihow.com/Install-Clang-on-Windows)
-    * On Linux: `sudo apt install clang` or `sudo pacman -S clang` or `sudo dnf install clang`
-* lm-sensors dev on linux: `sudo apt install libsensors4-dev` or `sudo pacman -S lm_sensors`
-  or `sudo dnf install lm_sensors`
+    * On Linux: `apt install clang` or `pacman -S clang` or `dnf install clang`
+* lm-sensors dev on linux: `apt install libsensors4-dev` or `pacman -S lm_sensors`
+  or `dnf install lm_sensors`
 
 ### Debug run
 
