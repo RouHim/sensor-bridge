@@ -13,8 +13,8 @@
 </p>
 
 <p align="center">
-    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.8/sensor-bridge_0.41.8_amd64.AppImage"><img src=".github/readme/dl-linux.png" width="250"/></a>
-    <a id="sensor-bridge-download-windows" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.8/sensor-bridge_0.41.8_x64_en-US.msi"><img src=".github/readme/dl-windows.png" width="250"/></a>
+    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.9/sensor-bridge_0.41.9_amd64.AppImage"><img src=".github/readme/dl-linux.png" width="250"/></a>
+    <a id="sensor-bridge-download-windows" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.9/sensor-bridge_0.41.9_x64_en-US.msi"><img src=".github/readme/dl-windows.png" width="250"/></a>
 </p>
 
 ## Current state
