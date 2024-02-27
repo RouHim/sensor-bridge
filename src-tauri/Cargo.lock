@@ -5460,9 +5460,9 @@ dependencies = [
 
 [[package]]
 name = "wmi"
-version = "0.13.2"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff298e96fd8ef6bb55dcb2a7fd2f26969f962bf428ffa6b267457dd804d64d8"
+checksum = "fc2f0a4062ca522aad4705a2948fd4061b3857537990202a8ddd5af21607f79a"
 dependencies = [
  "chrono",
  "futures",
