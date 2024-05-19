@@ -24,7 +24,7 @@ base64 = "0.21.7"                                                               
 message-io = { version = "0.18.1", default-features = false, features = ["tcp"] }                                     # TCPSocket communication
 uuid = { version = "1.7.0", features = ["v4"] }                                                                       # Generate UUID v4
 image = "0.24.9"                                                                                                      # Image processing
-imageproc = { version = "0.23.0", features = ["rayon"] }                                                              # More image processing
+imageproc = { version = "0.25.0", features = ["rayon"] }                                                              # More image processing
 chrono = "0.4.34"                                                                                                      # Time handling
 log = "0.4.21"                                                                                                         # Logging
 env_logger = "0.11.2"                                                                                                 # Logging
