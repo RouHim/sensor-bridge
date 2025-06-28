@@ -44,29 +44,6 @@
 
         <div class="flex-container center-horizontal">
 
-            <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
-            </select>
-
-            <button class="icon-button" id="btn-add-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Add a new network device">
-                <i data-feather="plus"></i>
-            </button>
-
-            <button class="icon-button" id="lcd-btn-save-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Save device configuration">
-                <i data-feather="save"></i>
-            </button>
-
-            <button class="icon-button" id="lcd-btn-remove-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Remove device configuration">
-                <i data-feather="trash"></i>
-            </button>
-
-            <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
-                    title="Open live preview">
-                <i data-feather="monitor"></i>
-            </button>
-
             <button class="icon-button" id="btn-export-config" style="font-size: 2em; margin-right: 10px;"
                     title="Export configuration">
                 <i data-feather="external-link"></i>
@@ -86,25 +63,44 @@
 
         <hr/>
 
-        <div id="lcd-panel" style="display: none;">
+        <!-- Network Device Management Section -->
+        <div id="network-device-management" class="flex-container center-horizontal" style="margin-bottom: 15px;">
+            <label for="cmb-network-devices" style="margin-right: 10px;">Network Device:</label>
+            <select id="cmb-network-devices" style="width: 200px; margin-right: 10px;" title="Select a network device">
+                <option value="">No devices available</option>
+            </select>
+
+            <button class="icon-button" id="btn-add-network-device" style="font-size: 1.5em; margin-right: 5px;"
+                    title="Add new network device">
+                <i data-feather="plus"></i>
+            </button>
+
+            <button class="icon-button" id="btn-remove-network-device" style="font-size: 1.5em; margin-right: 5px;"
+                    title="Remove selected network device">
+                <i data-feather="trash-2"></i>
+            </button>
+
+            <button class="icon-button" id="btn-refresh-network-devices" style="font-size: 1.5em;"
+                    title="Refresh network devices list">
+                <i data-feather="refresh-cw"></i>
+            </button>
+        </div>
+
+        <div id="lcd-panel">
 
             <div class="flex-container center-horizontal" id="device-config">
                 <label for="lcd-txt-device-name" style="margin-right: 5px">Device name:</label>
                 <input id="lcd-txt-device-name" style="width: 150px;" title="Enter a simple name of your device">
 
-                <label for="lcd-txt-device-network-address" style="margin-left: 25px; margin-right: 5px;">Network
-                    address:</label>
-                <input id="lcd-txt-device-network-address" style="width: 150px;"
-                       title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
+                <label for="lcd-txt-web-server-port" style="margin-left: 25px; margin-right: 5px;">Web Server Port:</label>
+                <input id="lcd-txt-web-server-port" style="width: 100px;" type="number" min="1" max="65535"
+                       title="Port number for the web server (e.g. 8080, 3000)" value="8080">
 
-                <div class="flex-container" id="lcd-config" style="margin-left: 25px">
-                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
-                    <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="1024">
-                    <div style="margin-left: 5px; margin-right: 5px">x</div>
-                    <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="600">
-                </div>
+                <button class="icon-button" id="btn-save-server-config" style="font-size: 1.5em; margin-left: 10px;"
+                        title="Save server configuration">
+                    <i data-feather="save"></i>
+                </button>
+
             </div>
 
             <div class="center-horizontal">

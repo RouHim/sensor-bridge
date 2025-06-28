@@ -18,8 +18,8 @@ pub struct AppConfig {
 pub struct NetworkDeviceConfig {
     pub id: String,
     pub name: String,
-    pub address: String,
     pub active: bool,
+    pub web_server_port: u16,
     pub display_config: DisplayConfig,
 }
 
@@ -28,8 +28,8 @@ impl NetworkDeviceConfig {
         NetworkDeviceConfig {
             id: Uuid::new_v4().to_string(),
             name: "A new device".to_string(),
-            address: "".to_string(),
             active: false,
+            web_server_port: 8080,
             display_config: Default::default(),
         }
     }

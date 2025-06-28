@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::net::SocketAddr;
+use std::net::{SocketAddr, UdpSocket};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -15,6 +15,16 @@ use crate::{conditional_image, sensor, static_image, text};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u16 = 10489;
+const DISCOVERY_PORT: u16 = 10490;
+const DISCOVERY_INTERVAL: Duration = Duration::from_secs(5);
+
+// Service discovery message
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ServiceDiscoveryMessage {
+    pub service_name: String,
+    pub server_port: u16,
+    pub version: String,
+}
 
 // Structure to hold client information
 #[derive(Debug, Clone)]
@@ -78,6 +88,12 @@ pub async fn start_server(
             broadcast_running_state,
         )
         .await;
+    });
+
+    // Start UDP discovery task
+    let discovery_server = server.clone();
+    tokio::spawn(async move {
+        udp_discovery_loop(discovery_server).await;
     });
 
     // Routes
@@ -391,10 +407,30 @@ pub fn start_sync(
     Arc::new(handle)
 }
 
-/// Verifies that the server can bind to the network port
-pub fn verify_network_address(_address: &str) -> bool {
-    // For server mode, we just check if we can bind to the port
-    check_server_port()
+/// UDP discovery service - broadcasts presence on the network
+async fn udp_discovery_loop(_server: Arc<HttpServer>) {
+    let socket = UdpSocket::bind(format!("0.0.0.0:{}", DISCOVERY_PORT).as_str()).unwrap();
+    socket.set_broadcast(true).unwrap();
+
+    let service_name = "sensor_bridge".to_string();
+    let server_port = NETWORK_PORT;
+    let version = env!("CARGO_PKG_VERSION").to_string();
+
+    let discovery_message = ServiceDiscoveryMessage {
+        service_name,
+        server_port,
+        version,
+    };
+
+    let serialized_message = bincode::serialize(&discovery_message).unwrap();
+
+    loop {
+        // Broadcast the discovery message
+        let _ = socket.send_to(&serialized_message, "255.255.255.255:10490");
+
+        // Wait for a while before the next broadcast
+        tokio::time::sleep(DISCOVERY_INTERVAL).await;
+    }
 }
 
 /// Tests if we can bind to the server port
@@ -408,5 +444,28 @@ pub fn check_server_port() -> bool {
             error!("Cannot bind to server port {}: {:?}", NETWORK_PORT, err);
             false
         }
+    }
+}
+
+/// Tests if we can bind to the discovery port
+pub fn check_discovery_port() -> bool {
+    match std::net::UdpSocket::bind(format!("0.0.0.0:{}", DISCOVERY_PORT)) {
+        Ok(_) => {
+            info!("Discovery port {} is available", DISCOVERY_PORT);
+            true
+        }
+        Err(err) => {
+            error!("Cannot bind to discovery port {}: {:?}", DISCOVERY_PORT, err);
+            false
+        }
+    }
+}
+
+/// Gets the server discovery info for clients to discover the service
+pub fn get_discovery_info() -> ServiceDiscoveryMessage {
+    ServiceDiscoveryMessage {
+        service_name: "sensor_bridge".to_string(),
+        server_port: NETWORK_PORT,
+        version: env!("CARGO_PKG_VERSION").to_string(),
     }
 }

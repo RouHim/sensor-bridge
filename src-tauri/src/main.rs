@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::{fs, thread};
 
-use log::error;
+use log::{error, info};
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementType, GraphConfig,
     SensorType, SensorValue, TextConfig,
@@ -132,12 +132,13 @@ fn main() {
             get_text_preview_image,
             get_graph_preview_image,
             get_conditional_image_preview_image,
-            verify_network_address,
             import_config,
             export_config,
             get_system_fonts,
             get_conditional_image_repo_entries,
             restart_app,
+            discover_servers,
+            save_web_server_port_config,
         ])
         .on_window_event(handle_window_events())
         .run(tauri::generate_context!())
@@ -183,32 +184,28 @@ async fn get_app_config() -> Result<String, String> {
     serde_json::to_string(&app_config).map_err(|err| err.to_string())
 }
 
-/// Saves the address config for the specified address and port.
-/// If the address config does not exist, it will be created.
+/// Saves the config for the specified device.
+/// If the config does not exist, it will be created.
 #[tauri::command]
 async fn save_app_config(
-    app_state: State<'_, AppState>,
-    id: String,
+    network_device_id: String,
     name: String,
-    address: String,
-    display_config: String,
+    active: bool,
+    display_config: sensor_core::DisplayConfig,
 ) -> Result<(), String> {
-    let mut network_device_config = match config::read(&id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
+    info!("Saving config for device: {}", network_device_id);
+
+    let mut network_device_config = config::read(&network_device_id).unwrap_or_else(|| {
+        let mut new_config = config::create_network_device_config();
+        new_config.id = network_device_id.clone();
+        new_config
+    });
 
     network_device_config.name = name;
-    network_device_config.address = address;
-    network_device_config.display_config = serde_json::from_str(display_config.as_str()).unwrap();
-
-    verify_config(&network_device_config)?;
+    network_device_config.active = active;
+    network_device_config.display_config = display_config;
 
     config::write(&network_device_config);
-
-    reconnect_displays(app_state).await;
 
     Ok(())
 }
@@ -414,10 +411,6 @@ async fn get_conditional_image_preview_image(
     Ok(base64::Engine::encode(&engine, graph_data))
 }
 
-#[tauri::command]
-async fn verify_network_address(address: String) -> bool {
-    net_port::verify_network_address(&address)
-}
 
 #[tauri::command]
 async fn export_config(file_path: String) -> Result<(), ()> {
@@ -456,6 +449,38 @@ async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
     // Using #[allow(unreachable_code)] to suppress the warning
     #[allow(unreachable_code)]
     Ok(())
+}
+
+#[tauri::command]
+async fn discover_servers() -> Result<String, String> {
+    use std::net::UdpSocket;
+    use std::time::Duration;
+
+    let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| e.to_string())?;
+    socket.set_broadcast(true).map_err(|e| e.to_string())?;
+    socket.set_read_timeout(Some(Duration::from_secs(3))).map_err(|e| e.to_string())?;
+
+    // Send discovery request
+    let discovery_request = b"SENSOR_BRIDGE_DISCOVERY";
+    socket.send_to(discovery_request, "255.255.255.255:10490").map_err(|e| e.to_string())?;
+
+    let mut discovered_servers = Vec::new();
+    let mut buf = [0; 1024];
+
+    // Listen for responses for 3 seconds
+    while let Ok((size, addr)) = socket.recv_from(&mut buf) {
+        if let Ok(message) = bincode::deserialize::<net_port::ServiceDiscoveryMessage>(&buf[..size]) {
+            let server_info = serde_json::json!({
+                "ip": addr.ip().to_string(),
+                "port": message.server_port,
+                "service_name": message.service_name,
+                "version": message.version
+            });
+            discovered_servers.push(server_info);
+        }
+    }
+
+    serde_json::to_string(&discovered_servers).map_err(|e| e.to_string())
 }
 
 /// Handle tauri window events
@@ -620,4 +645,58 @@ async fn reconnect_displays(app_state: State<'_, AppState>) {
             .await
             .unwrap_or_default();
     }
+}
+
+/// Saves the web server port configuration for the specified device.
+/// If the config does not exist, it will be created.
+#[tauri::command]
+async fn save_web_server_port_config(
+    app_state: State<'_, AppState>,
+    port_id: String,
+    name: String,
+    port: u16,
+    display_config: String,
+) -> Result<(), String> {
+    info!("Saving web server port config for device: {}", port_id);
+
+    let mut network_device_config = config::read(&port_id).unwrap_or_else(|| {
+        let mut new_config = config::create_network_device_config();
+        new_config.id = port_id.clone();
+        new_config
+    });
+
+    network_device_config.name = name;
+    network_device_config.web_server_port = port;
+    
+    // Parse the display config JSON string
+    let parsed_display_config: sensor_core::DisplayConfig = 
+        serde_json::from_str(&display_config).map_err(|e| format!("Invalid display config JSON: {}", e))?;
+    
+    network_device_config.display_config = parsed_display_config;
+
+    config::write(&network_device_config);
+
+    // If the device is currently active, restart the sync thread with new config
+    if network_device_config.active {
+        {
+            let port_handle = app_state.port_handle.lock().unwrap();
+            stop_sync_thread(&port_id, port_handle);
+        } // port_handle is dropped here automatically
+
+        // Start sync thread with updated config
+        let thread_handle = start_port_thread(
+            &app_state.sensor_value_history,
+            &app_state.static_sensor_values,
+            network_device_config.clone(),
+        );
+
+        // Add the port handle back to the app state
+        app_state
+            .port_handle
+            .lock()
+            .unwrap()
+            .insert(port_id, thread_handle);
+    }
+
+    Ok(())
 }
