@@ -41,11 +41,6 @@ impl DmiDecodeSensors {
         ));
         parse_sensor_values(fs::read(DMIDECODE_DATA_PATH).unwrap().as_slice())
     }
-
-    #[cfg(target_os = "windows")]
-    pub fn get_sensor_values(&self) -> Vec<SensorValue> {
-        vec![]
-    }
 }
 
 #[cfg(target_os = "linux")]

@@ -1,8 +1,3 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
-
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -38,7 +33,6 @@ mod static_image;
 mod system_stat_sensor;
 mod text;
 mod utils;
-mod windows_libre_hardware_monitor_sensor;
 
 #[cfg(test)]
 mod fonts_test;

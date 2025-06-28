@@ -120,7 +120,7 @@ pub fn start_sync(
     // Start new thread that writes data via HTTP
     let handle = thread::spawn(move || {
         // Try to open the HTTP connection
-        let mut http_endpoint =
+        let http_endpoint =
             match try_open_http_endpoint(&net_port_config, &port_running_state_handle) {
                 Some(value) => value,
                 None => return,
@@ -140,7 +140,7 @@ pub fn start_sync(
                 serialize_render_data(net_port_config.display_config.clone(), last_sensor_values);
 
             // Send the actual data to the remote HTTP endpoint
-            send_http_data(&net_port_config, &mut http_endpoint, data_to_send);
+            send_http_data(&net_port_config, &http_endpoint, data_to_send);
 
             // Wait for the next iteration
             wait(start_time);
@@ -240,7 +240,7 @@ fn send_http_data(
 }
 
 /// Attempt to reconnect to the HTTP endpoint
-fn reconnect_http_endpoint(net_port_config: &NetworkDeviceConfig, http_endpoint: &HttpEndpoint) {
+fn reconnect_http_endpoint(net_port_config: &NetworkDeviceConfig, _http_endpoint: &HttpEndpoint) {
     // For now we just log the reconnection attempt
     // Actual reconnection will happen on the next data send attempt
     // due to the stateless nature of HTTP

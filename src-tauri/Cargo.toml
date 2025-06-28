@@ -45,10 +45,6 @@ pretty_assertions = "1.4.0"
 lm-sensors = "0.2.1"                                                                                                  # Read sensor values from lm-sensors
 dmidecode = "0.8.0"                                                                                                   # Read linux system information from dmidecode
 
-# Windows specific dependencies
-[target.'cfg(target_os = "windows")'.dependencies]
-wmi = "0.13.3"                                                                                                        # Read sensor values from WMI
-
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL

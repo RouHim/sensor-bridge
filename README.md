@@ -9,12 +9,11 @@
 </p>
 
 <p align="center">
-    <i>Sensor bridge is a cross-platform desktop application that allows you to display sensor information on anothers device screen.</i>
+    <i>Sensor bridge is a desktop application that allows you to display sensor information on another device screen.</i>
 </p>
 
 <p align="center">
     <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.13/sensor-bridge_0.41.13_amd64.AppImage"><img src=".github/readme/dl-linux.png" width="250"/></a>
-    <a id="sensor-bridge-download-windows" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.13/sensor-bridge_0.41.13_x64_en-US.msi"><img src=".github/readme/dl-windows.png" width="250"/></a>
 </p>
 
 ## Current state
@@ -25,7 +24,7 @@ The software is still in a very early and immature state. If you want to use it,
 
 * Display sensor information of your computer on another device screen
 * Design your display using an intuitive user interface
-* Works on Windows and Linux
+* Works on Linux
 * Rendering is offloaded to the other device, reducing memory and CPU consumption on your computer
 * Supports multiple display devices at the same time
 * Custom font support
@@ -35,7 +34,6 @@ The software is still in a very early and immature state. If you want to use it,
 
 ## Roadmap
 
-* RTSS support
 * Android app
 * Aquacomputer aqua suite sensor support
 * Local display
@@ -71,13 +69,6 @@ This is where the sensor information is sent from your computer and displayed.
 
 The following software is required to be installed on your system:
 
-### Windows
-
-* [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (`choco install librehardwaremonitor`
-  or `scoop install librehardwaremonitor`)
-
-[//]: # (* [RTSS]&#40;https://www.guru3d.com/files-details/rtss-rivatuner-statistics-server-download.html&#41;)
-
 ### Linux
 
 * [lm-sensors](https://github.com/lm-sensors/lm-sensors) (`apt install lm-sensors` or `pacman -S lm_sensors`
@@ -91,10 +82,7 @@ This section describes how to build and run the project from source.
 
 * [Rust](https://www.rust-lang.org/tools/install)
 * [Tauri prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
-* clang
-    * On
-      Windows: [Enable the "C++ Clang tools for Windows" component in the Visual Studio Installer](https://www.wikihow.com/Install-Clang-on-Windows)
-    * On Linux: `apt install clang` or `pacman -S clang` or `dnf install clang`
+* clang: `apt install clang` or `pacman -S clang` or `dnf install clang`
 * lm-sensors dev on linux: `apt install libsensors4-dev` or `pacman -S lm_sensors`
   or `dnf install lm_sensors`
 
