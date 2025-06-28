@@ -1,270 +1,343 @@
-use std::net::IpAddr;
-use std::str;
-use std::str::FromStr;
+use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use log::{debug, error, info, warn};
 use sensor_core::{DisplayConfig, RenderData, SensorValue, TransportMessage, TransportType};
-use ureq::{Agent, AgentBuilder};
+use serde::{Deserialize, Serialize};
+use tokio::sync::broadcast;
+use warp::Filter;
 
 use crate::config::NetworkDeviceConfig;
-use crate::{conditional_image, sensor, static_image, text, utils};
+use crate::{conditional_image, sensor, static_image, text};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
-const NETWORK_PORT: u64 = 10489;
-const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const NETWORK_PORT: u16 = 10489;
 
-// Custom type to represent HTTP connection
-pub struct HttpEndpoint {
-    address: String,
-    agent: Agent,
+// Structure to hold client information
+#[derive(Debug, Clone)]
+pub struct ClientInfo {
+    pub id: String,
+    pub name: String,
+    pub display_config: DisplayConfig,
+    pub last_seen: Instant,
 }
 
-/// Opens an HTTP connection to the specified address
-pub fn open(net_port_config: &NetworkDeviceConfig) -> Option<HttpEndpoint> {
-    let ip = resolve_hostname(&net_port_config.address);
+// Structure for client registration
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClientRegistration {
+    pub name: String,
+    pub display_config: DisplayConfig,
+}
 
-    if ip.is_none() {
-        error!("Could not resolve hostname {}", net_port_config.address);
-        return None;
-    }
+// HTTP server state
+pub struct HttpServer {
+    clients: Arc<Mutex<HashMap<String, ClientInfo>>>,
+    data_sender: broadcast::Sender<Vec<u8>>,
+    static_data_cache: Arc<Mutex<HashMap<String, Vec<u8>>>>, // Cache for static data by type
+}
 
-    let address = format!("http://{}:{NETWORK_PORT}", ip.unwrap());
-
-    info!(
-        "Connecting to device {}({})",
-        net_port_config.name, &address
-    );
-
-    // Create HTTP agent with timeouts
-    let agent = AgentBuilder::new()
-        .timeout_read(HTTP_TIMEOUT)
-        .timeout_write(HTTP_TIMEOUT)
-        .build();
-
-    // Test connection
-    match agent.get(&format!("{}/ping", address)).call() {
-        Ok(_) => {
-            info!("Connected to device {}({})", net_port_config.name, &address);
-
-            let http_endpoint = HttpEndpoint { address, agent };
-
-            prepare_static_data(net_port_config, &http_endpoint);
-
-            Some(http_endpoint)
-        }
-        Err(err) => {
-            error!(
-                "Could not connect to device {}({}) - Error: {:?}",
-                net_port_config.name, &address, err
-            );
-            None
+impl HttpServer {
+    pub fn new() -> Self {
+        let (data_sender, _) = broadcast::channel(100);
+        Self {
+            clients: Arc::new(Mutex::new(HashMap::new())),
+            data_sender,
+            static_data_cache: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }
 
-/// Prepares the static data.
-/// This sends the static image data and the conditional image data to the remote HTTP endpoint.
-fn prepare_static_data(net_port_config: &NetworkDeviceConfig, http_endpoint: &HttpEndpoint) {
-    // Prepare text data
-    prepare_static_text_data_on_display(net_port_config, http_endpoint);
+/// Starts the HTTP server that clients will connect to
+pub async fn start_server(
+    sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    static_sensor_values: Arc<Vec<SensorValue>>,
+    net_port_configs: Vec<NetworkDeviceConfig>,
+    server_running_state: Arc<Mutex<bool>>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let server = Arc::new(HttpServer::new());
 
-    // Prepare static image data
-    prepare_static_image_data_on_display(net_port_config, http_endpoint);
+    // Prepare static data for all configured devices
+    prepare_all_static_data(&net_port_configs, &server).await;
 
-    // Prepare conditional image data
-    prepare_conditional_image_data_on_display(net_port_config, http_endpoint);
+    // Start data broadcasting task
+    let broadcast_server = server.clone();
+    let broadcast_sensor_history = sensor_value_history.clone();
+    let broadcast_static_values = static_sensor_values.clone();
+    let broadcast_configs = net_port_configs.clone();
+    let broadcast_running_state = server_running_state.clone();
 
-    // Wait 1 seconds for the assets to be loaded
-    info!("Waiting 1s for assets to be processed by the display...");
-    thread::sleep(Duration::from_secs(1));
-}
-
-/// Resolves the name of the device to an ip v4 address
-fn resolve_hostname(address: &str) -> Option<String> {
-    // Check if target string is an valid ip address
-    if IpAddr::from_str(address).is_ok() {
-        return Some(address.to_string());
-    }
-
-    // Otherwise we most likely have a hostname, try to resolve the hostname
-    // and get the first ipv4 address
-    match dns_lookup::lookup_host(address).ok() {
-        Some(ips) => ips
-            .iter()
-            .filter(|ip| ip.is_ipv4())
-            .map(|ip| ip.to_string())
-            .next(),
-        None => {
-            error!("Could not resolve hostname {}", address);
-            None
-        }
-    }
-}
-
-/// Starts a new thread that sends data via HTTP.
-/// Returns a handle to the thread.
-/// The thread will be stopped when the port_running_state_handle is set to false.
-/// The thread will be joined when the handle is dropped.
-pub fn start_sync(
-    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
-    static_sensor_values: &Arc<Vec<SensorValue>>,
-    net_port_config: NetworkDeviceConfig,
-    port_running_state_handle: Arc<Mutex<bool>>,
-) -> Arc<thread::JoinHandle<()>> {
-    let static_sensor_values = static_sensor_values.clone();
-    let sensor_value_history = sensor_value_history.clone();
-
-    // Start new thread that writes data via HTTP
-    let handle = thread::spawn(move || {
-        // Try to open the HTTP connection
-        let http_endpoint =
-            match try_open_http_endpoint(&net_port_config, &port_running_state_handle) {
-                Some(value) => value,
-                None => return,
-            };
-
-        // Send data until the port_running_state_handle is set to false (sync button in UI)
-        while *port_running_state_handle.lock().unwrap() {
-            // Measure duration
-            let start_time = Instant::now();
-
-            // Read sensor values
-            let last_sensor_values =
-                sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
-
-            // Serialize the transport struct to bytes using messagepack
-            let data_to_send =
-                serialize_render_data(net_port_config.display_config.clone(), last_sensor_values);
-
-            // Send the actual data to the remote HTTP endpoint
-            send_http_data(&net_port_config, &http_endpoint, data_to_send);
-
-            // Wait for the next iteration
-            wait(start_time);
-        }
-
-        // Wait for thread to be joined
-        thread::park();
+    tokio::spawn(async move {
+        broadcast_data_loop(
+            broadcast_sensor_history,
+            broadcast_static_values,
+            broadcast_configs,
+            broadcast_server,
+            broadcast_running_state,
+        )
+        .await;
     });
 
-    Arc::new(handle)
+    // Routes
+    let clients = server.clients.clone();
+    let ping_route = warp::path("ping").and(warp::get()).map(|| "pong");
+
+    let register_route = warp::path("register")
+        .and(warp::post())
+        .and(warp::body::json())
+        .and(with_clients(clients.clone()))
+        .and_then(register_client);
+
+    let data_route = warp::path("data")
+        .and(warp::get())
+        .and(warp::query::<HashMap<String, String>>())
+        .and(with_server(server.clone()))
+        .and_then(get_data_stream);
+
+    let static_data_route = warp::path!("static" / String)
+        .and(warp::get())
+        .and(with_server(server.clone()))
+        .and_then(get_static_data);
+
+    let routes = ping_route
+        .or(register_route)
+        .or(data_route)
+        .or(static_data_route)
+        .with(warp::cors().allow_any_origin())
+        .with(warp::log("sensor_bridge"));
+
+    let addr: SocketAddr = format!("0.0.0.0:{}", NETWORK_PORT).parse()?;
+    info!("Starting HTTP server on {}", addr);
+
+    warp::serve(routes).run(addr).await;
+    Ok(())
 }
 
-/// Tries to open the HTTP connection until the port_running_state_handle is set to false.
-fn try_open_http_endpoint(
-    net_port_config: &NetworkDeviceConfig,
-    port_running_state_handle: &Arc<Mutex<bool>>,
-) -> Option<HttpEndpoint> {
-    let mut http_endpoint = None;
+// Helper functions for warp filters
+fn with_clients(
+    clients: Arc<Mutex<HashMap<String, ClientInfo>>>,
+) -> impl Filter<
+    Extract = (Arc<Mutex<HashMap<String, ClientInfo>>>,),
+    Error = std::convert::Infallible,
+> + Clone {
+    warp::any().map(move || clients.clone())
+}
 
-    while *port_running_state_handle.lock().unwrap() && http_endpoint.is_none() {
-        // Wait 1 seconds before trying to open the connection again
-        thread::sleep(Duration::from_secs(1));
+fn with_server(
+    server: Arc<HttpServer>,
+) -> impl Filter<Extract = (Arc<HttpServer>,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || server.clone())
+}
 
-        // Try to open the HTTP connection
-        http_endpoint = open(net_port_config);
+// Handler for client registration
+async fn register_client(
+    registration: ClientRegistration,
+    clients: Arc<Mutex<HashMap<String, ClientInfo>>>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let client_id = uuid::Uuid::new_v4().to_string();
+    let client_info = ClientInfo {
+        id: client_id.clone(),
+        name: registration.name.clone(),
+        display_config: registration.display_config,
+        last_seen: Instant::now(),
+    };
+
+    {
+        let mut clients_guard = clients.lock().unwrap();
+        clients_guard.insert(client_id.clone(), client_info);
     }
 
-    http_endpoint
-}
-
-/// Prepares the render data for the remote HTTP endpoint
-fn prepare_static_text_data_on_display(
-    net_port_config: &NetworkDeviceConfig,
-    http_endpoint: &HttpEndpoint,
-) {
-    let text_data = text::get_preparation_data(&net_port_config.display_config);
-    let data_to_send = text::serialize(text_data);
-    send_http_data(net_port_config, http_endpoint, data_to_send);
-}
-
-/// Prepares the render data for the remote HTTP endpoint
-fn prepare_static_image_data_on_display(
-    net_port_config: &NetworkDeviceConfig,
-    http_endpoint: &HttpEndpoint,
-) {
-    let static_image_data = static_image::get_preparation_data(&net_port_config.display_config);
-    let data_to_send = static_image::serialize(static_image_data);
-    send_http_data(net_port_config, http_endpoint, data_to_send);
-}
-
-/// Prepares the conditional image data and sends it to the remote HTTP endpoint
-fn prepare_conditional_image_data_on_display(
-    net_port_config: &NetworkDeviceConfig,
-    http_endpoint: &HttpEndpoint,
-) {
-    let conditional_image_data =
-        conditional_image::get_preparation_data(&net_port_config.display_config);
-    let data_to_send = conditional_image::serialize_preparation_data(conditional_image_data);
-    send_http_data(net_port_config, http_endpoint, data_to_send);
-}
-
-/// Sends the data to the remote HTTP endpoint
-fn send_http_data(
-    net_port_config: &NetworkDeviceConfig,
-    http_endpoint: &HttpEndpoint,
-    data_to_send: Vec<u8>,
-) {
-    // Log data to send
-    let data_len = utils::pretty_bytes(data_to_send.len() as f64);
     info!(
-        "Sending data {} {} to '{}'...",
-        data_len.0, data_len.1, net_port_config.name
+        "Client '{}' registered with ID: {}",
+        registration.name, client_id
     );
 
-    // Send the actual data via HTTP POST request
-    let response = http_endpoint
-        .agent
-        .post(&format!("{}/data", http_endpoint.address))
-        .set("Content-Type", "application/octet-stream")
-        .send_bytes(&data_to_send);
+    Ok(warp::reply::json(&serde_json::json!({
+        "client_id": client_id,
+        "status": "registered"
+    })))
+}
 
-    // Handle response status
-    match response {
-        Ok(resp) => {
-            if resp.status() == 200 {
-                info!(" Successfully");
-            } else {
-                warn!(" Failed with status {}", resp.status());
-                reconnect_http_endpoint(net_port_config, http_endpoint);
+// Handler for data streaming
+async fn get_data_stream(
+    params: HashMap<String, String>,
+    server: Arc<HttpServer>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let client_id = params
+        .get("client_id")
+        .ok_or_else(|| warp::reject::custom(ClientError::MissingClientId))?;
+
+    // Update client last_seen time
+    {
+        let mut clients = server.clients.lock().unwrap();
+        if let Some(client) = clients.get_mut(client_id) {
+            client.last_seen = Instant::now();
+        } else {
+            return Err(warp::reject::custom(ClientError::UnknownClient));
+        }
+    }
+
+    let mut receiver = server.data_sender.subscribe();
+
+    match receiver.recv().await {
+        Ok(data) => Ok(warp::reply::with_header(
+            data,
+            "Content-Type",
+            "application/octet-stream",
+        )),
+        Err(_) => Err(warp::reject::custom(ClientError::DataReceiveError)),
+    }
+}
+
+// Handler for static data
+async fn get_static_data(
+    data_type: String,
+    server: Arc<HttpServer>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let cache = server.static_data_cache.lock().unwrap();
+
+    if let Some(data) = cache.get(&data_type) {
+        Ok(warp::reply::with_header(
+            data.clone(),
+            "Content-Type",
+            "application/octet-stream",
+        ))
+    } else {
+        Err(warp::reject::custom(ClientError::StaticDataNotFound))
+    }
+}
+
+// Custom error types for warp rejection
+#[derive(Debug)]
+enum ClientError {
+    MissingClientId,
+    UnknownClient,
+    DataReceiveError,
+    StaticDataNotFound,
+}
+
+impl warp::reject::Reject for ClientError {}
+
+/// Prepares static data for all configured network devices
+async fn prepare_all_static_data(
+    net_port_configs: &[NetworkDeviceConfig],
+    server: &Arc<HttpServer>,
+) {
+    let mut cache = server.static_data_cache.lock().unwrap();
+
+    for config in net_port_configs {
+        // Prepare text data
+        let text_data = text::get_preparation_data(&config.display_config);
+        let serialized_text = text::serialize(text_data);
+        cache.insert(format!("text_{}", config.name), serialized_text);
+
+        // Prepare static image data
+        let static_image_data = static_image::get_preparation_data(&config.display_config);
+        let serialized_static_image = static_image::serialize(static_image_data);
+        cache.insert(
+            format!("static_image_{}", config.name),
+            serialized_static_image,
+        );
+
+        // Prepare conditional image data
+        let conditional_image_data =
+            conditional_image::get_preparation_data(&config.display_config);
+        let serialized_conditional_image =
+            conditional_image::serialize_preparation_data(conditional_image_data);
+        cache.insert(
+            format!("conditional_image_{}", config.name),
+            serialized_conditional_image,
+        );
+    }
+
+    info!(
+        "Static data prepared for {} devices",
+        net_port_configs.len()
+    );
+}
+
+/// Main data broadcasting loop
+async fn broadcast_data_loop(
+    sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    static_sensor_values: Arc<Vec<SensorValue>>,
+    net_port_configs: Vec<NetworkDeviceConfig>,
+    server: Arc<HttpServer>,
+    server_running_state: Arc<Mutex<bool>>,
+) {
+    while *server_running_state.lock().unwrap() {
+        let start_time = Instant::now();
+
+        // Read sensor values
+        let last_sensor_values =
+            sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
+
+        // Clean up old clients (haven't been seen in 30 seconds)
+        cleanup_old_clients(&server.clients);
+
+        // For each active client, send appropriate data
+        let active_clients = {
+            let clients = server.clients.lock().unwrap();
+            clients.clone()
+        };
+
+        for (_client_id, client_info) in active_clients {
+            // Find the matching config for this client
+            if let Some(config) = net_port_configs.iter().find(|c| c.name == client_info.name) {
+                let data_to_send = serialize_render_data(
+                    config.display_config.clone(),
+                    last_sensor_values.clone(),
+                );
+
+                // Send data via broadcast channel
+                if let Err(e) = server.data_sender.send(data_to_send) {
+                    warn!("Failed to broadcast data: {:?}", e);
+                }
             }
         }
-        Err(err) => {
-            warn!(" Request failed: {:?} --> Reconnecting", err);
-            reconnect_http_endpoint(net_port_config, http_endpoint);
+
+        // Log active clients count
+        let client_count = server.clients.lock().unwrap().len();
+        if client_count > 0 {
+            debug!("Broadcasting data to {} active clients", client_count);
+        }
+
+        // Wait for the next iteration
+        wait_for_next_iteration(start_time).await;
+    }
+}
+
+/// Removes clients that haven't been seen for more than 30 seconds
+fn cleanup_old_clients(clients: &Arc<Mutex<HashMap<String, ClientInfo>>>) {
+    let mut clients_guard = clients.lock().unwrap();
+    let now = Instant::now();
+    let timeout = Duration::from_secs(30);
+
+    let old_clients: Vec<String> = clients_guard
+        .iter()
+        .filter(|(_, client)| now.duration_since(client.last_seen) > timeout)
+        .map(|(id, _)| id.clone())
+        .collect();
+
+    for client_id in old_clients {
+        if let Some(client) = clients_guard.remove(&client_id) {
+            info!("Removed inactive client: {} ({})", client.name, client_id);
         }
     }
 }
 
-/// Attempt to reconnect to the HTTP endpoint
-fn reconnect_http_endpoint(net_port_config: &NetworkDeviceConfig, _http_endpoint: &HttpEndpoint) {
-    // For now we just log the reconnection attempt
-    // Actual reconnection will happen on the next data send attempt
-    // due to the stateless nature of HTTP
-    info!(
-        "Will attempt to reconnect to {} on next data send",
-        net_port_config.name
-    );
-}
-
-/// Serializes the sensor values and display config to a transport message.
-/// The transport message is then serialized to a byte vector.
-/// The byte vector is then sent to the remote HTTP endpoint.
+/// Serializes the sensor values and display config to a transport message
 fn serialize_render_data(
     display_config: DisplayConfig,
     last_sensor_values: Vec<SensorValue>,
 ) -> Vec<u8> {
-    // Serialize data to render
     let render_data = RenderData {
         display_config,
         sensor_values: last_sensor_values,
     };
     let render_data = bincode::serialize(&render_data).unwrap();
 
-    // Serialize transport message
     let transport_message = TransportMessage {
         transport_type: TransportType::RenderImage,
         data: render_data,
@@ -274,47 +347,65 @@ fn serialize_render_data(
 }
 
 /// Waits for the remaining time of the update interval
-/// To keep the PUSH_RATE at a constant rate, we need to sleep for the remaining time - the time it took to read the sensor values
-/// and send them to the network endpoint
-fn wait(start_time: Instant) {
+async fn wait_for_next_iteration(start_time: Instant) {
     let processing_duration = Instant::now().duration_since(start_time);
     debug!("Processing duration: {:?}", processing_duration);
+
     let time_to_wait = PUSH_RATE
         .checked_sub(processing_duration)
         .unwrap_or_else(|| {
-            error!("Warning: Processing duration is longer than the update interval");
+            warn!("Warning: Processing duration is longer than the update interval");
             PUSH_RATE
         });
-    thread::sleep(time_to_wait);
+
+    tokio::time::sleep(time_to_wait).await;
 }
 
-/// Verifies that the specified address is reachable
-pub fn verify_network_address(address: &str) -> bool {
-    let ip = resolve_hostname(address);
+/// Legacy function to maintain compatibility - starts the server in a blocking way
+pub fn start_sync(
+    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    static_sensor_values: &Arc<Vec<SensorValue>>,
+    net_port_config: NetworkDeviceConfig,
+    port_running_state_handle: Arc<Mutex<bool>>,
+) -> Arc<thread::JoinHandle<()>> {
+    let sensor_value_history = sensor_value_history.clone();
+    let static_sensor_values = static_sensor_values.clone();
+    let configs = vec![net_port_config];
 
-    if ip.is_none() {
-        error!("Could not resolve hostname {}", address);
-        return false;
-    }
+    let handle = thread::spawn(move || {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            if let Err(e) = start_server(
+                sensor_value_history,
+                static_sensor_values,
+                configs,
+                port_running_state_handle,
+            )
+            .await
+            {
+                error!("Server error: {:?}", e);
+            }
+        });
+    });
 
-    // Test HTTP connection to the specified address
-    check_ip(&ip.unwrap())
+    Arc::new(handle)
 }
 
-/// Tests HTTP connection to the specified ip address
-pub fn check_ip(ip: &str) -> bool {
-    let address = format!("http://{ip}:{NETWORK_PORT}");
-    info!("Testing IP '{ip}' on HTTP port '{NETWORK_PORT}'");
+/// Verifies that the server can bind to the network port
+pub fn verify_network_address(_address: &str) -> bool {
+    // For server mode, we just check if we can bind to the port
+    check_server_port()
+}
 
-    let agent = AgentBuilder::new()
-        .timeout_connect(Duration::from_secs(2))
-        .build();
-
-    // Try to connect with timeout already configured in the agent
-    match agent.get(&format!("{}/ping", address)).call() {
-        Ok(_) => true,
+/// Tests if we can bind to the server port
+pub fn check_server_port() -> bool {
+    match std::net::TcpListener::bind(format!("0.0.0.0:{}", NETWORK_PORT)) {
+        Ok(_) => {
+            info!("Server port {} is available", NETWORK_PORT);
+            true
+        }
         Err(err) => {
-            debug!("Connection test failed: {:?}", err);
+            error!("Cannot bind to server port {}: {:?}", NETWORK_PORT, err);
             false
         }
     }

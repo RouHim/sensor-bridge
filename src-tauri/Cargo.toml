@@ -27,11 +27,12 @@ chrono = "0.4.34"                                                               
 log = "0.4.21"                                                                                                         # Logging
 env_logger = "0.11.2"                                                                                                 # Logging
 super-shell = "1.2.3"                                                                                                 # Privileged shell execution
-dns-lookup = "2.0.4"                                                                                                  # DNS lookup
 zip-extract = "0.1.3"                                                                                                 # Zip file handling
 font-loader = { git = "https://github.com/matprec/rust-font-loader" }                                               # System font loading
 rusttype = "0.9.3"                                                                                                    # Font parsing
 ureq = { version = "2.9.6", features = ["json"] }                                                                     # HTTP client requests
+warp = "0.3.7"                                                                                                        # HTTP server framework
+tokio = { version = "1.37.0", features = ["full"] }                                                                   # Async runtime
 dirs = "5.0.1"                                                                                                        # System directories
 lm-sensors = "0.2.1"                                                                                                  # Read sensor values from lm-sensors
 dmidecode = "0.8.0"                                                                                                   # Read linux system information from dmidecode
