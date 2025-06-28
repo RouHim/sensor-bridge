@@ -1,5 +1,40 @@
-const {invoke, convertFileSrc} = window.__TAURI__.tauri;
-const {open, save} = window.__TAURI__.dialog;
+// Access Tauri API functions for v2
+const {invoke} = window.__TAURI__.core;
+
+// Import dialog functions using Tauri v2 plugin approach
+// This is the correct way for Tauri v2
+let open, save;
+
+// Wait for Tauri to be ready before initializing dialog functions
+async function initializeDialogAPI() {
+    try {
+        // In Tauri v2, dialog functions are available through window.__TAURI__.dialog
+        // after the dialog plugin is properly loaded
+        if (window.__TAURI__ && window.__TAURI__.dialog) {
+            open = window.__TAURI__.dialog.open;
+            save = window.__TAURI__.dialog.save;
+            console.log('Dialog API initialized successfully');
+        } else {
+            console.warn('Dialog API not available, retrying...');
+            // Retry after a short delay
+            setTimeout(initializeDialogAPI, 100);
+        }
+    } catch (error) {
+        console.error('Failed to initialize dialog API:', error);
+        // Provide fallback functions
+        open = () => Promise.reject(new Error('Tauri dialog API not available'));
+        save = () => Promise.reject(new Error('Tauri dialog API not available'));
+    }
+}
+
+// Initialize dialog APIs immediately
+initializeDialogAPI();
+
+// Convert file source utility
+const convertFileSrc = window.__TAURI__.core.convertFileSrc || ((filePath) => {
+    // Fallback if convertFileSrc is not available
+    return filePath;
+});
 
 // Modal dialog
 const sensorSelectionDialog = document.getElementById("sensor-selection-dialog");
@@ -1930,3 +1965,4 @@ function moveElementDown() {
 function addTextFormatPlaceholder(textToAdd) {
     txtTextFormat.value += textToAdd;
 }
+

@@ -100,6 +100,7 @@ fn main() {
 
     // Create the tray icon
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let tray = build_system_tray(app).build(app)?;
             tray.on_tray_icon_event(build_system_tray_handler());
