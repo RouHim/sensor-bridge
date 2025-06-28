@@ -1,4 +1,3 @@
-#[cfg(target_os = "linux")]
 use std::fs;
 
 use font_loader::system_fonts;
@@ -40,7 +39,6 @@ pub fn install_font(font_family_name: &str, font_data: &Vec<u8>) {
     install_font_internal(font_family_name, font_data);
 }
 
-#[cfg(target_os = "linux")]
 fn install_font_internal(font_family_name: &str, font_data: &Vec<u8>) {
     // Install to user local font directory
     let font_dir = dirs::font_dir().unwrap();
