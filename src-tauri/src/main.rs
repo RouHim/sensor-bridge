@@ -14,9 +14,11 @@ use sensor_core::{
     SensorType, SensorValue, TextConfig,
 };
 use super_shell::RootShell;
-use tauri::State;
-use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
-use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
+// Import Tauri v2 specific modules
+use tauri::tray::TrayIconBuilder;
+use tauri::WindowEvent;
+use tauri::{App, State};
+use tauri::{AppHandle, Manager};
 
 use crate::config::{AppConfig, NetworkDeviceConfig};
 use crate::utils::LockResultExt;
@@ -104,18 +106,22 @@ fn main() {
 
     // Create the tray icon
     tauri::Builder::default()
-        .system_tray(build_system_tray())
-        .on_system_tray_event(build_system_tray_handler())
+        .setup(|app| {
+            let tray = build_system_tray(app).build(app)?;
+            tray.on_tray_icon_event(build_system_tray_handler());
+
+            let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
+            app.get_webview_window("main")
+                .unwrap()
+                .set_title(&title)
+                .unwrap();
+            Ok(())
+        })
         .manage(AppState {
             port_handle: app_state_network_handles,
             root_shell: root_shell.clone(),
             static_sensor_values,
             sensor_value_history,
-        })
-        .setup(|app| {
-            let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
-            app.get_window("main").unwrap().set_title(&title).unwrap();
-            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_sensor_values,
@@ -289,7 +295,7 @@ async fn show_lcd_live_preview(
     verify_config(&network_device_config)?;
 
     // If the window is still present, close it
-    let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    let existing_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
     if let Some(window) = existing_window {
         window.close().unwrap();
     }
@@ -316,7 +322,7 @@ async fn get_lcd_preview_image(
     let display_config = network_device_config.display_config;
 
     // If the window is not visible, return an empty string
-    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    let maybe_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
     if let Some(window) = maybe_window {
         if !window.is_visible().unwrap() {
             // The window is not visible, return an empty string
@@ -449,18 +455,66 @@ async fn get_conditional_image_repo_entries() -> Result<String, String> {
 
 #[tauri::command]
 async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
+    // Just call restart directly, which will terminate execution
     app_handle.restart();
+    // This line is technically unreachable but needed for the function signature
+    // Using #[allow(unreachable_code)] to suppress the warning
+    #[allow(unreachable_code)]
     Ok(())
 }
 
 /// Handle tauri window events
-fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
-    |event| {
-        if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
-            event.window().hide().unwrap();
+fn handle_window_events() -> impl Fn(&tauri::Window, &WindowEvent) {
+    |window, event| {
+        if let WindowEvent::CloseRequested { api, .. } = event {
+            window.hide().unwrap();
             api.prevent_close();
         }
     }
+}
+
+/// Handles the system tray behaviour
+fn build_system_tray_handler() -> impl Fn(&tauri::tray::TrayIcon, tauri::tray::TrayIconEvent) {
+    |tray_icon, event| match event {
+        tauri::tray::TrayIconEvent::Click { .. }
+        | tauri::tray::TrayIconEvent::DoubleClick { .. } => {
+            let app = tray_icon.app_handle();
+            let window = app.get_webview_window(WINDOW_NAME).unwrap();
+            if window.is_visible().unwrap() {
+                window.hide().unwrap();
+            } else {
+                window.show().unwrap();
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Build the system tray
+fn build_system_tray(app: &mut App) -> tauri::tray::TrayIconBuilder<tauri::Wry> {
+    use tauri::menu::{Menu, MenuItem};
+
+    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>).unwrap();
+    let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>).unwrap();
+
+    let tray_menu = Menu::with_items(app, &[&show_i, &quit_i]).unwrap();
+
+    TrayIconBuilder::new()
+        .icon_as_template(true)
+        .on_menu_event(move |app_handle, event| match event.id.0.as_str() {
+            "quit" => {
+                app_handle.exit(0);
+            }
+            "show" => {
+                app_handle
+                    .get_webview_window("main")
+                    .unwrap()
+                    .show()
+                    .unwrap();
+            }
+            _ => {}
+        })
+        .menu(&tray_menu)
 }
 
 /// Starts the sync thread for the specified port
@@ -498,43 +552,6 @@ fn stop_sync_thread(
     let port_thread_handle = port_handle.get(network_device_id).unwrap();
     *port_thread_handle.running.lock().unwrap() = false;
     port_thread_handle.handle.thread().unpark();
-}
-
-/// Handles the system tray behaviour
-fn build_system_tray_handler() -> fn(&AppHandle<Wry>, SystemTrayEvent) {
-    |app, event| match event {
-        SystemTrayEvent::DoubleClick {
-            position: _,
-            size: _,
-            ..
-        } => {
-            let window = app.get_window(WINDOW_NAME).unwrap();
-            if window.is_visible().unwrap() {
-                window.hide().unwrap();
-            } else {
-                window.show().unwrap();
-            }
-        }
-        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-            "quit" => {
-                app.exit(0);
-            }
-            "show" => {
-                app.get_window("main").unwrap().show().unwrap();
-            }
-            _ => {}
-        },
-        _ => {}
-    }
-}
-
-/// Build the system tray
-fn build_system_tray() -> SystemTray {
-    SystemTray::new().with_menu(
-        SystemTrayMenu::new()
-            .add_item(CustomMenuItem::new("show".to_string(), "Show"))
-            .add_item(CustomMenuItem::new("quit".to_string(), "Quit")),
-    )
 }
 
 /// Verifies the config for the specified network device

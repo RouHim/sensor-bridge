@@ -20,7 +20,6 @@ pub const WINDOW_LABEL: &str = "lcd_preview";
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
 pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
-    let network_device_id = port_config.id.clone();
     let width = port_config.display_config.resolution_width;
     let height = port_config.display_config.resolution_height;
     let lcd_elements = port_config.display_config.elements.clone();
@@ -31,12 +30,10 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
         // Prepare static assets
         prepare_assets(lcd_elements);
 
-        let lcd_preview_window = tauri::WindowBuilder::new(
-            &app_handle,
-            WINDOW_LABEL,
-            tauri::WindowUrl::App(format!("lcd_preview.html#{network_device_id}").into()),
-        )
-        .build();
+        let lcd_preview_window = tauri::WindowBuilder::new(&app_handle, WINDOW_LABEL)
+            .title("LCD Preview")
+            .inner_size(width as f64, height as f64)
+            .build();
 
         // There is already a window handle
         if lcd_preview_window.is_err() {
@@ -47,12 +44,7 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
         }
 
         let lcd_preview_window = lcd_preview_window.unwrap();
-        lcd_preview_window.set_title("LCD Preview").unwrap();
         lcd_preview_window.set_resizable(false).unwrap();
-        lcd_preview_window
-            .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
-            .unwrap();
-
         lcd_preview_window.show().unwrap();
     });
 }

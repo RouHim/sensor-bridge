@@ -6,61 +6,59 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use log::{debug, error, info, warn};
-use message_io::network::{Endpoint, SendStatus, Transport};
-use message_io::node::NodeHandler;
 use sensor_core::{DisplayConfig, RenderData, SensorValue, TransportMessage, TransportType};
+use ureq::{Agent, AgentBuilder};
 
 use crate::config::NetworkDeviceConfig;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
 const PUSH_RATE: Duration = Duration::from_millis(1000);
 const NETWORK_PORT: u64 = 10489;
+const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Opens a tcp socket to the specified address
-pub fn open(net_port_config: &NetworkDeviceConfig) -> Option<(NodeHandler<()>, Endpoint)> {
-    let (handler, _listener) = message_io::node::split::<()>();
-    let tcp_endpoint = connect_to_tcp_socket(net_port_config, &handler);
-
-    tcp_endpoint.map(|endpoint| (handler, endpoint))
+// Custom type to represent HTTP connection
+pub struct HttpEndpoint {
+    address: String,
+    agent: Agent,
 }
 
-/// Establishes a tcp connection to the specified address
-fn connect_to_tcp_socket(
-    net_port_config: &NetworkDeviceConfig,
-    handler: &NodeHandler<()>,
-) -> Option<Endpoint> {
+/// Opens an HTTP connection to the specified address
+pub fn open(net_port_config: &NetworkDeviceConfig) -> Option<HttpEndpoint> {
     let ip = resolve_hostname(&net_port_config.address);
 
     if ip.is_none() {
         error!("Could not resolve hostname {}", net_port_config.address);
+        return None;
     }
 
-    let address = format!("{}:{NETWORK_PORT}", ip.unwrap());
+    let address = format!("http://{}:{NETWORK_PORT}", ip.unwrap());
 
     info!(
         "Connecting to device {}({})",
         net_port_config.name, &address
     );
 
-    // Blocks until the connection is established
-    let endpoint = handler
-        .network()
-        .connect_sync(Transport::FramedTcp, &address);
+    // Create HTTP agent with timeouts
+    let agent = AgentBuilder::new()
+        .timeout_read(HTTP_TIMEOUT)
+        .timeout_write(HTTP_TIMEOUT)
+        .build();
 
-    // If not ok, print error and return none
-    match endpoint {
-        Ok(endpoint) => {
+    // Test connection
+    match agent.get(&format!("{}/ping", address)).call() {
+        Ok(_) => {
             info!("Connected to device {}({})", net_port_config.name, &address);
 
-            let mut net_port = (handler.clone(), endpoint.0);
-            prepare_static_data(net_port_config, &mut net_port);
+            let http_endpoint = HttpEndpoint { address, agent };
 
-            Some(endpoint.0)
+            prepare_static_data(net_port_config, &http_endpoint);
+
+            Some(http_endpoint)
         }
-        Err(_err) => {
+        Err(err) => {
             error!(
-                "Could not connect to device {}({})",
-                net_port_config.name, &address
+                "Could not connect to device {}({}) - Error: {:?}",
+                net_port_config.name, &address, err
             );
             None
         }
@@ -68,19 +66,16 @@ fn connect_to_tcp_socket(
 }
 
 /// Prepares the static data.
-/// This sends the static image data and the conditional image data to the remote tcp socket.
-fn prepare_static_data(
-    net_port_config: &NetworkDeviceConfig,
-    net_port: &mut (NodeHandler<()>, Endpoint),
-) {
+/// This sends the static image data and the conditional image data to the remote HTTP endpoint.
+fn prepare_static_data(net_port_config: &NetworkDeviceConfig, http_endpoint: &HttpEndpoint) {
     // Prepare text data
-    prepare_static_text_data_on_display(net_port_config, net_port);
+    prepare_static_text_data_on_display(net_port_config, http_endpoint);
 
     // Prepare static image data
-    prepare_static_image_data_on_display(net_port_config, net_port);
+    prepare_static_image_data_on_display(net_port_config, http_endpoint);
 
     // Prepare conditional image data
-    prepare_conditional_image_data_on_display(net_port_config, net_port);
+    prepare_conditional_image_data_on_display(net_port_config, http_endpoint);
 
     // Wait 1 seconds for the assets to be loaded
     info!("Waiting 1s for assets to be processed by the display...");
@@ -96,7 +91,7 @@ fn resolve_hostname(address: &str) -> Option<String> {
 
     // Otherwise we most likely have a hostname, try to resolve the hostname
     // and get the first ipv4 address
-    return match dns_lookup::lookup_host(address).ok() {
+    match dns_lookup::lookup_host(address).ok() {
         Some(ips) => ips
             .iter()
             .filter(|ip| ip.is_ipv4())
@@ -106,10 +101,10 @@ fn resolve_hostname(address: &str) -> Option<String> {
             error!("Could not resolve hostname {}", address);
             None
         }
-    };
+    }
 }
 
-/// Starts a new thread that writes to the remote tcp socket.
+/// Starts a new thread that sends data via HTTP.
 /// Returns a handle to the thread.
 /// The thread will be stopped when the port_running_state_handle is set to false.
 /// The thread will be joined when the handle is dropped.
@@ -122,13 +117,14 @@ pub fn start_sync(
     let static_sensor_values = static_sensor_values.clone();
     let sensor_value_history = sensor_value_history.clone();
 
-    // Start new thread that writes to the remote tcp socket
+    // Start new thread that writes data via HTTP
     let handle = thread::spawn(move || {
-        // Try to open the named network port
-        let mut net_port = match try_open_tcp_socket(&net_port_config, &port_running_state_handle) {
-            Some(value) => value,
-            None => return,
-        };
+        // Try to open the HTTP connection
+        let mut http_endpoint =
+            match try_open_http_endpoint(&net_port_config, &port_running_state_handle) {
+                Some(value) => value,
+                None => return,
+            };
 
         // Send data until the port_running_state_handle is set to false (sync button in UI)
         while *port_running_state_handle.lock().unwrap() {
@@ -143,8 +139,8 @@ pub fn start_sync(
             let data_to_send =
                 serialize_render_data(net_port_config.display_config.clone(), last_sensor_values);
 
-            // Send to actual data to the remote tcp socket
-            send_tcp_data(&net_port_config, &mut net_port, data_to_send);
+            // Send the actual data to the remote HTTP endpoint
+            send_http_data(&net_port_config, &mut http_endpoint, data_to_send);
 
             // Wait for the next iteration
             wait(start_time);
@@ -157,61 +153,59 @@ pub fn start_sync(
     Arc::new(handle)
 }
 
-/// Tries to open the tcp socket until the port_running_state_handle is set to false.
-/// Returns a tcp handler and tcp listener
-fn try_open_tcp_socket(
+/// Tries to open the HTTP connection until the port_running_state_handle is set to false.
+fn try_open_http_endpoint(
     net_port_config: &NetworkDeviceConfig,
     port_running_state_handle: &Arc<Mutex<bool>>,
-) -> Option<(NodeHandler<()>, Endpoint)> {
-    let mut net_port = None;
+) -> Option<HttpEndpoint> {
+    let mut http_endpoint = None;
 
-    while *port_running_state_handle.lock().unwrap() && net_port.is_none() {
-        // Wait 1 seconds before trying to open the port again
+    while *port_running_state_handle.lock().unwrap() && http_endpoint.is_none() {
+        // Wait 1 seconds before trying to open the connection again
         thread::sleep(Duration::from_secs(1));
 
-        // Try to open the named network port
-        net_port = open(net_port_config);
+        // Try to open the HTTP connection
+        http_endpoint = open(net_port_config);
     }
-    net_port.as_ref()?;
 
-    net_port
+    http_endpoint
 }
 
-/// Prepares the render data for the remote tcp socket
+/// Prepares the render data for the remote HTTP endpoint
 fn prepare_static_text_data_on_display(
     net_port_config: &NetworkDeviceConfig,
-    net_port: &mut (NodeHandler<()>, Endpoint),
+    http_endpoint: &HttpEndpoint,
 ) {
     let text_data = text::get_preparation_data(&net_port_config.display_config);
     let data_to_send = text::serialize(text_data);
-    send_tcp_data(net_port_config, net_port, data_to_send);
+    send_http_data(net_port_config, http_endpoint, data_to_send);
 }
 
-/// Prepares the render data for the remote tcp socket
+/// Prepares the render data for the remote HTTP endpoint
 fn prepare_static_image_data_on_display(
     net_port_config: &NetworkDeviceConfig,
-    net_port: &mut (NodeHandler<()>, Endpoint),
+    http_endpoint: &HttpEndpoint,
 ) {
     let static_image_data = static_image::get_preparation_data(&net_port_config.display_config);
     let data_to_send = static_image::serialize(static_image_data);
-    send_tcp_data(net_port_config, net_port, data_to_send);
+    send_http_data(net_port_config, http_endpoint, data_to_send);
 }
 
-/// Prepares the conditional image data and sends it to the remote tcp socket
+/// Prepares the conditional image data and sends it to the remote HTTP endpoint
 fn prepare_conditional_image_data_on_display(
     net_port_config: &NetworkDeviceConfig,
-    net_port: &mut (NodeHandler<()>, Endpoint),
+    http_endpoint: &HttpEndpoint,
 ) {
     let conditional_image_data =
         conditional_image::get_preparation_data(&net_port_config.display_config);
     let data_to_send = conditional_image::serialize_preparation_data(conditional_image_data);
-    send_tcp_data(net_port_config, net_port, data_to_send);
+    send_http_data(net_port_config, http_endpoint, data_to_send);
 }
 
-/// Sends the data to the remote tcp socket
-fn send_tcp_data(
+/// Sends the data to the remote HTTP endpoint
+fn send_http_data(
     net_port_config: &NetworkDeviceConfig,
-    net_port: &mut (NodeHandler<()>, Endpoint),
+    http_endpoint: &HttpEndpoint,
     data_to_send: Vec<u8>,
 ) {
     // Log data to send
@@ -221,43 +215,44 @@ fn send_tcp_data(
         data_len.0, data_len.1, net_port_config.name
     );
 
-    // Send the actual data via TCP
-    let send_status: SendStatus = net_port.0.network().send(net_port.1, &data_to_send);
+    // Send the actual data via HTTP POST request
+    let response = http_endpoint
+        .agent
+        .post(&format!("{}/data", http_endpoint.address))
+        .set("Content-Type", "application/octet-stream")
+        .send_bytes(&data_to_send);
 
     // Handle response status
-    match send_status {
-        SendStatus::MaxPacketSizeExceeded => {
-            error!(" MaxPacketSizeExceeded")
-        }
-        SendStatus::Sent => {
-            info!(" Successfully")
-        }
-        SendStatus::ResourceNotFound => {
-            warn!(" Not found --> Reconnecting");
-            // Connection was lost, try to reconnect
-            *net_port = match open(net_port_config) {
-                Some((handler, endpoint)) => (handler, endpoint),
-                None => {
-                    return;
-                }
-            };
-        }
-        SendStatus::ResourceNotAvailable => {
-            warn!(" Not available --> Reconnecting");
-            // Connection failed, try to reconnect
-            *net_port = match open(net_port_config) {
-                Some((handler, endpoint)) => (handler, endpoint),
-                None => {
-                    return;
-                }
+    match response {
+        Ok(resp) => {
+            if resp.status() == 200 {
+                info!(" Successfully");
+            } else {
+                warn!(" Failed with status {}", resp.status());
+                reconnect_http_endpoint(net_port_config, http_endpoint);
             }
+        }
+        Err(err) => {
+            warn!(" Request failed: {:?} --> Reconnecting", err);
+            reconnect_http_endpoint(net_port_config, http_endpoint);
         }
     }
 }
 
+/// Attempt to reconnect to the HTTP endpoint
+fn reconnect_http_endpoint(net_port_config: &NetworkDeviceConfig, http_endpoint: &HttpEndpoint) {
+    // For now we just log the reconnection attempt
+    // Actual reconnection will happen on the next data send attempt
+    // due to the stateless nature of HTTP
+    info!(
+        "Will attempt to reconnect to {} on next data send",
+        net_port_config.name
+    );
+}
+
 /// Serializes the sensor values and display config to a transport message.
 /// The transport message is then serialized to a byte vector.
-/// The byte vector is then sent to the remote tcp socket.
+/// The byte vector is then sent to the remote HTTP endpoint.
 fn serialize_render_data(
     display_config: DisplayConfig,
     last_sensor_values: Vec<SensorValue>,
@@ -280,7 +275,7 @@ fn serialize_render_data(
 
 /// Waits for the remaining time of the update interval
 /// To keep the PUSH_RATE at a constant rate, we need to sleep for the remaining time - the time it took to read the sensor values
-/// and send them to the network tcp port
+/// and send them to the network endpoint
 fn wait(start_time: Instant) {
     let processing_duration = Instant::now().duration_since(start_time);
     debug!("Processing duration: {:?}", processing_duration);
@@ -302,18 +297,25 @@ pub fn verify_network_address(address: &str) -> bool {
         return false;
     }
 
-    // Pings the specified address
+    // Test HTTP connection to the specified address
     check_ip(&ip.unwrap())
 }
 
-/// Pings the specified ip address
+/// Tests HTTP connection to the specified ip address
 pub fn check_ip(ip: &str) -> bool {
-    info!("Testing IP '{ip}' on TCP port '{NETWORK_PORT}'");
+    let address = format!("http://{ip}:{NETWORK_PORT}");
+    info!("Testing IP '{ip}' on HTTP port '{NETWORK_PORT}'");
 
-    let (handler, _) = message_io::node::split::<()>();
-    let endpoint = handler
-        .network()
-        .connect_sync(Transport::FramedTcp, format!("{ip}:{NETWORK_PORT}"));
+    let agent = AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(2))
+        .build();
 
-    endpoint.is_ok()
+    // Try to connect with timeout already configured in the agent
+    match agent.get(&format!("{}/ping", address)).call() {
+        Ok(_) => true,
+        Err(err) => {
+            debug!("Connection test failed: {:?}", err);
+            false
+        }
+    }
 }
