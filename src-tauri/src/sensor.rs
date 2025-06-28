@@ -10,7 +10,7 @@ use crate::system_stat_sensor;
 use crate::utils::LockResultExt;
 use crate::{
     linux_amdgpu, linux_lm_sensors, linux_system_sensors, misc_sensor,
-    windows_libre_hardware_monitor_sensor, SENSOR_VALUE_HISTORY_SIZE,
+    SENSOR_VALUE_HISTORY_SIZE,
 };
 
 pub trait SensorProvider {
@@ -64,7 +64,6 @@ fn read_dynamic_sensor_values() -> Vec<SensorValue> {
         linux_lm_sensors::get_sensor_values,
         linux_amdgpu::get_sensor_values,
         linux_system_sensors::get_sensor_values,
-        windows_libre_hardware_monitor_sensor::get_sensor_values,
     ];
 
     let mut sensor_values = vec![];
