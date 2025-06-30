@@ -44,21 +44,21 @@
 
         <div class="flex-container center-horizontal">
 
-            <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
+            <select id="main-registered-clients-select" style="width: 300px; margin-right: 5px">
             </select>
 
-            <button class="icon-button" id="btn-add-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Add a new network device">
-                <i data-feather="plus"></i>
+            <button class="icon-button" id="btn-refresh-clients" style="font-size: 2em; margin-right: 10px;"
+                    title="Refresh registered clients">
+                <i data-feather="refresh-cw"></i>
             </button>
 
-            <button class="icon-button" id="lcd-btn-save-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Save device configuration">
+            <button class="icon-button" id="lcd-btn-save-client-config" style="font-size: 2em; margin-right: 10px;"
+                    title="Save client configuration">
                 <i data-feather="save"></i>
             </button>
 
-            <button class="icon-button" id="lcd-btn-remove-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Remove device configuration">
+            <button class="icon-button" id="lcd-btn-remove-client" style="font-size: 2em; margin-right: 10px;"
+                    title="Remove registered client">
                 <i data-feather="trash"></i>
             </button>
 
@@ -88,23 +88,22 @@
 
         <div id="lcd-panel" style="display: none;">
 
-            <div class="flex-container center-horizontal" id="device-config">
-                <label for="lcd-txt-device-name" style="margin-right: 5px">Device name:</label>
-                <input id="lcd-txt-device-name" style="width: 150px;" title="Enter a simple name of your device">
-
-                <label for="lcd-txt-device-network-address" style="margin-left: 25px; margin-right: 5px;">Network
-                    address:</label>
-                <input id="lcd-txt-device-network-address" style="width: 150px;"
-                       title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
+            <div class="flex-container center-horizontal" id="client-info">
+                <label for="lcd-txt-client-name" style="margin-right: 5px">Client name:</label>
+                <input id="lcd-txt-client-name" style="width: 200px;" title="Enter a friendly name for this client">
 
                 <div class="flex-container" id="lcd-config" style="margin-left: 25px">
-                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
+                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">Resolution (read-only):</label>
                     <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="1024">
+                           value="1920" readonly>
                     <div style="margin-left: 5px; margin-right: 5px">x</div>
                     <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="600">
+                           value="1080" readonly>
                 </div>
+            </div>
+
+            <div id="lcd-lbl-client-info" style="text-align: center; color: #888; font-size: 0.9em; margin: 10px 0;">
+                Client information will appear here...
             </div>
 
             <div class="center-horizontal">

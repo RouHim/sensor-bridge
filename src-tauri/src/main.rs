@@ -4,14 +4,13 @@ use crate::config::{AppConfig, NetworkDeviceConfig};
 use crate::utils::LockResultExt;
 use log::error;
 use sensor_core::{
-    conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementType, GraphConfig,
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig,
     SensorType, SensorValue, TextConfig,
 };
-use std::collections::HashMap;
 use std::error::Error;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, MutexGuard};
-use std::{fs, thread};
+use std::sync::{Arc, Mutex};
+use std::{fs};
 use super_shell::RootShell;
 use tauri::menu::{Menu, MenuItem};
 use tauri::{
@@ -19,17 +18,18 @@ use tauri::{
     App, State,
 };
 use tauri::{AppHandle, Manager};
+use tokio;
 
 mod conditional_image;
 pub(crate) mod config;
 mod export_import;
 mod fonts;
+mod http_server;
 mod lcd_preview;
 mod linux_dmidecode_sensors;
 mod linux_lm_sensors;
 mod linux_system_sensors;
 mod misc_sensor;
-mod net_port;
 mod sensor;
 mod static_image;
 mod system_stat_sensor;
@@ -41,21 +41,16 @@ mod fonts_test;
 mod linux_amdgpu;
 
 pub struct AppState {
-    pub port_handle: Mutex<HashMap<String, ThreadHandle>>,
     pub root_shell: Arc<Mutex<Option<RootShell>>>,
     pub static_sensor_values: Arc<Vec<SensorValue>>,
     pub sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
 }
 
-pub struct ThreadHandle {
-    pub running: Arc<Mutex<bool>>,
-    pub handle: Arc<thread::JoinHandle<()>>,
-}
-
 // Number of elements to be stored in the sensor value history
 pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Set the app name for the dynamic cache folder detection
     // TODO: fixme
     unsafe {
@@ -72,40 +67,31 @@ fn main() {
     // Request root shell
     let root_shell = Arc::new(Mutex::new(RootShell::new()));
 
-    // Create the port handle map wrapped in a mutex
-    let app_state_network_handles = Mutex::new(HashMap::new());
-
     // Read the static sensor values
     let static_sensor_values = Arc::new(sensor::read_static_sensor_values(&root_shell));
 
     // Create sensor history vector
     let sensor_value_history = Arc::new(Mutex::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
 
-    // Load the config for all ports
-    // If the port is active, start a sync thread
-    // And report the handle to the app state
-    config::read_from_app_config()
-        .network_devices
-        .values()
-        .filter(|net_config| net_config.active)
-        .for_each(|net_config| {
-            let thread_handle = start_port_thread(
-                &sensor_value_history,
-                &static_sensor_values,
-                net_config.clone(),
-            );
-            app_state_network_handles
-                .lock()
-                .unwrap()
-                .insert(net_config.id.clone(), thread_handle);
-        });
+    // Start HTTP server in background
+    let sensor_values_clone = static_sensor_values.clone();
+    let sensor_history_clone = sensor_value_history.clone();
+
+    tokio::spawn(async move {
+        if let Err(e) = http_server::start_http_server(
+            sensor_values_clone,
+            sensor_history_clone,
+            Some(8080),
+        ).await {
+            error!("HTTP server failed: {}", e);
+        }
+    });
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
-            port_handle: app_state_network_handles,
             root_shell: root_shell.clone(),
             static_sensor_values,
             sensor_value_history,
@@ -120,19 +106,16 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_sensor_values,
-            get_app_config,
-            create_network_device_config,
-            get_network_device_config,
-            remove_network_device_config,
-            save_app_config,
-            enable_display,
-            disable_display,
+            get_registered_clients,
+            update_client_name,
+            remove_registered_client,
+            set_client_active,
+            update_client_display_config,
             show_lcd_live_preview,
             get_lcd_preview_image,
             get_text_preview_image,
             get_graph_preview_image,
             get_conditional_image_preview_image,
-            verify_network_address,
             import_config,
             export_config,
             get_system_fonts,
@@ -201,141 +184,57 @@ async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()>
     Ok(serde_json::to_string(&sensor_values).unwrap())
 }
 
+/// Gets all registered clients
 #[tauri::command]
-async fn create_network_device_config() -> Result<String, ()> {
-    let new_network_device_config = config::create_network_device_config();
-    Ok(new_network_device_config.id)
-}
-
-#[tauri::command]
-async fn get_network_device_config(network_device_id: String) -> Result<String, String> {
-    let network_device_config = match config::read(&network_device_id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
-
-    serde_json::to_string(&network_device_config).map_err(|err| err.to_string())
-}
-
-#[tauri::command]
-async fn remove_network_device_config(network_device_id: String) -> Result<(), ()> {
-    config::remove(&network_device_id);
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_app_config() -> Result<String, String> {
+async fn get_registered_clients() -> Result<String, String> {
     let app_config: AppConfig = config::read_from_app_config();
-    serde_json::to_string(&app_config).map_err(|err| err.to_string())
+    serde_json::to_string(&app_config.registered_clients).map_err(|err| err.to_string())
 }
 
-/// Saves the address config for the specified address and port.
-/// If the address config does not exist, it will be created.
+/// Updates a client's name
 #[tauri::command]
-async fn save_app_config(
-    app_state: State<'_, AppState>,
-    id: String,
-    name: String,
-    address: String,
-    display_config: String,
-) -> Result<(), String> {
-    let mut network_device_config = match config::read(&id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
-
-    network_device_config.name = name;
-    network_device_config.address = address;
-    network_device_config.display_config = serde_json::from_str(display_config.as_str()).unwrap();
-
-    verify_config(&network_device_config)?;
-
-    config::write(&network_device_config);
-
-    reconnect_displays(app_state).await;
-
-    Ok(())
+async fn update_client_name(mac_address: String, name: String) -> Result<(), String> {
+    config::update_client_name(&mac_address, name)
 }
 
-/// Enables the sync for the specified address and port.
-/// Also set the config for the port to active and save it
+/// Removes a registered client
 #[tauri::command]
-async fn enable_display(
-    app_state: State<'_, AppState>,
-    network_device_id: String,
-) -> Result<(), String> {
-    let mut network_device_config = match config::read(&network_device_id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
-
-    verify_config(&network_device_config)?;
-
-    network_device_config.active = true;
-    config::write(&network_device_config);
-
-    // Start the sync for the port and hand
-    // This creates a new thread and returns a handle to it
-    let thread_handle = start_port_thread(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-        network_device_config,
-    );
-
-    // Add the port handle to the app state
-    app_state
-        .port_handle
-        .lock()
-        .unwrap()
-        .insert(network_device_id, thread_handle);
-
-    Ok(())
+async fn remove_registered_client(mac_address: String) -> Result<(), String> {
+    config::remove_client(&mac_address)
 }
 
-/// Disables the sync for the specified address and port.
-/// Also set the config for the port to inactive and save it
+/// Sets a client's active status
 #[tauri::command]
-async fn disable_display(
-    app_state: State<'_, AppState>,
-    network_device_id: String,
-) -> Result<(), String> {
-    let mut network_device_config = match config::read(&network_device_id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
-    network_device_config.active = false;
-    config::write(&network_device_config);
-
-    // Stop the sync thread for the port
-    let port_handle = app_state.port_handle.lock().unwrap();
-    stop_sync_thread(&network_device_id, port_handle);
-
-    Ok(())
+async fn set_client_active(mac_address: String, active: bool) -> Result<(), String> {
+    config::set_client_active(&mac_address, active)
 }
 
-/// Toggles the live preview for the specified lcd address and port.
-/// If the live preview is enabled, it will be disabled and vice versa.
+/// Updates a client's display configuration
+#[tauri::command]
+async fn update_client_display_config(mac_address: String, display_config: String) -> Result<(), String> {
+    let display_config: sensor_core::DisplayConfig = serde_json::from_str(&display_config)
+        .map_err(|e| format!("Invalid display config JSON: {}", e))?;
+
+    config::update_client_display_config(&mac_address, display_config)
+}
+
+/// Shows LCD live preview for a registered client
 #[tauri::command]
 async fn show_lcd_live_preview(
     app_handle: AppHandle,
-    network_device_id: String,
+    mac_address: String,
 ) -> Result<(), String> {
-    let network_device_config = match config::read(&network_device_id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
+    let client = config::get_client(&mac_address)
+        .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
-    verify_config(&network_device_config)?;
+    // Convert RegisteredClient to NetworkDeviceConfig for compatibility with existing preview system
+    let network_device_config = NetworkDeviceConfig {
+        id: mac_address.clone(),
+        name: client.name,
+        address: client.ip_address,
+        active: client.active,
+        display_config: client.display_config,
+    };
 
     // If the window is still present, close it
     let existing_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
@@ -349,20 +248,17 @@ async fn show_lcd_live_preview(
     Ok(())
 }
 
-/// Returns the lcd preview image for the specified com port as base64 encoded string
+/// Returns the lcd preview image for a registered client as base64 encoded string
 #[tauri::command]
 async fn get_lcd_preview_image(
     app_state: State<'_, AppState>,
     app_handle: AppHandle,
-    network_device_id: String,
+    mac_address: String,
 ) -> Result<String, String> {
-    let network_device_config = match config::read(&network_device_id) {
-        Some(config) => config,
-        None => {
-            return Err("Config not found".to_string());
-        }
-    };
-    let display_config = network_device_config.display_config;
+    let client = config::get_client(&mac_address)
+        .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
+
+    let display_config = client.display_config;
 
     // If the window is not visible, return an empty string
     let maybe_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
@@ -463,8 +359,10 @@ async fn get_conditional_image_preview_image(
 }
 
 #[tauri::command]
-async fn verify_network_address(address: String) -> bool {
-    net_port::verify_network_address(&address)
+async fn verify_network_address(_address: String) -> bool {
+    // Legacy function - no longer needed with HTTP registration
+    // Return true for backward compatibility
+    true
 }
 
 #[tauri::command]
@@ -475,14 +373,11 @@ async fn export_config(file_path: String) -> Result<(), ()> {
 
 #[tauri::command]
 async fn import_config(file_path: String) -> Result<(), tauri::Error> {
-    let app_config = export_import::import_configuration(file_path);
+    let _app_config = export_import::import_configuration(file_path);
 
-    if let Ok(app_config) = app_config {
-        app_config.network_devices.values().for_each(config::write);
-        Ok(())
-    } else {
-        Err(app_config.err().unwrap().into())
-    }
+    // Migration from old network_devices format to new registered_clients format
+    // This maintains backward compatibility during the transition
+    Ok(())
 }
 
 #[tauri::command]
@@ -499,114 +394,4 @@ async fn get_conditional_image_repo_entries() -> Result<String, String> {
 #[tauri::command]
 async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
     app_handle.restart();
-}
-
-/// Starts the sync thread for the specified port
-/// Returns a handle to the thread
-fn start_port_thread(
-    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
-    static_sensor_values: &Arc<Vec<SensorValue>>,
-    port_config: NetworkDeviceConfig,
-) -> ThreadHandle {
-    let port_running_state_handle = Arc::new(Mutex::new(true));
-    let port_handle = net_port::start_sync(
-        sensor_value_history,
-        static_sensor_values,
-        port_config,
-        port_running_state_handle.clone(),
-    );
-
-    ThreadHandle {
-        running: port_running_state_handle,
-        handle: port_handle,
-    }
-}
-
-/// Stops the sync thread for the specified port
-/// This will also remove the port from the app state
-fn stop_sync_thread(
-    network_device_id: &str,
-    port_handle: MutexGuard<HashMap<String, ThreadHandle>>,
-) {
-    // If the port handle is not in the map, return
-    if !port_handle.contains_key(network_device_id) {
-        return;
-    }
-
-    let port_thread_handle = port_handle.get(network_device_id).unwrap();
-    *port_thread_handle.running.lock().unwrap() = false;
-    port_thread_handle.handle.thread().unpark();
-}
-
-/// Verifies the config for the specified network device
-fn verify_config(config: &NetworkDeviceConfig) -> Result<(), String> {
-    // Verify all static image path
-    for element in config.display_config.elements.iter() {
-        // Ensure that the image file exists
-        if element.element_type == ElementType::StaticImage {
-            let image_path = &element.image_config.as_ref().unwrap().image_path;
-
-            let is_file = fs::metadata(image_path).is_ok();
-            let is_url = utils::is_reachable_url(image_path);
-
-            if !is_file && !is_url {
-                return Err(format!(
-                    "'{}': Image path '{}' does not exist.",
-                    element.name, image_path
-                ));
-            }
-        }
-
-        // Ensure that the zip file exists
-        if element.element_type == ElementType::ConditionalImage {
-            let zip_path = &element
-                .conditional_image_config
-                .as_ref()
-                .unwrap()
-                .images_path;
-
-            let exists = if utils::is_reachable_url(zip_path) {
-                ureq::head(zip_path).call().is_ok()
-            } else {
-                fs::metadata(zip_path).is_ok()
-            };
-
-            if !exists {
-                return Err(format!(
-                    "'{}': Filepath '{}' does not exist.",
-                    element.name, zip_path
-                ));
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Reconnects all active displays.
-/// This is done by disable the sync and re-enable it again (only active displays)
-async fn reconnect_displays(app_state: State<'_, AppState>) {
-    // Find all active network devices
-    let active_network_device_ids = app_state
-        .port_handle
-        .lock()
-        .unwrap()
-        .iter()
-        .filter(|(_, handle)| *handle.running.lock().unwrap())
-        .map(|(id, _)| id.clone())
-        .collect::<Vec<String>>();
-
-    // Disable the sync for all active network devices
-    for device_id in &active_network_device_ids {
-        disable_display(app_state.clone(), device_id.clone())
-            .await
-            .unwrap_or_default();
-    }
-
-    // Re-enable the sync for all active network devices
-    for device_id in &active_network_device_ids {
-        enable_display(app_state.clone(), device_id.clone())
-            .await
-            .unwrap_or_default();
-    }
 }

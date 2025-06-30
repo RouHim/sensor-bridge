@@ -8,23 +8,23 @@ const sensorSelectionDialog = document.getElementById("sensor-selection-dialog")
 const sensorSelectionTable = document.getElementById("sensor-selection-table");
 const txtSensorSelectionTableFilterInput = document.getElementById("sensor-selection-table-filter-input");
 
-// Network port selection
-const cmbNetworkPorts = document.getElementById("main-network-ports-select");
+// Client selection and management
+const cmbRegisteredClients = document.getElementById("main-registered-clients-select");
 const lcdBasePanel = document.getElementById("lcd-panel");
 
 // Main buttons
-const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
-const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
+const btnRefreshClients = document.getElementById("btn-refresh-clients");
+const btnSaveClientConfig = document.getElementById("lcd-btn-save-client-config");
 const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
-const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
+const btnRemoveClient = document.getElementById("lcd-btn-remove-client");
 const btnExportConfig = document.getElementById("btn-export-config");
 const btnImportConfig = document.getElementById("btn-import-config");
 const panelKillSwitch = document.getElementById("kill-switch-input");
 const btnActivateSync = document.getElementById("main-chk-transfer-active");
 
-// LCD designer
-const txtDeviceName = document.getElementById("lcd-txt-device-name");
-const txtDeviceNetworkAddress = document.getElementById("lcd-txt-device-network-address");
+// Client configuration (simplified - no network address needed)
+const txtClientName = document.getElementById("lcd-txt-client-name");
+const lblClientInfo = document.getElementById("lcd-lbl-client-info");
 const txtDisplayResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtDisplayResolutionHeight = document.getElementById("lcd-txt-resolution-height");
 const designerPane = document.getElementById("lcd-designer-pane");
@@ -109,7 +109,7 @@ let sensorValues = [];
 let selectedListElement = null;
 let selectedDesignerElement = null;
 let draggedLiElement;
-let currentNetworkDeviceId = null;
+let currentClientMacAddress = null;
 
 // Global constants
 const DESIGNER_ID_PREFIX = "designer-";
@@ -178,9 +178,9 @@ window.addEventListener("DOMContentLoaded", () => {
         forceAlpha: true,
     }));
 
-    // Register on network device selected onNetDeviceSelected(liElement)
-    cmbNetworkPorts.addEventListener("change", (event) => {
-        onNetDeviceSelected(event.target.options[event.target.selectedIndex]);
+    // Register client selection event
+    cmbRegisteredClients.addEventListener("change", (event) => {
+        onClientSelected(event.target.options[event.target.selectedIndex]);
     });
 
     // Register event for display resolution
@@ -190,12 +190,12 @@ window.addEventListener("DOMContentLoaded", () => {
     // Register event for element type
     cmbElementType.addEventListener("change", onElementTypeChange);
 
-    // Register button click events
-    btnAddNetworkDevice.addEventListener("click", createNetworkPort);
-    btnRemoveNetworkDevice.addEventListener("click", removeNetworkDevice);
+    // Register button click events - updated for client management
+    btnRefreshClients.addEventListener("click", loadRegisteredClients);
+    btnRemoveClient.addEventListener("click", removeClient);
     btnExportConfig.addEventListener("click", exportConfig);
     btnImportConfig.addEventListener("click", importConfig);
-    btnSaveNetworkDevice.addEventListener("click", onSave);
+    btnSaveClientConfig.addEventListener("click", onSave);
     btnSaveElement.addEventListener("click", onSave);
     btnActivateSync.addEventListener("click", () => toggleSync(btnActivateSync.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
@@ -232,9 +232,9 @@ window.addEventListener("DOMContentLoaded", () => {
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
     designerPane.addEventListener('drop', dropOnDesignerPane);
 
-    // Load all devices from config
-    loadDeviceConfigs().catch((error) => {
-            alert("Error while loading device configs. " + error);
+    // Load all registered clients from server
+    loadRegisteredClients().catch((error) => {
+            alert("Error while loading registered clients. " + error);
         }
     );
 
@@ -1433,24 +1433,14 @@ function toTauriAssetPath(image_path) {
 }
 
 function validateUi() {
-    // Device config
-    if (txtDeviceName.value === "") {
-        alert("Please enter a name for the device.");
+    // Client config
+    if (txtClientName.value === "") {
+        alert("Please enter a name for the client.");
         return false;
     }
-    if (txtDeviceNetworkAddress.value === "") {
-        alert("Please enter a network address for the device.");
-        return false;
-    }
-    // resolution
-    if (txtDisplayResolutionWidth.value === "") {
-        alert("Please enter a resolution width for the device.");
-        return false;
-    }
-    if (txtDisplayResolutionHeight.value === "") {
-        alert("Please enter a resolution height for the device.");
-        return false;
-    }
+
+    // Note: Resolution is now read-only, provided by client
+    // No need to validate network address
 
     // Element config
     if (txtElementName.value === "") {
@@ -1656,11 +1646,14 @@ function onSave() {
 
     updateCurrentElement();
 
-    // Update the device name in list
-    let deviceNameElement = document.getElementById(currentNetworkDeviceId);
-    deviceNameElement.innerText = txtDeviceName.value;
+    // Update the client name in the list
+    if (currentClientMacAddress) {
+        const selectedOption = cmbRegisteredClients.querySelector(`option[value="${currentClientMacAddress}"]`);
+        if (selectedOption) {
+            selectedOption.innerText = `${txtClientName.value} (${currentClientMacAddress.substring(0, 8)}...)`;
+        }
+    }
 
-    // Writes config to backend
     saveConfig();
 }
 
