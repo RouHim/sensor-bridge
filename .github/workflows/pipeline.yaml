@@ -14,7 +14,7 @@ jobs:
 
   check-repo:
     name: Check git repository
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
 
   check-code-style:
     name: Check code style
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
 
   check-code:
     name: Check rust code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,7 +83,7 @@ jobs:
 
   check-unused-dependencies:
     name: Check for unused deps
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,7 +117,7 @@ jobs:
 
   test:
     name: Run application tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -148,7 +148,7 @@ jobs:
   create-release:
     name: Create new release
     needs: [ check-repo, check-code-style, check-code, test ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
@@ -287,7 +287,7 @@ jobs:
   update-updater:
     name: Update updater
     needs: [ bundle-and-upload ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       UPDATER_FILE: ".github/updater/sensorbridge_update.json"
     steps:
