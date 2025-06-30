@@ -197,7 +197,7 @@ window.addEventListener("DOMContentLoaded", () => {
     btnImportConfig.addEventListener("click", importConfig);
     btnSaveClientConfig.addEventListener("click", onSave);
     btnSaveElement.addEventListener("click", onSave);
-    btnActivateSync.addEventListener("click", () => toggleSync(btnActivateSync.checked));
+    btnActivateSync.addEventListener("click", () => toggleHttpServer(btnActivateSync.checked));
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
     btnAddElement.addEventListener("click", addNewElement);
     btnRemoveElement.addEventListener("click", removeElement);
@@ -224,9 +224,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
-
-    // If lost focus, check network config
-    txtDeviceNetworkAddress.addEventListener("focusout", verifyNetworkAddress);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
@@ -440,9 +437,10 @@ function importConfig() {
                                 if (pressedOk) {
                                     invoke('restart_app');
                                 } else {
-                                    loadDeviceConfigs()
+                                    // Reload registered clients instead of device configs
+                                    loadRegisteredClients()
                                         .catch((error) => {
-                                                alert("Error while loading device configs. " + error);
+                                                alert("Error while loading registered clients. " + error);
                                             }
                                         )
                                 }
@@ -491,19 +489,6 @@ function changeMoveUnit() {
             btnControlPadChangeMoveUnit.innerText = "1px";
             break;
     }
-}
-
-function verifyNetworkAddress() {
-    // Call backend to verify network address
-    invoke('verify_network_address', {address: txtDeviceNetworkAddress.value}).then(
-        (isValid) => {
-            if (isValid) {
-                txtDeviceNetworkAddress.classList.remove("invalid");
-            } else {
-                txtDeviceNetworkAddress.classList.add("invalid");
-            }
-        }
-    );
 }
 
 /// Show an info dialog which explains how to use conditional image upload
@@ -781,97 +766,222 @@ function getElementConfig(listItem) {
     };
 }
 
-function saveConfig() {
-    // If net port id is empty, return
-    if (currentNetworkDeviceId === "") {
+// Load all registered clients from the backend
+async function loadRegisteredClients() {
+    try {
+        const response = await invoke('get_registered_clients');
+        const clients = JSON.parse(response);
+
+        // Clear the select dropdown
+        cmbRegisteredClients.innerHTML = "";
+
+        // Add a default option
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.innerText = "Select a client...";
+        cmbRegisteredClients.appendChild(defaultOption);
+
+        // Add each client to the dropdown
+        Object.entries(clients).forEach(([macAddress, client]) => {
+            const option = document.createElement("option");
+            option.value = macAddress;
+            option.innerText = `${client.name} (${macAddress.substring(0, 8)}...)`;
+            cmbRegisteredClients.appendChild(option);
+        });
+
+        console.log("Loaded registered clients successfully");
+    } catch (error) {
+        console.error("Error loading registered clients:", error);
+        throw error;
+    }
+}
+
+// Remove the currently selected client
+async function removeClient() {
+    if (!currentClientMacAddress) {
+        alert("Please select a client first.");
         return;
     }
 
-    // Get device name and network address
-    // Find all list items of lcd-designer-placed-elements extract sensors and save them to the lcd config
-    const lcdDesignerPlacedElementsListItemsArray = Array.from(lstDesignerPlacedElements.getElementsByTagName("li"));
+    if (!confirm(`Are you sure you want to remove client ${currentClientMacAddress}?`)) {
+        return;
+    }
 
+    try {
+        await invoke('remove_registered_client', { macAddress: currentClientMacAddress });
+        await loadRegisteredClients();
+        currentClientMacAddress = null;
+        // Clear the form
+        onClientSelected(null);
+        console.log("Client removed successfully");
+    } catch (error) {
+        alert("Error removing client: " + error);
+    }
+}
+
+// Handle client selection from the dropdown
+function onClientSelected(selectedOption) {
+    if (!selectedOption || !selectedOption.value) {
+        // No client selected, disable interaction
+        lcdBasePanel.style.display = "none";
+        currentClientMacAddress = null;
+        return;
+    }
+
+    currentClientMacAddress = selectedOption.value;
+
+    // Enable client interaction
+    lcdBasePanel.style.display = "block";
+
+    // Load client data and populate form
+    loadClientData(currentClientMacAddress);
+}
+
+// Load client data for the selected client
+async function loadClientData(macAddress) {
+    try {
+        const response = await invoke('get_registered_clients');
+        const clients = JSON.parse(response);
+        const client = clients[macAddress];
+
+        if (!client) {
+            alert("Client not found");
+            return;
+        }
+
+        // Populate form fields
+        txtClientName.value = client.name || "";
+        txtDisplayResolutionWidth.value = client.display_config?.resolution_width || 320;
+        txtDisplayResolutionHeight.value = client.display_config?.resolution_height || 240;
+
+        // Update display dimensions
+        updateDisplayDesignPaneDimensions();
+
+        // Load sensor values and display config
+        await loadSensorValues();
+        loadDisplayConfigForClient(client.display_config);
+
+    } catch (error) {
+        alert("Error loading client data: " + error);
+    }
+}
+
+// Load display configuration for the selected client
+function loadDisplayConfigForClient(displayConfig) {
+    if (!displayConfig) {
+        // Clear designer pane and list
+        designerPane.innerHTML = "";
+        lstDesignerPlacedElements.innerHTML = "";
+        return;
+    }
+
+    // Set display resolution
+    txtDisplayResolutionWidth.value = displayConfig.resolution_width;
+    txtDisplayResolutionHeight.value = displayConfig.resolution_height;
+
+    // Clear designer pane and list
+    designerPane.innerHTML = "";
+    lstDesignerPlacedElements.innerHTML = "";
+
+    // Add elements to designer pane and list
+    if (displayConfig.elements) {
+        displayConfig.elements.forEach((element, index) => {
+            // Add element to list
+            addElementToList(element.id, element.x, element.y, element.name, element.element_type,
+                element.text_config, element.image_config, element.graph_config, element.conditional_image_config);
+
+            // Add element to designer pane
+            addElementToDesignerPane(index, element.id, element.element_type, element.x, element.y,
+                element.text_config, element.image_config, element.graph_config, element.conditional_image_config);
+        });
+
+        // If there are elements, select the first one
+        if (displayConfig.elements.length > 0) {
+            setSelectedElement(document.querySelector("#lcd-designer-placed-elements li"));
+        }
+    }
+
+    // Update designer pane dimensions
+    designerPane.style.width = displayConfig.resolution_width + "px";
+    designerPane.style.height = displayConfig.resolution_height + "px";
+}
+
+// Save the current client configuration
+async function saveConfig() {
+    if (!currentClientMacAddress) {
+        alert("No client selected");
+        return;
+    }
+
+    // Get all elements configuration
+    const lcdDesignerPlacedElementsListItemsArray = Array.from(lstDesignerPlacedElements.getElementsByTagName("li"));
     const displayElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
         return getElementConfig(listItem);
     });
 
-    // Build lcd config object, with integers
+    // Build display config object
     const displayConfig = {
         resolution_width: parseInt(txtDisplayResolutionWidth.value),
         resolution_height: parseInt(txtDisplayResolutionHeight.value),
         elements: displayElements,
+    };
+
+    try {
+        // Update client name
+        await invoke('update_client_name', {
+            macAddress: currentClientMacAddress,
+            name: txtClientName.value
+        });
+
+        // Update display config
+        await invoke('update_client_display_config', {
+            macAddress: currentClientMacAddress,
+            displayConfig: JSON.stringify(displayConfig)
+        });
+
+        // Reload clients to update the dropdown
+        await loadRegisteredClients();
+
+        // Reselect the current client
+        cmbRegisteredClients.value = currentClientMacAddress;
+
+        console.log("Configuration saved successfully");
+    } catch (error) {
+        alert("Error saving configuration: " + error);
     }
-
-    invoke('save_app_config', {
-        id: currentNetworkDeviceId,
-        name: txtDeviceName.value,
-        address: txtDeviceNetworkAddress.value,
-        displayConfig: JSON.stringify(displayConfig),
-    }).catch(
-        (error) => {
-            alert("Error while saving config. " + error);
-        }
-    )
-}
-
-// Selects the current network device and loads its config
-function onNetDeviceSelected(element) {
-    if (element === null || element === undefined) {
-        disableDeviceInteraction();
-        currentNetworkDeviceId = undefined;
-        return;
-    }
-
-    enableDeviceInteraction();
-
-    let networkDeviceId = element.id;
-    currentNetworkDeviceId = networkDeviceId;
-
-    invoke('get_network_device_config', {networkDeviceId: networkDeviceId}).then(
-        (portConfig) => {
-            // cast port config to json object
-            portConfig = JSON.parse(portConfig);
-
-            // Set name, host and resolution
-            txtDeviceName.value = portConfig.name;
-            txtDeviceNetworkAddress.value = portConfig.address;
-
-            // Set active sync state
-            btnActivateSync.checked = portConfig.active;
-
-            // Set as selected net port combobox
-            cmbNetworkPorts.value = networkDeviceId;
-
-            // Load sensor values
-            loadSensorValues().then(() => {
-                    // Load lcd config
-                    loadDisplayConfig(networkDeviceId);
-                }
-            );
-        }
-    ).catch((error) => {
-        alert("Error while loading config for network device id: " + networkDeviceId + ". " + error);
-    });
 }
 
 // Toggles the sync for the selected net port
-function toggleSync(checked) {
+function toggleHttpServer(checked) {
     if (checked) {
-        invoke('enable_display', {networkDeviceId: currentNetworkDeviceId})
+        invoke('start_http_server')
+            .then(() => {
+                console.log("HTTP server started successfully");
+            })
             .catch((error) => {
-                alert("Error while enabling network device. " + error);
+                alert("Error while starting HTTP server: " + error);
+                btnActivateSync.checked = false; // Reset checkbox on error
             });
     } else {
-        invoke('disable_display', {networkDeviceId: currentNetworkDeviceId})
+        invoke('stop_http_server')
+            .then(() => {
+                console.log("HTTP server stopped successfully");
+            })
             .catch((error) => {
-                alert("Error while disabling network device. " + error);
+                alert("Error while stopping HTTP server: " + error);
+                btnActivateSync.checked = true; // Reset checkbox on error
             });
     }
 }
 
 
 function toggleLivePreview() {
-    invoke('show_lcd_live_preview', {networkDeviceId: currentNetworkDeviceId})
+    if (!currentClientMacAddress) {
+        alert("Please select a client first.");
+        return;
+    }
+
+    invoke('show_lcd_live_preview', {macAddress: currentClientMacAddress})
         .catch((error) => {
             alert("Error while showing live preview. " + error);
         });
@@ -1381,7 +1491,6 @@ function addElementToDesignerPane(zIndex, elementId, sensorType, positionX, posi
             designerElement.style.width = elementGraphConfig.width + "px";
             designerElement.style.height = elementGraphConfig.height + "px";
             invoke('get_graph_preview_image', {
-                networkDeviceId: currentNetworkDeviceId,
                 graphConfig: buildGraphConfigFromAttributes(selectedListElement)
             }).then(response => {
                 designerElement.src = "data:image/png;base64," + response;
@@ -1850,7 +1959,7 @@ function onListElementDrop(event) {
         event.target.appendChild(draggedLiElement);
     }
 
-    // Recalculate the z-index of all elements
+    // Recalculates the z-index of all elements
     recalculateZIndex();
 }
 

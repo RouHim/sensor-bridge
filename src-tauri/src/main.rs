@@ -19,6 +19,7 @@ use tauri::{
 };
 use tauri::{AppHandle, Manager};
 use tokio;
+use tokio::task::JoinHandle;
 
 mod conditional_image;
 pub(crate) mod config;
@@ -44,6 +45,8 @@ pub struct AppState {
     pub root_shell: Arc<Mutex<Option<RootShell>>>,
     pub static_sensor_values: Arc<Vec<SensorValue>>,
     pub sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    pub http_server_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
+    pub http_server_running: Arc<Mutex<bool>>,
 }
 
 // Number of elements to be stored in the sensor value history
@@ -73,20 +76,6 @@ async fn main() {
     // Create sensor history vector
     let sensor_value_history = Arc::new(Mutex::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
 
-    // Start HTTP server in background
-    let sensor_values_clone = static_sensor_values.clone();
-    let sensor_history_clone = sensor_value_history.clone();
-
-    tokio::spawn(async move {
-        if let Err(e) = http_server::start_http_server(
-            sensor_values_clone,
-            sensor_history_clone,
-            Some(8080),
-        ).await {
-            error!("HTTP server failed: {}", e);
-        }
-    });
-
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -95,6 +84,8 @@ async fn main() {
             root_shell: root_shell.clone(),
             static_sensor_values,
             sensor_value_history,
+            http_server_handle: Arc::new(Mutex::new(None)),
+            http_server_running: Arc::new(Mutex::new(false)),
         })
         .setup(|app| {
             let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
@@ -121,6 +112,9 @@ async fn main() {
             get_system_fonts,
             get_conditional_image_repo_entries,
             restart_app,
+            start_http_server,
+            stop_http_server,
+            get_app_config,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -359,13 +353,6 @@ async fn get_conditional_image_preview_image(
 }
 
 #[tauri::command]
-async fn verify_network_address(_address: String) -> bool {
-    // Legacy function - no longer needed with HTTP registration
-    // Return true for backward compatibility
-    true
-}
-
-#[tauri::command]
 async fn export_config(file_path: String) -> Result<(), ()> {
     export_import::export_configuration(file_path);
     Ok(())
@@ -394,4 +381,56 @@ async fn get_conditional_image_repo_entries() -> Result<String, String> {
 #[tauri::command]
 async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
     app_handle.restart();
+}
+
+/// Starts the HTTP server
+#[tauri::command]
+fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
+    let mut server_running = app_state.http_server_running.lock().unwrap();
+    let mut server_handle = app_state.http_server_handle.lock().unwrap();
+
+    if *server_running {
+        return Err("HTTP server is already running".to_string());
+    }
+
+    // Start the server in a background task
+    let sensor_values = app_state.static_sensor_values.clone();
+    let sensor_history = app_state.sensor_value_history.clone();
+
+    let handle = tokio::spawn(async move {
+        if let Ok(server_handle) = http_server::start_server(8080, sensor_values, sensor_history).await {
+            // Keep the server running
+            let _ = server_handle.await;
+        }
+    });
+
+    *server_handle = Some(handle);
+    *server_running = true;
+    Ok(())
+}
+
+/// Stops the HTTP server
+#[tauri::command]
+fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
+    let mut server_running = app_state.http_server_running.lock().unwrap();
+    let mut server_handle = app_state.http_server_handle.lock().unwrap();
+
+    if !*server_running {
+        return Err("HTTP server is not running".to_string());
+    }
+
+    if let Some(handle) = server_handle.take() {
+        handle.abort();
+        *server_running = false;
+        Ok(())
+    } else {
+        Err("HTTP server handle not found".to_string())
+    }
+}
+
+/// Get the entire app configuration
+#[tauri::command]
+async fn get_app_config() -> Result<String, String> {
+    let app_config = config::read_from_app_config();
+    serde_json::to_string(&app_config).map_err(|err| err.to_string())
 }

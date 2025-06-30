@@ -22,18 +22,15 @@ systemstat = "0.2.3"                                                            
 rayon = "1.9.0"                                                                                                       # Parallel processing
 base64 = "0.21.7"                                                                                                     # Base64 encoding
 # HTTP server dependencies
-axum = "0.7"                                                                                                          # HTTP server framework
+warp = "0.3"                                                                                                          # HTTP server framework
 tokio = { version = "1.0", features = ["full"] }                                                                     # Async runtime
-tower = "0.4"                                                                                                         # HTTP middleware
 tower-http = { version = "0.5", features = ["cors", "trace"] }                                                       # HTTP middleware utilities
 uuid = { version = "1.7.0", features = ["v4"] }                                                                       # Generate UUID v4
 image = "0.24.9"                                                                                                      # Image processing
-imageproc = { version = "0.23.0", features = ["rayon"] }                                                              # More image processing
 chrono = { version = "0.4.34", features = ["serde"] }                                                                      # Time handling with serde support
 log = "0.4.21"                                                                                                         # Logging
 env_logger = "0.11.2"                                                                                                 # Logging
 super-shell = "1.2.3"                                                                                                 # Privileged shell execution
-dns-lookup = "2.0.4"                                                                                                  # DNS lookup
 zip-extract = "0.1.3"                                                                                                 # Zip file handling
 font-loader = { git = "https://github.com/matprec/rust-font-loader" }                                               # System font loading
 rusttype = "0.9.3"                                                                                                    # Font parsing
@@ -41,15 +38,15 @@ ureq = { version = "2.9.6", features = ["json"] }                               
 dirs = "5.0.1"                                                                                                        # System directories
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
+lm-sensors = "0.2.1"                                                                                                  # Read sensor values from lm-sensors
+dmidecode = "0.8.0"
 
 [dev-dependencies]
 assertor = "0.0.2"
 pretty_assertions = "1.4.0"
 
 # Linux specific dependencies
-[target.'cfg(target_os = "linux")'.dependencies]
-lm-sensors = "0.2.1"                                                                                                  # Read sensor values from lm-sensors
-dmidecode = "0.8.0"                                                                                                   # Read linux system information from dmidecode
+[target.'cfg(target_os = "linux")'.dependencies]                                                                                            # Read linux system information from dmidecode
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
