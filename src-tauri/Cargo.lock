@@ -2488,15 +2488,16 @@ checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
 
 [[package]]
 name = "lm-sensors"
-version = "0.2.2"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc4cd2d2ef25d5a52ea8f5260d5a40d284b13cef8762210888ba4952ea466159"
+checksum = "2242109e9d681aacf06915b372929a467d1bf7f7f4cda0f5b959d48182e363b8"
 dependencies = [
  "bitflags 2.9.1",
  "libc",
  "num_enum",
+ "parking_lot",
  "sensors-sys",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
