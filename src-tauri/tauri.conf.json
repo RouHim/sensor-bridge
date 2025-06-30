@@ -2,35 +2,74 @@
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
-    "devPath": "../src",
-    "distDir": "../src",
-    "withGlobalTauri": true
+    "frontendDist": "../src"
   },
-  "package": {
-    "productName": "sensor-bridge",
-    "version": "0.0.0"
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "copyright": "",
+    "targets": "all",
+    "externalBin": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "longDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "resources": [],
+    "shortDescription": "",
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    },
+    "createUpdaterArtifacts": "v1Compatible"
   },
-  "tauri": {
-    "systemTray": {
+  "productName": "sensor-bridge",
+  "mainBinaryName": "sensor-bridge",
+  "version": "0.0.0",
+  "identifier": "com.github.rouhim.sensorbridge",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI2ODI0RjQ5QzAzNTdGQTgKUldTb2Z6WEFTVStDSnUzMUxrMHJYSUlDWmpUdEtxVlRWblp3eHA4M2NFbDV4U3dvQ2drTTVWTjAK",
+      "endpoints": [
+        "https://gist.github.com/RouHim/4c3d1cf64150dac63d6cfdab2fce306d/raw"
+      ]
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "sensor-bridge",
+        "height": 800,
+        "width": 1280,
+        "fullscreen": false,
+        "resizable": true,
+        "useHttpsScheme": true
+      }
+    ],
+    "withGlobalTauri": true,
+    "trayIcon": {
       "iconPath": "icons/icon.png",
       "iconAsTemplate": true
     },
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "window": {
-        "all": true
-      },
-      "dialog": {
-        "all": true
-      },
-      "protocol": {
-        "all": true,
-        "asset": true,
-        "assetScope": [
+    "security": {
+      "assetProtocol": {
+        "scope": [
           "*",
           "**",
           "**/*",
@@ -38,61 +77,10 @@
           "$DATA/**",
           "$CACHE/**",
           "$CONFIG/**"
-        ]
-      }
-    },
-    "bundle": {
-      "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
-      "deb": {
-        "depends": []
+        ],
+        "enable": true
       },
-      "externalBin": [],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "com.github.rouhim.sensorbridge",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
-    },
-    "security": {
-      "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data:"
-    },
-    "updater": {
-      "active": true,
-      "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI2ODI0RjQ5QzAzNTdGQTgKUldTb2Z6WEFTVStDSnUzMUxrMHJYSUlDWmpUdEtxVlRWblp3eHA4M2NFbDV4U3dvQ2drTTVWTjAK",
-      "endpoints": [
-        "https://gist.github.com/RouHim/4c3d1cf64150dac63d6cfdab2fce306d/raw"
-      ]
-    },
-    "windows": [
-      {
-        "title": "sensor-bridge",
-        "height": 800,
-        "width": 1280,
-        "fullscreen": false,
-        "resizable": true
-      }
-    ]
+      "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data:; connect-src ipc: http://ipc.localhost"
+    }
   }
 }

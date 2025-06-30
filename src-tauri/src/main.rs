@@ -104,6 +104,9 @@ fn main() {
 
     // Create the tray icon
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .system_tray(build_system_tray())
         .on_system_tray_event(build_system_tray_handler())
         .manage(AppState {
