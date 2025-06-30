@@ -44,7 +44,7 @@ pretty_assertions = "1.4.0"
 
 # Linux specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
-lm-sensors = "0.2.1"                                                                                                  # Read sensor values from lm-sensors
+lm-sensors = "0.3.0"                                                                                                  # Read sensor values from lm-sensors
 dmidecode = "0.8.0"                                                                                                   # Read linux system information from dmidecode
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
