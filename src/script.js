@@ -1,5 +1,7 @@
-const {invoke, convertFileSrc} = window.__TAURI__.tauri;
-const {open, save} = window.__TAURI__.dialog;
+// Tauri v2 API syntax
+const { invoke } = window.__TAURI__.core;
+const { convertFileSrc } = window.__TAURI__.core;
+const { open, save } = window.__TAURI__.dialog;
 
 // Modal dialog
 const sensorSelectionDialog = document.getElementById("sensor-selection-dialog");
@@ -1930,3 +1932,4 @@ function moveElementDown() {
 function addTextFormatPlaceholder(textToAdd) {
     txtTextFormat.value += textToAdd;
 }
+

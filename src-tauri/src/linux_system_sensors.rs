@@ -1,20 +1,10 @@
-#[cfg(target_os = "linux")]
+use sensor_core::{SensorType, SensorValue};
 use std::fs;
-
-#[cfg(target_os = "linux")]
-use sensor_core::SensorType;
-use sensor_core::SensorValue;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
 }
 
-#[cfg(target_os = "windows")]
-fn get_all_available_sensors() -> Vec<SensorValue> {
-    vec![]
-}
-
-#[cfg(target_os = "linux")]
 fn get_all_available_sensors() -> Vec<SensorValue> {
     let cpuinfo = fs::read_to_string("/proc/cpuinfo").unwrap();
     cpuinfo

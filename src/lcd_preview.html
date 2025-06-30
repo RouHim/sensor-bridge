@@ -6,7 +6,8 @@
 </head>
 
 <script>
-    const {invoke} = window.__TAURI__.tauri;
+    // Tauri v2 API syntax
+    const {invoke} = window.__TAURI__.core;
 
     // Set the preview image on page load
     set_lcd_preview_image();

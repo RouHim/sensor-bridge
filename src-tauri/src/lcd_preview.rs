@@ -6,7 +6,7 @@ use std::thread;
 use log::info;
 use rayon::prelude::*;
 use sensor_core::{DisplayConfig, ElementConfig, ElementType, SensorValue};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::config::NetworkDeviceConfig;
 use crate::utils::LockResultExt;
@@ -28,6 +28,27 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
     info!("Showing display preview for '{}'", port_config.name);
 
     thread::spawn(move || {
+        // Check if window already exists and handle it properly
+        if let Some(existing_window) = app_handle.get_webview_window(WINDOW_LABEL) {
+            // Window already exists, destroy it immediately to force cleanup
+            if let Err(e) = existing_window.destroy() {
+                log::error!("Failed to destroy existing LCD preview window: {}", e);
+                return; // Exit if we can't destroy the window
+            }
+
+            // Give a brief moment for Tauri to process the destruction
+            std::thread::sleep(std::time::Duration::from_millis(50));
+
+            // Verify the window is actually gone
+            if app_handle.get_webview_window(WINDOW_LABEL).is_some() {
+                log::error!("Window still exists after destroy() call");
+                return;
+            }
+
+            log::info!("Successfully destroyed existing LCD preview window");
+        }
+
+        // Create a new window (either because none existed or we successfully destroyed the existing one)
         // Prepare static assets
         prepare_assets(lcd_elements);
 
@@ -38,22 +59,18 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
         )
         .build();
 
-        // There is already a window handle
-        if lcd_preview_window.is_err() {
-            let app_handle = app_handle.clone();
-            let port_config = port_config.clone();
-            show(app_handle, port_config);
-            return;
+        match lcd_preview_window {
+            Ok(window) => {
+                let _ = window.set_title("LCD Preview");
+                let _ = window.set_resizable(false);
+                let _ =
+                    window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }));
+                let _ = window.show();
+            }
+            Err(e) => {
+                log::error!("Failed to create LCD preview window: {}", e);
+            }
         }
-
-        let lcd_preview_window = lcd_preview_window.unwrap();
-        lcd_preview_window.set_title("LCD Preview").unwrap();
-        lcd_preview_window.set_resizable(false).unwrap();
-        lcd_preview_window
-            .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
-            .unwrap();
-
-        lcd_preview_window.show().unwrap();
     });
 }
 

@@ -1,17 +1,9 @@
-#[cfg(target_os = "linux")]
-use sensor_core::SensorType;
-use sensor_core::SensorValue;
+use sensor_core::{SensorType, SensorValue};
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     get_all_available_sensors()
 }
 
-#[cfg(target_os = "windows")]
-fn get_all_available_sensors() -> Vec<SensorValue> {
-    vec![]
-}
-
-#[cfg(target_os = "linux")]
 fn get_all_available_sensors() -> Vec<SensorValue> {
     let mut sensor_values: Vec<SensorValue> = vec![];
 

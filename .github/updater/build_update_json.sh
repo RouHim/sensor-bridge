@@ -28,10 +28,6 @@ echo "Repo: $REPO_BASE_URL"
 APPIMAGE_URL="${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz"
 APPIMAGE_SIG=$(curl -L --silent "${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_amd64.AppImage.tar.gz.sig")
 
-# Collect windows MSI data
-MSI_URL=${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_x64_en-US.msi.zip
-MSI_SIG=$(curl -L --silent "${REPO_BASE_URL}/releases/download/${VERSION}/sensor-bridge_${VERSION}_x64_en-US.msi.zip.sig")
-
 # Set the generic version, notes and pub_date
 cat <<<$(jq --arg VERSION "$VERSION" '.version = "\($VERSION)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
 cat <<<$(jq --arg NOTES "$NOTES" '.notes = "\($NOTES)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
@@ -40,10 +36,6 @@ cat <<<$(jq --arg NOW "$NOW" '.pub_date = "\($NOW)"' ${UPDATER_JSON_FILE}) >${UP
 # Set the linux specific data
 cat <<<$(jq --arg APPIMAGE_URL "$APPIMAGE_URL" '.platforms."linux-x86_64".url = "\($APPIMAGE_URL)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
 cat <<<$(jq --arg APPIMAGE_SIG "$APPIMAGE_SIG" '.platforms."linux-x86_64".signature = "\($APPIMAGE_SIG)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
-
-# Set the windows specific data
-cat <<<$(jq --arg MSI_URL "$MSI_URL" '.platforms."windows-x86_64".url = "\($MSI_URL)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
-cat <<<$(jq --arg MSI_SIG "$MSI_SIG" '.platforms."windows-x86_64".signature = "\($MSI_SIG)"' ${UPDATER_JSON_FILE}) >${UPDATER_JSON_FILE}
 
 # Print the final json file
 cat "${UPDATER_JSON_FILE}"
