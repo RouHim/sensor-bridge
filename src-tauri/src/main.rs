@@ -3,23 +3,25 @@
     windows_subsystem = "windows"
 )]
 
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::sync::{Arc, Mutex, MutexGuard};
-use std::{fs, thread};
-
+use crate::config::{AppConfig, NetworkDeviceConfig};
+use crate::utils::LockResultExt;
 use log::error;
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementType, GraphConfig,
     SensorType, SensorValue, TextConfig,
 };
+use std::collections::HashMap;
+use std::error::Error;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::{fs, thread};
 use super_shell::RootShell;
-use tauri::State;
-use tauri::{AppHandle, GlobalWindowEvent, Manager, Wry};
-use tauri::{CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu};
-
-use crate::config::{AppConfig, NetworkDeviceConfig};
-use crate::utils::LockResultExt;
+use tauri::menu::{Menu, MenuItem};
+use tauri::{
+    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
+    App, State,
+};
+use tauri::{AppHandle, Manager};
 
 mod conditional_image;
 pub(crate) mod config;
@@ -54,15 +56,15 @@ pub struct ThreadHandle {
     pub handle: Arc<thread::JoinHandle<()>>,
 }
 
-/// Name of the default window
-const WINDOW_NAME: &str = "main";
-
 // Number of elements to be stored in the sensor value history
 pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
 
 fn main() {
     // Set the app name for the dynamic cache folder detection
-    std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge");
+    // TODO: fixme
+    unsafe {
+        std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge");
+    }
 
     // Initialize the logger
     env_logger::init();
@@ -102,13 +104,10 @@ fn main() {
                 .insert(net_config.id.clone(), thread_handle);
         });
 
-    // Create the tray icon
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .system_tray(build_system_tray())
-        .on_system_tray_event(build_system_tray_handler())
         .manage(AppState {
             port_handle: app_state_network_handles,
             root_shell: root_shell.clone(),
@@ -117,7 +116,10 @@ fn main() {
         })
         .setup(|app| {
             let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
-            app.get_window("main").unwrap().set_title(&title).unwrap();
+            app.get_webview_window("main").unwrap().set_title(&title)?;
+
+            build_tray_icon(app)?;
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -141,9 +143,57 @@ fn main() {
             get_conditional_image_repo_entries,
             restart_app,
         ])
-        .on_window_event(handle_window_events())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.hide();
+                api.prevent_close();
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn build_tray_icon(app: &mut App) -> Result<(), Box<dyn Error>> {
+    let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+    let _ = TrayIconBuilder::new()
+        .icon(app.default_window_icon().unwrap().clone())
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "quit" => {
+                app.exit(0);
+            }
+            "show" => {
+                // in this example, let's show and focus the main window when the tray is clicked
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            _ => {
+                println!("menu item {:?} not handled", event.id);
+            }
+        })
+        .on_tray_icon_event(|tray, event| match event {
+            TrayIconEvent::Click {
+                button: MouseButton::Left,
+                ..
+            } => {
+                println!("left click pressed and released");
+                // in this example, let's show and focus the main window when the tray is clicked
+                let app = tray.app_handle();
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            _ => {
+                println!("unhandled event {event:?}");
+            }
+        })
+        .build(app)?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -292,7 +342,7 @@ async fn show_lcd_live_preview(
     verify_config(&network_device_config)?;
 
     // If the window is still present, close it
-    let existing_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    let existing_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
     if let Some(window) = existing_window {
         window.close().unwrap();
     }
@@ -319,9 +369,9 @@ async fn get_lcd_preview_image(
     let display_config = network_device_config.display_config;
 
     // If the window is not visible, return an empty string
-    let maybe_window = app_handle.get_window(lcd_preview::WINDOW_LABEL);
+    let maybe_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
     if let Some(window) = maybe_window {
-        if !window.is_visible().unwrap() {
+        if !window.is_visible().unwrap_or(false) {
             // The window is not visible, return an empty string
             return Ok("".to_string());
         }
@@ -453,17 +503,6 @@ async fn get_conditional_image_repo_entries() -> Result<String, String> {
 #[tauri::command]
 async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
     app_handle.restart();
-    Ok(())
-}
-
-/// Handle tauri window events
-fn handle_window_events() -> fn(GlobalWindowEvent<Wry>) {
-    |event| {
-        if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
-            event.window().hide().unwrap();
-            api.prevent_close();
-        }
-    }
 }
 
 /// Starts the sync thread for the specified port
@@ -501,43 +540,6 @@ fn stop_sync_thread(
     let port_thread_handle = port_handle.get(network_device_id).unwrap();
     *port_thread_handle.running.lock().unwrap() = false;
     port_thread_handle.handle.thread().unpark();
-}
-
-/// Handles the system tray behaviour
-fn build_system_tray_handler() -> fn(&AppHandle<Wry>, SystemTrayEvent) {
-    |app, event| match event {
-        SystemTrayEvent::DoubleClick {
-            position: _,
-            size: _,
-            ..
-        } => {
-            let window = app.get_window(WINDOW_NAME).unwrap();
-            if window.is_visible().unwrap() {
-                window.hide().unwrap();
-            } else {
-                window.show().unwrap();
-            }
-        }
-        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-            "quit" => {
-                app.exit(0);
-            }
-            "show" => {
-                app.get_window("main").unwrap().show().unwrap();
-            }
-            _ => {}
-        },
-        _ => {}
-    }
-}
-
-/// Build the system tray
-fn build_system_tray() -> SystemTray {
-    SystemTray::new().with_menu(
-        SystemTrayMenu::new()
-            .add_item(CustomMenuItem::new("show".to_string(), "Show"))
-            .add_item(CustomMenuItem::new("quit".to_string(), "Quit")),
-    )
 }
 
 /// Verifies the config for the specified network device

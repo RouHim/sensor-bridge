@@ -31,10 +31,10 @@ pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
         // Prepare static assets
         prepare_assets(lcd_elements);
 
-        let lcd_preview_window = tauri::WindowBuilder::new(
+        let lcd_preview_window = tauri::WebviewWindowBuilder::new(
             &app_handle,
             WINDOW_LABEL,
-            tauri::WindowUrl::App(format!("lcd_preview.html#{network_device_id}").into()),
+            tauri::WebviewUrl::App(format!("lcd_preview.html#{network_device_id}").into()),
         )
         .build();
 

@@ -96,7 +96,7 @@ fn resolve_hostname(address: &str) -> Option<String> {
 
     // Otherwise we most likely have a hostname, try to resolve the hostname
     // and get the first ipv4 address
-    return match dns_lookup::lookup_host(address).ok() {
+    match dns_lookup::lookup_host(address).ok() {
         Some(ips) => ips
             .iter()
             .filter(|ip| ip.is_ipv4())
@@ -106,7 +106,7 @@ fn resolve_hostname(address: &str) -> Option<String> {
             error!("Could not resolve hostname {}", address);
             None
         }
-    };
+    }
 }
 
 /// Starts a new thread that writes to the remote tcp socket.
