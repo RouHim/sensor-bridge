@@ -4,7 +4,7 @@ This document describes the HTTP API endpoints that clients can use to connect t
 
 ## Overview
 
-The Sensor Bridge now uses HTTP communication instead of TCP. Clients register themselves with the server by providing their MAC address, IP address, and display resolution. The server then provides sensor data to registered and active clients.
+The Sensor Bridge uses HTTP communication for client-server interaction. Clients register themselves with the server by providing their MAC address, IP address, and display resolution. The server maintains an in-memory client registry for high-performance access control and provides sensor data to registered and active clients.
 
 ## Base URL
 
@@ -16,7 +16,14 @@ http://<server-ip>:8080
 
 ## Authentication
 
-Currently, no authentication is required. Clients are identified by their MAC address.
+Currently, no authentication is required. Clients are identified by their MAC address, which is automatically normalized to lowercase with colon separators (e.g., `aa:bb:cc:dd:ee:ff`).
+
+## Client Lifecycle
+
+1. **Registration**: Client registers with server using `/api/register`
+2. **Activation**: Client must be activated through the server UI (clients start as inactive)
+3. **Data Access**: Active clients can access sensor data via `/api/sensor-data`
+4. **Cleanup**: Inactive clients are automatically removed after 24 hours
 
 ## Client Registration
 
@@ -50,6 +57,7 @@ Registers a new client or updates an existing client's information.
     "resolution_height": 1080,
     "active": false,
     "last_seen": 1704067200,
+    "registered_at": 1704067200,
     "display_config": {
       "resolution_width": 1920,
       "resolution_height": 1080,
@@ -60,9 +68,20 @@ Registers a new client or updates an existing client's information.
 ```
 
 **Notes:**
-- MAC address is used as the unique identifier
-- If `name` is not provided, a default name will be generated
+- MAC address is automatically normalized to lowercase with colon separators
+- Supports various MAC address formats: `aa:bb:cc`, `AA-BB-CC`, `aabbccddeeff`
+- If `name` is not provided, a default name will be generated based on MAC address
 - Clients start as inactive and must be activated through the UI
+- Existing clients are updated with new information (IP, resolution)
+- `last_seen` timestamp is automatically updated on each interaction
+
+**Error Responses:**
+```json
+{
+  "error": "mac_address is required",
+  "status": 400
+}
+```
 
 ## Sensor Data
 
@@ -73,7 +92,7 @@ Retrieves current sensor data and display configuration for a registered client.
 **Endpoint:** `GET /api/sensor-data?mac_address={mac_address}`
 
 **Parameters:**
-- `mac_address`: The MAC address of the registered client
+- `mac_address`: The MAC address of the registered client (any format accepted)
 
 **Response:**
 ```json
@@ -115,8 +134,45 @@ Retrieves current sensor data and display configuration for a registered client.
 ```
 
 **Error Responses:**
-- `404 Not Found`: Client not registered
-- `403 Forbidden`: Client is not active
+
+**404 Not Found - Client not registered:**
+```json
+{
+  "error": "Client not registered",
+  "status": 404
+}
+```
+
+**403 Forbidden - Client not active:**
+```json
+{
+  "error": "Client not active",
+  "status": 403
+}
+```
+
+**400 Bad Request - Missing MAC address:**
+```json
+{
+  "error": "mac_address parameter required",
+  "status": 400
+}
+```
+
+**Notes:**
+- Successfully serving data updates the client's `last_seen` timestamp
+- Even inactive clients get their `last_seen` timestamp updated when they call this endpoint
+- MAC address format is automatically normalized before lookup
+
+## Legacy Endpoints
+
+### Get All Sensor Data (Deprecated)
+
+**⚠️ Deprecated**: Use `/api/sensor-data` with MAC address parameter instead.
+
+**Endpoint:** `GET /api/sensors`
+
+This endpoint is maintained for backward compatibility but will be removed in a future version.
 
 ## Health Check
 
@@ -134,6 +190,43 @@ Check if the server is running and responsive.
   "timestamp": 1704067200
 }
 ```
+
+## Error Handling
+
+All API endpoints return structured JSON error responses with appropriate HTTP status codes:
+
+| Status Code | Description | Example Response |
+|-------------|-------------|------------------|
+| 200 | Success | Data response |
+| 400 | Bad Request | `{"error": "mac_address is required", "status": 400}` |
+| 403 | Forbidden | `{"error": "Client not active", "status": 403}` |
+| 404 | Not Found | `{"error": "Client not registered", "status": 404}` |
+| 500 | Internal Server Error | `{"error": "Internal server error", "status": 500}` |
+
+## Client Management Features
+
+### MAC Address Normalization
+
+The server automatically handles different MAC address formats:
+
+- `aa:bb:cc:dd:ee:ff` → `aa:bb:cc:dd:ee:ff` (no change)
+- `AA:BB:CC:DD:EE:FF` → `aa:bb:cc:dd:ee:ff` (lowercase)
+- `AA-BB-CC-DD-EE-FF` → `aa:bb:cc:dd:ee:ff` (colon separators)
+- `aabbccddeeff` → `aa:bb:cc:dd:ee:ff` (add separators)
+
+### Client Lifecycle Management
+
+- **Registration**: Clients are added to the in-memory registry
+- **Activation**: Must be done through the server UI
+- **Activity Tracking**: `last_seen` timestamp updated on each API call
+- **Automatic Cleanup**: Clients inactive for 24+ hours are automatically removed
+
+### Performance Optimizations
+
+- **In-Memory Registry**: Fast client lookups using `Arc<RwLock<HashMap>>`
+- **Concurrent Access**: Multiple clients can be served simultaneously
+- **Efficient Updates**: No file I/O on every API request
+- **Background Cleanup**: Hourly cleanup task removes stale clients
 
 ## Client Implementation Example
 
