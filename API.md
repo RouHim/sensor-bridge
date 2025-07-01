@@ -1,10 +1,13 @@
 # Sensor Bridge HTTP API Documentation
 
-This document describes the HTTP API endpoints that clients can use to connect to and interact with the Sensor Bridge server.
+This document describes the HTTP API endpoints that clients can use to connect to and interact with the Sensor Bridge
+server.
 
 ## Overview
 
-The Sensor Bridge uses HTTP communication for client-server interaction. Clients register themselves with the server by providing their MAC address, IP address, and display resolution. The server maintains an in-memory client registry for high-performance access control and provides sensor data to registered and active clients.
+The Sensor Bridge uses HTTP communication for client-server interaction. Clients register themselves with the server by
+providing their MAC address, IP address, and display resolution. The server maintains an in-memory client registry for
+high-performance access control and provides sensor data to registered and active clients.
 
 ## Base URL
 
@@ -16,7 +19,8 @@ http://<server-ip>:8080
 
 ## Authentication
 
-Currently, no authentication is required. Clients are identified by their MAC address, which is automatically normalized to lowercase with colon separators (e.g., `aa:bb:cc:dd:ee:ff`).
+Currently, no authentication is required. Clients are identified by their MAC address, which is automatically normalized
+to lowercase with colon separators (e.g., `aa:bb:cc:dd:ee:ff`).
 
 ## Client Lifecycle
 
@@ -34,6 +38,7 @@ Registers a new client or updates an existing client's information.
 **Endpoint:** `POST /api/register`
 
 **Request Body:**
+
 ```json
 {
   "mac_address": "aa:bb:cc:dd:ee:ff",
@@ -45,6 +50,7 @@ Registers a new client or updates an existing client's information.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -68,6 +74,7 @@ Registers a new client or updates an existing client's information.
 ```
 
 **Notes:**
+
 - MAC address is automatically normalized to lowercase with colon separators
 - Supports various MAC address formats: `aa:bb:cc`, `AA-BB-CC`, `aabbccddeeff`
 - If `name` is not provided, a default name will be generated based on MAC address
@@ -76,6 +83,7 @@ Registers a new client or updates an existing client's information.
 - `last_seen` timestamp is automatically updated on each interaction
 
 **Error Responses:**
+
 ```json
 {
   "error": "mac_address is required",
@@ -92,9 +100,11 @@ Retrieves current sensor data and display configuration for a registered client.
 **Endpoint:** `GET /api/sensor-data?mac_address={mac_address}`
 
 **Parameters:**
+
 - `mac_address`: The MAC address of the registered client (any format accepted)
 
 **Response:**
+
 ```json
 {
   "render_data": {
@@ -136,6 +146,7 @@ Retrieves current sensor data and display configuration for a registered client.
 **Error Responses:**
 
 **404 Not Found - Client not registered:**
+
 ```json
 {
   "error": "Client not registered",
@@ -144,6 +155,7 @@ Retrieves current sensor data and display configuration for a registered client.
 ```
 
 **403 Forbidden - Client not active:**
+
 ```json
 {
   "error": "Client not active",
@@ -152,6 +164,7 @@ Retrieves current sensor data and display configuration for a registered client.
 ```
 
 **400 Bad Request - Missing MAC address:**
+
 ```json
 {
   "error": "mac_address parameter required",
@@ -160,19 +173,10 @@ Retrieves current sensor data and display configuration for a registered client.
 ```
 
 **Notes:**
+
 - Successfully serving data updates the client's `last_seen` timestamp
 - Even inactive clients get their `last_seen` timestamp updated when they call this endpoint
 - MAC address format is automatically normalized before lookup
-
-## Legacy Endpoints
-
-### Get All Sensor Data (Deprecated)
-
-**⚠️ Deprecated**: Use `/api/sensor-data` with MAC address parameter instead.
-
-**Endpoint:** `GET /api/sensors`
-
-This endpoint is maintained for backward compatibility but will be removed in a future version.
 
 ## Health Check
 
@@ -180,9 +184,10 @@ This endpoint is maintained for backward compatibility but will be removed in a 
 
 Check if the server is running and responsive.
 
-**Endpoint:** `GET /api/health`
+**Endpoint:** `GET /health`
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -195,13 +200,13 @@ Check if the server is running and responsive.
 
 All API endpoints return structured JSON error responses with appropriate HTTP status codes:
 
-| Status Code | Description | Example Response |
-|-------------|-------------|------------------|
-| 200 | Success | Data response |
-| 400 | Bad Request | `{"error": "mac_address is required", "status": 400}` |
-| 403 | Forbidden | `{"error": "Client not active", "status": 403}` |
-| 404 | Not Found | `{"error": "Client not registered", "status": 404}` |
-| 500 | Internal Server Error | `{"error": "Internal server error", "status": 500}` |
+| Status Code | Description           | Example Response                                      |
+|-------------|-----------------------|-------------------------------------------------------|
+| 200         | Success               | Data response                                         |
+| 400         | Bad Request           | `{"error": "mac_address is required", "status": 400}` |
+| 403         | Forbidden             | `{"error": "Client not active", "status": 403}`       |
+| 404         | Not Found             | `{"error": "Client not registered", "status": 404}`   |
+| 500         | Internal Server Error | `{"error": "Internal server error", "status": 500}`   |
 
 ## Client Management Features
 
@@ -360,7 +365,7 @@ class SensorBridgeClient {
         this.resolutionWidth = 1920;
         this.resolutionHeight = 1080;
     }
-    
+
     getMacAddress() {
         const interfaces = os.networkInterfaces();
         for (const name of Object.keys(interfaces)) {
@@ -372,7 +377,7 @@ class SensorBridgeClient {
         }
         return '00:00:00:00:00:00';
     }
-    
+
     getLocalIP() {
         const interfaces = os.networkInterfaces();
         for (const name of Object.keys(interfaces)) {
@@ -384,7 +389,7 @@ class SensorBridgeClient {
         }
         return '127.0.0.1';
     }
-    
+
     async register(name = null) {
         const registrationData = {
             mac_address: this.macAddress,
@@ -392,11 +397,11 @@ class SensorBridgeClient {
             resolution_width: this.resolutionWidth,
             resolution_height: this.resolutionHeight
         };
-        
+
         if (name) {
             registrationData.name = name;
         }
-        
+
         try {
             const response = await axios.post(`${this.serverUrl}/api/register`, registrationData);
             return response.data;
@@ -404,11 +409,11 @@ class SensorBridgeClient {
             throw new Error(`Registration failed: ${error.response?.status || error.message}`);
         }
     }
-    
+
     async getSensorData() {
         try {
             const response = await axios.get(`${this.serverUrl}/api/sensor-data`, {
-                params: { mac_address: this.macAddress }
+                params: {mac_address: this.macAddress}
             });
             return response.data;
         } catch (error) {
@@ -421,10 +426,10 @@ class SensorBridgeClient {
             }
         }
     }
-    
+
     async run() {
         console.log(`Registering client with MAC: ${this.macAddress}`);
-        
+
         try {
             const registrationResult = await this.register('My JS Display Client');
             console.log(`Registration successful: ${registrationResult.message}`);
@@ -432,25 +437,25 @@ class SensorBridgeClient {
             console.error(`Registration failed: ${error.message}`);
             return;
         }
-        
+
         console.log('Waiting for activation in the server UI...');
-        
+
         setInterval(async () => {
             try {
                 const data = await this.getSensorData();
                 const renderData = data.render_data;
                 const displayConfig = renderData.display_config;
                 const sensorValues = renderData.sensor_values;
-                
+
                 console.log(`Received ${sensorValues.length} sensor values`);
                 console.log(`Display config has ${displayConfig.elements.length} elements`);
-                
+
                 // Here you would render the display based on the configuration
                 // and sensor values
-                
+
             } catch (error) {
                 console.error(`Error: ${error.message}`);
-                
+
                 if (error.message.includes('not active')) {
                     console.log('Client is not active, waiting...');
                 } else if (error.message.includes('not registered')) {
@@ -473,7 +478,8 @@ client.run();
 
 ## Display Configuration Format
 
-The display configuration defines what elements should be rendered on the client display. Each element has a type and specific configuration options:
+The display configuration defines what elements should be rendered on the client display. Each element has a type and
+specific configuration options:
 
 ### Element Types
 
@@ -531,7 +537,8 @@ The display configuration defines what elements should be rendered on the client
 
 ## Implementation Notes
 
-1. **Polling Frequency**: It's recommended to poll for sensor data every 1-2 seconds to balance responsiveness with server load.
+1. **Polling Frequency**: It's recommended to poll for sensor data every 1-2 seconds to balance responsiveness with
+   server load.
 
 2. **Error Handling**: Always implement proper error handling for network failures and server errors.
 
@@ -539,7 +546,8 @@ The display configuration defines what elements should be rendered on the client
 
 4. **MAC Address**: Ensure your MAC address detection works correctly on your target platform.
 
-5. **Display Rendering**: The actual rendering of elements is up to the client implementation. The server provides the configuration and current sensor values.
+5. **Display Rendering**: The actual rendering of elements is up to the client implementation. The server provides the
+   configuration and current sensor values.
 
 6. **CORS**: The server has CORS enabled for web-based clients.
 

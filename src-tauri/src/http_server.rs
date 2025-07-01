@@ -96,9 +96,6 @@ pub async fn start_server(
     // Load existing clients from config system into registry
     load_existing_clients_into_registry(&client_registry).await;
 
-    // Start client cleanup task
-    start_client_cleanup_task(client_registry.clone());
-
     // Create filter helpers
     let client_registry_filter = warp::any().map({
         let registry = client_registry.clone();
@@ -124,26 +121,7 @@ pub async fn start_server(
             }))
         });
 
-    // Legacy /api/sensors endpoint for backward compatibility
-    let api_sensors = warp::path("api")
-        .and(warp::path("sensors"))
-        .and(warp::get())
-        .and(sensor_values_filter.clone())
-        .and(sensor_history_filter.clone())
-        .map(|sensor_values: Arc<Vec<sensor_core::SensorValue>>, 
-              sensor_history: Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>| {
-            let sensor_values = crate::sensor::read_all_sensor_values(
-                &sensor_history,
-                &sensor_values,
-            );
-
-            warp::reply::json(&serde_json::json!({
-                "sensors": sensor_values,
-                "timestamp": Utc::now().timestamp()
-            }))
-        });
-
-    // NEW: /api/sensor-data endpoint with client verification
+    // sensor data endpoint with client verification
     let api_sensor_data = warp::path("api")
         .and(warp::path("sensor-data"))
         .and(warp::get())
@@ -153,7 +131,7 @@ pub async fn start_server(
         .and(sensor_history_filter)
         .and_then(handle_sensor_data_request);
 
-    // Updated registration endpoint
+    // Registration endpoint
     let register = warp::path("api")
         .and(warp::path("register"))
         .and(warp::post())
@@ -163,7 +141,6 @@ pub async fn start_server(
 
     // Combine routes with proper error handling
     let routes = health
-        .or(api_sensors)
         .or(api_sensor_data)
         .or(register)
         .recover(handle_rejection)
@@ -363,30 +340,6 @@ fn normalize_mac_address(mac: &str) -> String {
         .join(":")
 }
 
-fn start_client_cleanup_task(client_registry: ClientRegistry) {
-    tokio::spawn(async move {
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600)); // Every hour
-        
-        loop {
-            interval.tick().await;
-            cleanup_inactive_clients(&client_registry, 24).await; // Remove clients inactive for 24+ hours
-        }
-    });
-}
-
-async fn cleanup_inactive_clients(client_registry: &ClientRegistry, inactive_timeout_hours: u64) {
-    let timeout_seconds = inactive_timeout_hours * 3600;
-    let mut clients = client_registry.write().await;
-    
-    clients.retain(|mac, client| {
-        let keep = client.is_recently_active(timeout_seconds);
-        if !keep {
-            info!("Removing inactive client: {}", mac);
-        }
-        keep
-    });
-}
-
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
     let (code, message) = if let Some(api_error) = err.find::<ApiError>() {
         match api_error {
@@ -417,9 +370,4 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
     }));
 
     Ok(warp::reply::with_status(json, code))
-}
-
-pub fn stop_server(handle: JoinHandle<()>) {
-    info!("Stopping HTTP server");
-    handle.abort();
 }
