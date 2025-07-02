@@ -27,6 +27,18 @@ const txtClientName = document.getElementById("lcd-txt-client-name");
 const lblClientInfo = document.getElementById("lcd-lbl-client-info");
 const txtDisplayResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtDisplayResolutionHeight = document.getElementById("lcd-txt-resolution-height");
+
+// Client information display elements
+const clientInfoContent = document.getElementById("client-info-content");
+const clientInfoPlaceholder = document.getElementById("client-info-placeholder");
+const clientActiveToggle = document.getElementById("client-active-toggle");
+const clientStatusText = document.getElementById("client-status-text");
+const clientInfoName = document.getElementById("client-info-name");
+const clientInfoIp = document.getElementById("client-info-ip");
+const clientInfoMac = document.getElementById("client-info-mac");
+const clientInfoResolution = document.getElementById("client-info-resolution");
+const clientInfoLastSeen = document.getElementById("client-info-last-seen");
+
 const designerPane = document.getElementById("lcd-designer-pane");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 const btnMoveElementUp = document.getElementById("lcd-btn-move-element-up");
@@ -221,6 +233,9 @@ window.addEventListener("DOMContentLoaded", () => {
     btnTextFormatAddValueAvg.addEventListener("click", () => addTextFormatPlaceholder("{value-avg}"));
     btnTextFormatAddValueMin.addEventListener("click", () => addTextFormatPlaceholder("{value-min}"));
     btnTextFormatAddValueMax.addEventListener("click", () => addTextFormatPlaceholder("{value-max}"));
+
+    // Client active toggle event listener
+    clientActiveToggle.addEventListener("change", handleClientActiveToggle);
 
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
@@ -861,8 +876,47 @@ async function loadClientData(macAddress) {
         await loadSensorValues();
         loadDisplayConfigForClient(client.display_config);
 
+        // Update client information display
+        updateClientInfoDisplay(client);
+
     } catch (error) {
         alert("Error loading client data: " + error);
+    }
+}
+
+// Update the client information display section
+function updateClientInfoDisplay(client) {
+    // Hide placeholder and show content
+    clientInfoPlaceholder.style.display = "none";
+    clientInfoContent.style.display = "block";
+
+    // Update client information fields
+    clientInfoName.innerText = client.name || "N/A";
+    clientInfoIp.innerText = client.ip_address || "N/A";
+    clientInfoMac.innerText = client.mac_address || "N/A";
+    clientInfoResolution.innerText = `${client.resolution_width || 0}x${client.resolution_height || 0}`;
+
+    // Format the last seen timestamp
+    let lastSeenText = "N/A";
+    if (client.last_seen) {
+        try {
+            const lastSeenDate = new Date(client.last_seen * 1000); // Convert from Unix timestamp
+            lastSeenText = lastSeenDate.toLocaleString();
+        } catch (e) {
+            lastSeenText = "Invalid date";
+        }
+    }
+    clientInfoLastSeen.innerText = lastSeenText;
+
+    // Update client status
+    if (client.active) {
+        clientStatusText.innerText = "Active";
+        clientStatusText.style.color = "#22c55e"; // Green color
+        clientActiveToggle.checked = true;
+    } else {
+        clientStatusText.innerText = "Inactive";
+        clientStatusText.style.color = "#ef4444"; // Red color
+        clientActiveToggle.checked = false;
     }
 }
 
@@ -2035,3 +2089,26 @@ function addTextFormatPlaceholder(textToAdd) {
     txtTextFormat.value += textToAdd;
 }
 
+// Client active toggle handler
+function handleClientActiveToggle() {
+    if (!currentClientMacAddress) {
+        alert("Please select a client first.");
+        return;
+    }
+
+    const isActive = clientActiveToggle.checked;
+
+    invoke('set_client_active', {
+        macAddress: currentClientMacAddress,
+        active: isActive
+    }).then(() => {
+        // Update client status text
+        clientStatusText.innerText = isActive ? "Active" : "Inactive";
+        clientStatusText.classList.toggle("text-green-500", isActive);
+        clientStatusText.classList.toggle("text-red-500", !isActive);
+    }).catch((error) => {
+        alert("Error while updating client active status. " + error);
+        // Reset toggle switch if there was an error
+        clientActiveToggle.checked = !isActive;
+    });
+}

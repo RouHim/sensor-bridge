@@ -102,8 +102,26 @@
                 </div>
             </div>
 
-            <div id="lcd-lbl-client-info" style="text-align: center; color: #888; font-size: 0.9em; margin: 10px 0;">
-                TODO: Client information will appear here...
+            <div id="lcd-lbl-client-info" style="text-align: center; color: #888; font-size: 0.9em; margin: 10px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; background-color: #1a1a1a;">
+                <div id="client-info-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #fff;">Client Information</h4>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="client-active-toggle" style="transform: scale(1.2);">
+                            <span id="client-status-text" style="font-weight: bold;">Active</span>
+                        </label>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left;">
+                        <div><strong>Name:</strong> <span id="client-info-name">-</span></div>
+                        <div><strong>IP Address:</strong> <span id="client-info-ip">-</span></div>
+                        <div><strong>MAC Address:</strong> <span id="client-info-mac">-</span></div>
+                        <div><strong>Resolution:</strong> <span id="client-info-resolution">-</span></div>
+                        <div style="grid-column: 1 / -1;"><strong>Last Seen:</strong> <span id="client-info-last-seen">-</span></div>
+                    </div>
+                </div>
+                <div id="client-info-placeholder" style="color: #666;">
+                    Select a client to view information...
+                </div>
             </div>
 
             <div class="center-horizontal">
