@@ -1,12 +1,16 @@
-use std::sync::{Arc, Mutex};
-use tokio::task::JoinHandle;
-use warp::Filter;
+use chrono::Utc;
 use log::info;
+use sensor_core::StaticClientData;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use tokio::sync::RwLock;
-use chrono::Utc;
-use serde::{Serialize, Deserialize};
+use tokio::task::JoinHandle;
+use warp::Filter;
+
+// Add imports for static data preparation
+use crate::{conditional_image, static_image, text};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisteredClient {
@@ -92,7 +96,7 @@ pub async fn start_server(
 
     // Initialize client registry
     let client_registry: ClientRegistry = Arc::new(RwLock::new(HashMap::new()));
-    
+
     // Load existing clients from config system into registry
     load_existing_clients_into_registry(&client_registry).await;
 
@@ -111,15 +115,13 @@ pub async fn start_server(
     });
 
     // Health check endpoint
-    let health = warp::path("health")
-        .and(warp::get())
-        .map(|| {
-            warp::reply::json(&serde_json::json!({
-                "status": "healthy",
-                "service": "sensor-bridge",
-                "timestamp": Utc::now().timestamp()
-            }))
-        });
+    let health = warp::path("health").and(warp::get()).map(|| {
+        warp::reply::json(&serde_json::json!({
+            "status": "healthy",
+            "service": "sensor-bridge",
+            "timestamp": Utc::now().timestamp()
+        }))
+    });
 
     // sensor data endpoint with client verification
     let api_sensor_data = warp::path("api")
@@ -148,9 +150,7 @@ pub async fn start_server(
 
     // Start the server in a background task
     let handle = tokio::spawn(async move {
-        warp::serve(routes)
-            .run(([0, 0, 0, 0], port))
-            .await;
+        warp::serve(routes).run(([0, 0, 0, 0], port)).await;
     });
 
     Ok(handle)
@@ -160,9 +160,9 @@ async fn load_existing_clients_into_registry(client_registry: &ClientRegistry) {
     info!("Loading existing clients into registry");
     let config = crate::config::read_from_app_config();
     let mut registry = client_registry.write().await;
-    
+
     for (mac_address, legacy_client) in config.registered_clients {
-        let normalized_mac = normalize_mac_address(&mac_address);
+        let normalized_mac = mac_address.to_lowercase();
         let client = RegisteredClient {
             mac_address: normalized_mac.clone(),
             name: legacy_client.name,
@@ -176,7 +176,7 @@ async fn load_existing_clients_into_registry(client_registry: &ClientRegistry) {
         };
         registry.insert(normalized_mac, client);
     }
-    
+
     info!("Loaded {} existing clients into registry", registry.len());
 }
 
@@ -189,14 +189,18 @@ async fn handle_sensor_data_request(
     // Extract and validate MAC address parameter
     let mac_address = params
         .get("mac_address")
-        .ok_or_else(|| warp::reject::custom(ApiError::BadRequest("mac_address parameter required".to_string())))?
+        .ok_or_else(|| {
+            warp::reject::custom(ApiError::BadRequest(
+                "mac_address parameter required".to_string(),
+            ))
+        })?
         .to_string();
 
     // Normalize MAC address format
-    let normalized_mac = normalize_mac_address(&mac_address);
+    let normalized_mac = mac_address.to_lowercase();
 
     let mut clients = client_registry.write().await;
-    
+
     match clients.get_mut(&normalized_mac) {
         None => {
             // Client not registered - return 404
@@ -215,11 +219,8 @@ async fn handle_sensor_data_request(
             client.update_last_seen();
 
             // Create client-specific render data
-            let render_data = create_render_data_for_client(
-                client,
-                &sensor_values,
-                &sensor_history,
-            );
+            let render_data =
+                create_render_data_for_client(client, &sensor_values, &sensor_history);
 
             let response = serde_json::json!({
                 "render_data": render_data,
@@ -231,6 +232,46 @@ async fn handle_sensor_data_request(
     }
 }
 
+/// Prepares all static data for the client (text, static images, conditional images)
+/// Returns the data serialized as binary using bincode
+fn prepare_static_data_for_client(display_config: &sensor_core::DisplayConfig) -> Vec<u8> {
+    info!("Preparing static data for client");
+
+    // Prepare text data (fonts)
+    let text_data = text::build_fonts_data(display_config);
+
+    // Prepare static image data
+    let static_image_data = static_image::get_preparation_data(display_config);
+
+    // Prepare conditional image data
+    let conditional_image_data = conditional_image::get_preparation_data(display_config);
+
+    // Bundle all data together
+    let static_data = StaticClientData {
+        text_data,
+        static_image_data,
+        conditional_image_data,
+    };
+
+    // Serialize to binary format using bincode
+    match bincode::serialize(&static_data) {
+        Ok(binary_data) => {
+            info!("Serialized static data: {} bytes", binary_data.len());
+            binary_data
+        }
+        Err(e) => {
+            log::error!("Failed to serialize static data: {}", e);
+            // Return empty data on error
+            bincode::serialize(&StaticClientData {
+                text_data: HashMap::new(),
+                static_image_data: HashMap::new(),
+                conditional_image_data: HashMap::new(),
+            })
+            .unwrap_or_default()
+        }
+    }
+}
+
 async fn handle_client_registration(
     registration: serde_json::Value,
     client_registry: ClientRegistry,
@@ -238,45 +279,34 @@ async fn handle_client_registration(
     info!("Client registration request: {:?}", registration);
 
     // Extract and validate registration data
-    let mac_address = registration["mac_address"]
-        .as_str()
-        .ok_or_else(|| warp::reject::custom(ApiError::BadRequest("mac_address is required".to_string())))?;
-    
-    let ip_address = registration["ip_address"]
-        .as_str()
-        .ok_or_else(|| warp::reject::custom(ApiError::BadRequest("ip_address is required".to_string())))?;
-    
-    let width = registration["resolution_width"]
-        .as_u64()
-        .unwrap_or(1920) as u32;
-    
-    let height = registration["resolution_height"]
-        .as_u64()
-        .unwrap_or(1080) as u32;
-    
-    let custom_name = registration["name"].as_str();
+    let mac_address = registration["mac_address"].as_str().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest("mac_address is required".to_string()))
+    })?;
+
+    let ip_address = registration["ip_address"].as_str().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest("ip_address is required".to_string()))
+    })?;
+
+    let width = registration["resolution_width"].as_u64().unwrap_or(1920) as u32;
+
+    let height = registration["resolution_height"].as_u64().unwrap_or(1080) as u32;
 
     // Normalize MAC address
-    let normalized_mac = normalize_mac_address(mac_address);
-    
-    // Generate client name
-    let client_name = if let Some(name) = custom_name {
-        name.to_string()
-    } else {
-        format!("Display {}", &normalized_mac[..8])
-    };
+    let normalized_mac = mac_address.to_lowercase();
+
+    // Generate client name based on MAC address
+    let client_name = format!("Display {}", &normalized_mac[..8]);
 
     let mut clients = client_registry.write().await;
-    
+
     // Check if client already exists
     let client = if let Some(existing_client) = clients.get_mut(&normalized_mac) {
         // Update existing client
         existing_client.ip_address = ip_address.to_string();
         existing_client.resolution_width = width;
         existing_client.resolution_height = height;
-        existing_client.name = client_name;
         existing_client.update_last_seen();
-        
+
         info!("Updated existing client: {}", normalized_mac);
         existing_client.clone()
     } else {
@@ -288,27 +318,24 @@ async fn handle_client_registration(
             width,
             height,
         );
-        
+
         clients.insert(normalized_mac.clone(), new_client.clone());
         info!("Registered new client: {}", normalized_mac);
         new_client
     };
 
     // Also sync with existing config system for persistence
-    let _legacy_client = crate::config::register_client(
-        normalized_mac,
-        ip_address.to_string(),
-        width,
-        height,
-    );
+    let _ = crate::config::register_client(normalized_mac, ip_address.to_string(), width, height);
 
-    let response = serde_json::json!({
-        "success": true,
-        "message": "Client registered successfully",
-        "client": client
-    });
+    // Prepare and send static data as binary response
+    let static_data = prepare_static_data_for_client(&client.display_config);
 
-    Ok(warp::reply::json(&response))
+    // Return binary data with appropriate content-type
+    Ok(warp::reply::with_header(
+        static_data,
+        "content-type",
+        "application/octet-stream",
+    ))
 }
 
 fn create_render_data_for_client(
@@ -317,10 +344,8 @@ fn create_render_data_for_client(
     sensor_history: &Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
 ) -> serde_json::Value {
     // Use the existing sensor reading logic but with client-specific display config
-    let current_sensor_values = crate::sensor::read_all_sensor_values(
-        sensor_history,
-        sensor_values,
-    );
+    let current_sensor_values =
+        crate::sensor::read_all_sensor_values(sensor_history, sensor_values);
 
     serde_json::json!({
         "display_config": client.display_config,
@@ -328,30 +353,14 @@ fn create_render_data_for_client(
     })
 }
 
-fn normalize_mac_address(mac: &str) -> String {
-    // Normalize MAC address format: convert to lowercase and use : as separator
-    mac.to_lowercase()
-        .chars()
-        .filter(|c| c.is_ascii_hexdigit())
-        .collect::<Vec<_>>()
-        .chunks(2)
-        .map(|chunk| chunk.iter().collect::<String>())
-        .collect::<Vec<_>>()
-        .join(":")
-}
-
-async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
+async fn handle_rejection(
+    err: warp::Rejection,
+) -> Result<impl warp::Reply, std::convert::Infallible> {
     let (code, message) = if let Some(api_error) = err.find::<ApiError>() {
         match api_error {
-            ApiError::NotRegistered => {
-                (warp::http::StatusCode::NOT_FOUND, "Client not registered")
-            }
-            ApiError::NotActive => {
-                (warp::http::StatusCode::FORBIDDEN, "Client not active")
-            }
-            ApiError::BadRequest(msg) => {
-                (warp::http::StatusCode::BAD_REQUEST, msg.as_str())
-            }
+            ApiError::NotRegistered => (warp::http::StatusCode::NOT_FOUND, "Client not registered"),
+            ApiError::NotActive => (warp::http::StatusCode::FORBIDDEN, "Client not active"),
+            ApiError::BadRequest(msg) => (warp::http::StatusCode::BAD_REQUEST, msg.as_str()),
             ApiError::InternalError(msg) => {
                 (warp::http::StatusCode::INTERNAL_SERVER_ERROR, msg.as_str())
             }
@@ -361,7 +370,10 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
     } else if let Some(_) = err.find::<warp::filters::body::BodyDeserializeError>() {
         (warp::http::StatusCode::BAD_REQUEST, "Invalid JSON body")
     } else {
-        (warp::http::StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+        (
+            warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error",
+        )
     };
 
     let json = warp::reply::json(&serde_json::json!({

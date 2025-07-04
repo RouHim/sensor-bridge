@@ -12,7 +12,8 @@ rust-version = "1.57"
 tauri-build = { version = "2.3.0", features = [] }
 
 [dependencies]
-sensor-core = "1.12.5"                                                                                      # Sensor core library
+#sensor-core = "1.12.5"                                                                                      # Sensor core library
+sensor-core = { path = "../../sensor-core" }                                                                                      # Sensor core library
 lazy_static = "1.4.0"
 serde = { version = "1.0.197", features = ["derive"] }                                                                  # Serialization
 serde_json = "1.0.114"                                                                                                  # De/Serialize to json
@@ -21,10 +22,8 @@ tauri = { version = "2.6.2", features = ["protocol-asset", "tray-icon"] } # Taur
 systemstat = "0.2.3"                                                                                                  # read common system sensor values
 rayon = "1.9.0"                                                                                                       # Parallel processing
 base64 = "0.21.7"                                                                                                     # Base64 encoding
-# HTTP server dependencies
 warp = "0.3"                                                                                                          # HTTP server framework
 tokio = { version = "1.0", features = ["full"] }                                                                     # Async runtime
-tower-http = { version = "0.5", features = ["cors", "trace"] }                                                       # HTTP middleware utilities
 uuid = { version = "1.7.0", features = ["v4"] }                                                                       # Generate UUID v4
 image = "0.24.9"                                                                                                      # Image processing
 chrono = { version = "0.4.34", features = ["serde"] }                                                                      # Time handling with serde support

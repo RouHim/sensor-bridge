@@ -44,32 +44,93 @@ Registers a new client or updates an existing client's information.
   "mac_address": "aa:bb:cc:dd:ee:ff",
   "ip_address": "192.168.1.100",
   "resolution_width": 1920,
-  "resolution_height": 1080,
-  "name": "Optional custom name"
+  "resolution_height": 1080
 }
 ```
 
 **Response:**
 
-```json
-{
-  "success": true,
-  "message": "Client registered successfully",
-  "client": {
-    "mac_address": "aa:bb:cc:dd:ee:ff",
-    "name": "Display aa:bb:cc",
-    "ip_address": "192.168.1.100",
-    "resolution_width": 1920,
-    "resolution_height": 1080,
-    "active": false,
-    "last_seen": 1704067200,
-    "registered_at": 1704067200,
-    "display_config": {
-      "resolution_width": 1920,
-      "resolution_height": 1080,
-      "elements": []
+**Content-Type:** `application/octet-stream`
+
+The registration endpoint returns binary static data serialized using bincode. This contains all static assets needed by the client for rendering, including fonts, static images, and conditional images.
+
+**Binary Data Structure:**
+The response contains a single bincode-serialized `StaticClientData` struct:
+
+```rust
+struct StaticClientData {
+    /// Font data: font family name -> font bytes
+    text_data: HashMap<String, Vec<u8>>,
+    /// Static images: element ID -> PNG image bytes  
+    static_image_data: HashMap<String, Vec<u8>>,
+    /// Conditional images: element ID -> (image name -> PNG image bytes)
+    conditional_image_data: HashMap<String, HashMap<String, Vec<u8>>>,
+}
+```
+
+**Data Contents:**
+
+1. **`text_data`** - Font files keyed by font family name
+   - Contains TTF/OTF font data as binary bytes
+   - Only includes fonts used by text elements in the display configuration
+
+2. **`static_image_data`** - Pre-processed static images  
+   - Images are pre-scaled to the exact dimensions specified in element configs
+   - All images are converted to PNG format for consistency
+   - Keyed by element ID for direct lookup
+
+3. **`conditional_image_data`** - Dynamic image sets for conditional elements
+   - Each element contains multiple images for different sensor value conditions
+   - Images are pre-processed and converted to PNG format
+   - Nested structure: element_id -> image_name -> image_bytes
+
+**Client Implementation Example:**
+
+```rust
+// Rust client example using bincode
+let response = reqwest::get("http://server:8080/api/register")
+    .await?
+    .bytes()
+    .await?;
+
+let static_data: StaticClientData = bincode::deserialize(&response)?;
+
+// Access font data
+for (font_family, font_bytes) in static_data.text_data {
+    load_font(font_family, font_bytes);
+}
+
+// Access static images
+for (element_id, image_bytes) in static_data.static_image_data {
+    load_static_image(element_id, image_bytes);
+}
+
+// Access conditional images  
+for (element_id, image_map) in static_data.conditional_image_data {
+    for (image_name, image_bytes) in image_map {
+        load_conditional_image(element_id, image_name, image_bytes);
     }
-  }
+}
+```
+
+```javascript
+// JavaScript client example
+const response = await fetch('/api/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(registrationData)
+});
+
+if (response.ok) {
+  const binaryData = await response.arrayBuffer();
+  console.log(`Received ${binaryData.byteLength} bytes of static data`);
+  
+  // Note: JavaScript clients would need a bincode decoder
+  // or the server could provide a JSON alternative endpoint
+  processStaticData(new Uint8Array(binaryData));
+} else {
+  const errorData = await response.json();
+  console.error('Registration failed:', errorData.error);
 }
 ```
 
@@ -271,7 +332,7 @@ class SensorBridgeClient:
         self.resolution_width = 1920
         self.resolution_height = 1080
         
-    def register(self, name=None):
+    def register(self):
         """Register with the sensor bridge server"""
         registration_data = {
             "mac_address": self.mac_address,
@@ -280,9 +341,6 @@ class SensorBridgeClient:
             "resolution_height": self.resolution_height
         }
         
-        if name:
-            registration_data["name"] = name
-            
         response = requests.post(
             f"{self.server_url}/api/register",
             json=registration_data
@@ -314,7 +372,7 @@ class SensorBridgeClient:
         print(f"Registering client with MAC: {self.mac_address}")
         
         # Register with server
-        registration_result = self.register("My Display Client")
+        registration_result = self.register()
         print(f"Registration successful: {registration_result['message']}")
         
         print("Waiting for activation in the server UI...")
@@ -390,17 +448,13 @@ class SensorBridgeClient {
         return '127.0.0.1';
     }
 
-    async register(name = null) {
+    async register() {
         const registrationData = {
             mac_address: this.macAddress,
             ip_address: this.ipAddress,
             resolution_width: this.resolutionWidth,
             resolution_height: this.resolutionHeight
         };
-
-        if (name) {
-            registrationData.name = name;
-        }
 
         try {
             const response = await axios.post(`${this.serverUrl}/api/register`, registrationData);
