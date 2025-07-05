@@ -2,9 +2,9 @@ use chrono::Utc;
 use log::info;
 use sensor_core::StaticClientData;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use tokio::sync::oneshot;
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use warp::Filter;
@@ -91,6 +91,7 @@ pub async fn start_server(
     port: u16,
     sensor_values: Arc<Vec<sensor_core::SensorValue>>,
     sensor_value_history: Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
+    shutdown_rx: oneshot::Receiver<()>,
 ) -> Result<JoinHandle<()>, Box<dyn std::error::Error + Send + Sync>> {
     info!("Starting HTTP server on port {}", port);
 
@@ -148,10 +149,19 @@ pub async fn start_server(
         .recover(handle_rejection)
         .with(warp::cors().allow_any_origin());
 
-    // Start the server in a background task
-    let handle = tokio::spawn(async move {
-        warp::serve(routes).run(([0, 0, 0, 0], port)).await;
-    });
+    // Start the server with graceful shutdown
+    let (addr, server) =
+        warp::serve(routes).bind_with_graceful_shutdown(([0, 0, 0, 0], port), async move {
+            // Wait for the shutdown signal
+            let _ = shutdown_rx.await;
+            info!(
+                "Graceful shutdown initiated for HTTP server on port {}",
+                port
+            );
+        });
+
+    info!("HTTP server bound to address: {}", addr);
+    let handle = tokio::spawn(server);
 
     Ok(handle)
 }
@@ -367,7 +377,10 @@ async fn handle_rejection(
         }
     } else if err.is_not_found() {
         (warp::http::StatusCode::NOT_FOUND, "Endpoint not found")
-    } else if let Some(_) = err.find::<warp::filters::body::BodyDeserializeError>() {
+    } else if err
+        .find::<warp::filters::body::BodyDeserializeError>()
+        .is_some()
+    {
         (warp::http::StatusCode::BAD_REQUEST, "Invalid JSON body")
     } else {
         (

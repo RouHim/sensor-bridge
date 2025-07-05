@@ -11,10 +11,10 @@ high-performance access control and provides sensor data to registered and activ
 
 ## Base URL
 
-The server runs on port `8080` by default.
+The server runs on port `25555` by default.
 
 ```
-http://<server-ip>:8080
+http://<server-ip>:25555
 ```
 
 ## Authentication
@@ -88,7 +88,7 @@ struct StaticClientData {
 
 ```rust
 // Rust client example using bincode
-let response = reqwest::get("http://server:8080/api/register")
+let response = reqwest::get("http://server:25555/api/register")
     .await?
     .bytes()
     .await?;
@@ -325,7 +325,7 @@ def get_local_ip():
     return ip
 
 class SensorBridgeClient:
-    def __init__(self, server_host, server_port=8080):
+    def __init__(self, server_host, server_port=25555):
         self.server_url = f"http://{server_host}:{server_port}"
         self.mac_address = get_mac_address()
         self.ip_address = get_local_ip()
@@ -416,7 +416,7 @@ const axios = require('axios');
 const os = require('os');
 
 class SensorBridgeClient {
-    constructor(serverHost, serverPort = 8080) {
+    constructor(serverHost, serverPort = 25555) {
         this.serverUrl = `http://${serverHost}:${serverPort}`;
         this.macAddress = this.getMacAddress();
         this.ipAddress = this.getLocalIP();

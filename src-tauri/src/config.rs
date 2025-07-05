@@ -2,15 +2,26 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 
+use chrono::{DateTime, Utc};
 use sensor_core::DisplayConfig;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// The app config
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppConfig {
     pub registered_clients: HashMap<String, RegisteredClient>,
+    #[serde(default = "default_http_port")]
+    pub http_port: u16,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        AppConfig {
+            registered_clients: HashMap::new(),
+            http_port: default_http_port(),
+        }
+    }
 }
 
 /// A registered client identified by MAC address
@@ -38,7 +49,12 @@ pub struct NetworkDeviceConfig {
 }
 
 impl RegisteredClient {
-    pub fn new(mac_address: String, ip_address: String, resolution_width: u32, resolution_height: u32) -> Self {
+    pub fn new(
+        mac_address: String,
+        ip_address: String,
+        resolution_width: u32,
+        resolution_height: u32,
+    ) -> Self {
         RegisteredClient {
             mac_address: mac_address.clone(),
             name: format!("Display {}", &mac_address[..8]), // Default name using MAC prefix
@@ -75,12 +91,25 @@ pub fn create_network_device_config() -> NetworkDeviceConfig {
 }
 
 /// Registers a new client or updates existing client information
-pub fn register_client(mac_address: String, ip_address: String, resolution_width: u32, resolution_height: u32) -> RegisteredClient {
+pub fn register_client(
+    mac_address: String,
+    ip_address: String,
+    resolution_width: u32,
+    resolution_height: u32,
+) -> RegisteredClient {
     let mut config: AppConfig = read_from_app_config();
 
-    let client = config.registered_clients.entry(mac_address.clone()).or_insert_with(|| {
-        RegisteredClient::new(mac_address.clone(), ip_address.clone(), resolution_width, resolution_height)
-    });
+    let client = config
+        .registered_clients
+        .entry(mac_address.clone())
+        .or_insert_with(|| {
+            RegisteredClient::new(
+                mac_address.clone(),
+                ip_address.clone(),
+                resolution_width,
+                resolution_height,
+            )
+        });
 
     // Update client information
     client.ip_address = ip_address;
@@ -103,7 +132,7 @@ pub fn update_client_name(mac_address: &str, name: String) -> Result<(), String>
             write_to_app_config(&config);
             Ok(())
         }
-        None => Err(format!("Client with MAC address {} not found", mac_address))
+        None => Err(format!("Client with MAC address {} not found", mac_address)),
     }
 }
 
@@ -117,12 +146,15 @@ pub fn set_client_active(mac_address: &str, active: bool) -> Result<(), String> 
             write_to_app_config(&config);
             Ok(())
         }
-        None => Err(format!("Client with MAC address {} not found", mac_address))
+        None => Err(format!("Client with MAC address {} not found", mac_address)),
     }
 }
 
 /// Updates a client's display configuration
-pub fn update_client_display_config(mac_address: &str, display_config: DisplayConfig) -> Result<(), String> {
+pub fn update_client_display_config(
+    mac_address: &str,
+    display_config: DisplayConfig,
+) -> Result<(), String> {
     let mut config: AppConfig = read_from_app_config();
 
     match config.registered_clients.get_mut(mac_address) {
@@ -131,7 +163,7 @@ pub fn update_client_display_config(mac_address: &str, display_config: DisplayCo
             write_to_app_config(&config);
             Ok(())
         }
-        None => Err(format!("Client with MAC address {} not found", mac_address))
+        None => Err(format!("Client with MAC address {} not found", mac_address)),
     }
 }
 
@@ -150,7 +182,7 @@ pub fn remove_client(mac_address: &str) -> Result<(), String> {
             write_to_app_config(&config);
             Ok(())
         }
-        None => Err(format!("Client with MAC address {} not found", mac_address))
+        None => Err(format!("Client with MAC address {} not found", mac_address)),
     }
 }
 
@@ -226,3 +258,27 @@ pub fn read(_network_device_id: &str) -> Option<NetworkDeviceConfig> {
     // For backward compatibility during migration
     None
 }
+
+/// Gets the HTTP server port from configuration
+pub fn get_http_port() -> u16 {
+    let config = read_from_app_config();
+    config.http_port
+}
+
+/// Sets the HTTP server port in configuration
+pub fn set_http_port(port: u16) -> Result<(), String> {
+    if port == 0 || port < 1024 || port > 65535 {
+        return Err("Port must be between 1024 and 65535".to_string());
+    }
+
+    let mut config = read_from_app_config();
+    config.http_port = port;
+    write_to_app_config(&config);
+    Ok(())
+}
+
+/// Default HTTP port
+fn default_http_port() -> u16 {
+    25555
+}
+

@@ -2,15 +2,15 @@
 
 use crate::config::{AppConfig, NetworkDeviceConfig};
 use crate::utils::LockResultExt;
-use log::error;
+use log::{error, info};
 use sensor_core::{
-    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig,
-    SensorType, SensorValue, TextConfig,
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig, SensorType,
+    SensorValue, TextConfig,
 };
 use std::error::Error;
+use std::fs;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
-use std::{fs};
 use super_shell::RootShell;
 use tauri::menu::{Menu, MenuItem};
 use tauri::{
@@ -18,7 +18,7 @@ use tauri::{
     App, State,
 };
 use tauri::{AppHandle, Manager};
-use tokio;
+use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 
 mod conditional_image;
@@ -47,6 +47,7 @@ pub struct AppState {
     pub sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
     pub http_server_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     pub http_server_running: Arc<Mutex<bool>>,
+    pub http_server_shutdown_tx: Arc<Mutex<Option<oneshot::Sender<()>>>>,
 }
 
 // Number of elements to be stored in the sensor value history
@@ -86,6 +87,7 @@ async fn main() {
             sensor_value_history,
             http_server_handle: Arc::new(Mutex::new(None)),
             http_server_running: Arc::new(Mutex::new(false)),
+            http_server_shutdown_tx: Arc::new(Mutex::new(None)),
         })
         .setup(|app| {
             let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
@@ -115,6 +117,8 @@ async fn main() {
             start_http_server,
             stop_http_server,
             get_app_config,
+            get_http_port,
+            set_http_port,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -205,7 +209,10 @@ async fn set_client_active(mac_address: String, active: bool) -> Result<(), Stri
 
 /// Updates a client's display configuration
 #[tauri::command]
-async fn update_client_display_config(mac_address: String, display_config: String) -> Result<(), String> {
+async fn update_client_display_config(
+    mac_address: String,
+    display_config: String,
+) -> Result<(), String> {
     let display_config: sensor_core::DisplayConfig = serde_json::from_str(&display_config)
         .map_err(|e| format!("Invalid display config JSON: {}", e))?;
 
@@ -214,10 +221,7 @@ async fn update_client_display_config(mac_address: String, display_config: Strin
 
 /// Shows LCD live preview for a registered client
 #[tauri::command]
-async fn show_lcd_live_preview(
-    app_handle: AppHandle,
-    mac_address: String,
-) -> Result<(), String> {
+async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Result<(), String> {
     let client = config::get_client(&mac_address)
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
@@ -353,18 +357,19 @@ async fn get_conditional_image_preview_image(
 }
 
 #[tauri::command]
-async fn export_config(file_path: String) -> Result<(), ()> {
+async fn export_config(file_path: String) -> Result<(), String> {
     export_import::export_configuration(file_path);
     Ok(())
 }
 
 #[tauri::command]
-async fn import_config(file_path: String) -> Result<(), tauri::Error> {
-    let _app_config = export_import::import_configuration(file_path);
-
-    // Migration from old network_devices format to new registered_clients format
-    // This maintains backward compatibility during the transition
-    Ok(())
+async fn import_config(file_path: String) -> Result<(), String> {
+    match export_import::import_configuration(file_path) {
+        Ok(_) => {
+            Ok(())
+        }
+        Err(e) => Err(format!("Failed to import configuration: {}", e))
+    }
 }
 
 #[tauri::command]
@@ -386,6 +391,7 @@ async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
 /// Starts the HTTP server
 #[tauri::command]
 fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
+    info!("Starting HTTP server...");
     let mut server_running = app_state.http_server_running.lock().unwrap();
     let mut server_handle = app_state.http_server_handle.lock().unwrap();
 
@@ -397,10 +403,21 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
     let sensor_values = app_state.static_sensor_values.clone();
     let sensor_history = app_state.sensor_value_history.clone();
 
+    let (shutdown_tx, shutdown_rx) = oneshot::channel();
+    *app_state.http_server_shutdown_tx.lock().unwrap() = Some(shutdown_tx);
+
     let handle = tokio::spawn(async move {
-        if let Ok(server_handle) = http_server::start_server(8080, sensor_values, sensor_history).await {
-            // Keep the server running
-            let _ = server_handle.await;
+        let port = config::get_http_port();
+        match http_server::start_server(port, sensor_values, sensor_history, shutdown_rx).await {
+            Ok(server_handle) => {
+                info!("HTTP server started successfully on port {}", port);
+                // Wait for the server to complete
+                let _ = server_handle.await;
+                info!("HTTP server stopped gracefully.");
+            }
+            Err(e) => {
+                log::error!("Failed to start HTTP server: {}", e);
+            }
         }
     });
 
@@ -412,6 +429,7 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
 /// Stops the HTTP server
 #[tauri::command]
 fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
+    info!("Stopping HTTP server...");
     let mut server_running = app_state.http_server_running.lock().unwrap();
     let mut server_handle = app_state.http_server_handle.lock().unwrap();
 
@@ -419,13 +437,34 @@ fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
         return Err("HTTP server is not running".to_string());
     }
 
-    if let Some(handle) = server_handle.take() {
-        handle.abort();
+    if server_handle.take().is_some() {
+        // Send the shutdown signal for graceful shutdown
+        if let Some(tx) = app_state.http_server_shutdown_tx.lock().unwrap().take() {
+            let _ = tx.send(());
+            info!("Graceful shutdown signal sent to HTTP server.");
+        }
+
+        // Don't call handle.abort() - let the graceful shutdown complete naturally
+        // The task will complete when the server finishes gracefully
+
         *server_running = false;
+        info!("HTTP server shutdown initiated.");
         Ok(())
     } else {
         Err("HTTP server handle not found".to_string())
     }
+}
+
+/// Get the HTTP server port
+#[tauri::command]
+async fn get_http_port() -> Result<u16, String> {
+    Ok(config::get_http_port())
+}
+
+/// Set the HTTP server port
+#[tauri::command]
+async fn set_http_port(port: u16) -> Result<(), String> {
+    config::set_http_port(port)
 }
 
 /// Get the entire app configuration
