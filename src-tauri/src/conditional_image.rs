@@ -6,10 +6,7 @@ use std::path::PathBuf;
 use crate::utils;
 use image::ImageFormat;
 use rayon::prelude::*;
-use sensor_core::{
-    is_image, ConditionalImageConfig, DisplayConfig, ElementConfig, ElementType,
-    PrepareConditionalImageData, TransportMessage, TransportType,
-};
+use sensor_core::{is_image, ConditionalImageConfig, DisplayConfig, ElementConfig, ElementType};
 use serde::{Deserialize, Serialize};
 
 const REPO_METADATA_URL: &str =
@@ -145,7 +142,9 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
 }
 
 /// Pre-renders conditional images and returns the data to send.
-pub fn get_preparation_data(lcd_config: &DisplayConfig) -> PrepareConditionalImageData {
+pub fn get_preparation_data(
+    lcd_config: &DisplayConfig,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
     let conditional_image_elements: Vec<&ElementConfig> = lcd_config
         .elements
         .iter()
@@ -166,7 +165,7 @@ pub fn get_preparation_data(lcd_config: &DisplayConfig) -> PrepareConditionalIma
         .map(|element| (element.id.clone(), get_image_series(&element.id)))
         .collect();
 
-    PrepareConditionalImageData { images_data }
+    images_data
 }
 
 /// Collects conditional image data for the specified element.
@@ -190,18 +189,6 @@ fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
     }
 
     image_series
-}
-
-/// Serializes the render data to bytes using messagepack
-/// and wraps it in a struct.
-/// Returns the bytes to send.
-pub fn serialize_preparation_data(data: PrepareConditionalImageData) -> Vec<u8> {
-    let transport_message = TransportMessage {
-        transport_type: TransportType::PrepareConditionalImage,
-        data: bincode::serialize(&data).unwrap(),
-    };
-
-    bincode::serialize(&transport_message).unwrap()
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

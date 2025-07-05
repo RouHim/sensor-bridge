@@ -1,32 +1,45 @@
 // Tauri v2 API syntax
-const { invoke } = window.__TAURI__.core;
-const { convertFileSrc } = window.__TAURI__.core;
-const { open, save } = window.__TAURI__.dialog;
+const {invoke} = window.__TAURI__.core;
+const {convertFileSrc} = window.__TAURI__.core;
+const {open, save} = window.__TAURI__.dialog;
 
 // Modal dialog
 const sensorSelectionDialog = document.getElementById("sensor-selection-dialog");
 const sensorSelectionTable = document.getElementById("sensor-selection-table");
 const txtSensorSelectionTableFilterInput = document.getElementById("sensor-selection-table-filter-input");
 
-// Network port selection
-const cmbNetworkPorts = document.getElementById("main-network-ports-select");
+// Client selection and management
+const cmbRegisteredClients = document.getElementById("main-registered-clients-select");
 const lcdBasePanel = document.getElementById("lcd-panel");
 
 // Main buttons
-const btnAddNetworkDevice = document.getElementById("btn-add-network-device");
-const btnSaveNetworkDevice = document.getElementById("lcd-btn-save-network-device");
+const btnRefreshClients = document.getElementById("btn-refresh-clients");
+const btnSaveClientConfig = document.getElementById("lcd-btn-save-client-config");
 const btnToggleLivePreview = document.getElementById("btn-lcd-toggle-live-preview");
-const btnRemoveNetworkDevice = document.getElementById("lcd-btn-remove-network-device");
+const btnRemoveClient = document.getElementById("lcd-btn-remove-client");
 const btnExportConfig = document.getElementById("btn-export-config");
 const btnImportConfig = document.getElementById("btn-import-config");
 const panelKillSwitch = document.getElementById("kill-switch-input");
 const btnActivateSync = document.getElementById("main-chk-transfer-active");
+const httpPortInput = document.getElementById("http-port-input");
 
-// LCD designer
-const txtDeviceName = document.getElementById("lcd-txt-device-name");
-const txtDeviceNetworkAddress = document.getElementById("lcd-txt-device-network-address");
+// Client configuration (simplified - no network address needed)
+const txtClientName = document.getElementById("lcd-txt-client-name");
+const lblClientInfo = document.getElementById("lcd-lbl-client-info");
 const txtDisplayResolutionWidth = document.getElementById("lcd-txt-resolution-width");
 const txtDisplayResolutionHeight = document.getElementById("lcd-txt-resolution-height");
+
+// Client information display elements
+const clientInfoContent = document.getElementById("client-info-content");
+const clientInfoPlaceholder = document.getElementById("client-info-placeholder");
+const clientActiveToggle = document.getElementById("client-active-toggle");
+const clientStatusText = document.getElementById("client-status-text");
+const clientInfoName = document.getElementById("client-info-name");
+const clientInfoIp = document.getElementById("client-info-ip");
+const clientInfoMac = document.getElementById("client-info-mac");
+const clientInfoResolution = document.getElementById("client-info-resolution");
+const clientInfoLastSeen = document.getElementById("client-info-last-seen");
+
 const designerPane = document.getElementById("lcd-designer-pane");
 const lstDesignerPlacedElements = document.getElementById("lcd-designer-placed-elements");
 const btnMoveElementUp = document.getElementById("lcd-btn-move-element-up");
@@ -109,7 +122,7 @@ let sensorValues = [];
 let selectedListElement = null;
 let selectedDesignerElement = null;
 let draggedLiElement;
-let currentNetworkDeviceId = null;
+let currentClientMacAddress = null;
 
 // Global constants
 const DESIGNER_ID_PREFIX = "designer-";
@@ -178,9 +191,9 @@ window.addEventListener("DOMContentLoaded", () => {
         forceAlpha: true,
     }));
 
-    // Register on network device selected onNetDeviceSelected(liElement)
-    cmbNetworkPorts.addEventListener("change", (event) => {
-        onNetDeviceSelected(event.target.options[event.target.selectedIndex]);
+    // Register client selection event
+    cmbRegisteredClients.addEventListener("change", (event) => {
+        onClientSelected(event.target.options[event.target.selectedIndex]);
     });
 
     // Register event for display resolution
@@ -190,14 +203,16 @@ window.addEventListener("DOMContentLoaded", () => {
     // Register event for element type
     cmbElementType.addEventListener("change", onElementTypeChange);
 
-    // Register button click events
-    btnAddNetworkDevice.addEventListener("click", createNetworkPort);
-    btnRemoveNetworkDevice.addEventListener("click", removeNetworkDevice);
+    // Register button click events - updated for client management
+    btnRefreshClients.addEventListener("click", loadRegisteredClients);
+    btnRemoveClient.addEventListener("click", removeClient);
     btnExportConfig.addEventListener("click", exportConfig);
     btnImportConfig.addEventListener("click", importConfig);
-    btnSaveNetworkDevice.addEventListener("click", onSave);
+    btnSaveClientConfig.addEventListener("click", onSave);
     btnSaveElement.addEventListener("click", onSave);
-    btnActivateSync.addEventListener("click", () => toggleSync(btnActivateSync.checked));
+    btnActivateSync.addEventListener("click", () => toggleHttpServer(btnActivateSync.checked));
+    httpPortInput.addEventListener("change", saveHttpPort);
+    httpPortInput.addEventListener("blur", saveHttpPort);
     btnToggleLivePreview.addEventListener("click", toggleLivePreview);
     btnAddElement.addEventListener("click", addNewElement);
     btnRemoveElement.addEventListener("click", removeElement);
@@ -222,19 +237,19 @@ window.addEventListener("DOMContentLoaded", () => {
     btnTextFormatAddValueMin.addEventListener("click", () => addTextFormatPlaceholder("{value-min}"));
     btnTextFormatAddValueMax.addEventListener("click", () => addTextFormatPlaceholder("{value-max}"));
 
+    // Client active toggle event listener
+    clientActiveToggle.addEventListener("change", handleClientActiveToggle);
+
     // Modal dialog handling
     sensorSelectionDialog.addEventListener("close", () => onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
-
-    // If lost focus, check network config
-    txtDeviceNetworkAddress.addEventListener("focusout", verifyNetworkAddress);
 
     // Register drag dropping
     designerPane.addEventListener('dragover', (event) => event.preventDefault());
     designerPane.addEventListener('drop', dropOnDesignerPane);
 
-    // Load all devices from config
-    loadDeviceConfigs().catch((error) => {
-            alert("Error while loading device configs. " + error);
+    // Load all registered clients from server
+    loadRegisteredClients().catch((error) => {
+            alert("Error while loading registered clients. " + error);
         }
     );
 
@@ -257,7 +272,27 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Load repo entries
     loadConditionalImageRepoEntries();
+
+    // Load current HTTP port value
+    loadHttpPort();
 });
+
+/**
+ * Updates the display design pane dimensions based on the current resolution settings
+ */
+function updateDisplayDesignPaneDimensions() {
+    if (!designerPane) return;
+
+    const width = parseInt(txtDisplayResolutionWidth.value);
+    const height = parseInt(txtDisplayResolutionHeight.value);
+
+    // Update the designer pane dimensions to match the display resolution
+    designerPane.style.width = `${width}px`;
+    designerPane.style.height = `${height}px`;
+
+    // Optional: Update any scaling or other visual adjustments
+    console.log(`Updated display design pane dimensions to ${width}x${height}`);
+}
 
 // Applies the selected conditional image catalog entry to the current selected conditional image element
 function applyConditionalImageCatalogEntry() {
@@ -435,18 +470,16 @@ function importConfig() {
                 invoke('import_config', {filePath: selected}).then(
                     () => {
                         // Show yes no dialog, that a restart is required
-                        confirm("The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?")
-                            .then((pressedOk) => {
-                                if (pressedOk) {
-                                    invoke('restart_app');
-                                } else {
-                                    loadDeviceConfigs()
-                                        .catch((error) => {
-                                                alert("Error while loading device configs. " + error);
-                                            }
-                                        )
-                                }
-                            });
+                        const shouldRestart = confirm("The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?");
+                        if (shouldRestart) {
+                            invoke('restart_app');
+                        } else {
+                            // Reload registered clients instead of device configs
+                            loadRegisteredClients()
+                                .catch((error) => {
+                                    alert("Error while loading registered clients. " + error);
+                                });
+                        }
                     }
                 ).catch((error) => {
                     alert("Error while importing config. " + error);
@@ -491,19 +524,6 @@ function changeMoveUnit() {
             btnControlPadChangeMoveUnit.innerText = "1px";
             break;
     }
-}
-
-function verifyNetworkAddress() {
-    // Call backend to verify network address
-    invoke('verify_network_address', {address: txtDeviceNetworkAddress.value}).then(
-        (isValid) => {
-            if (isValid) {
-                txtDeviceNetworkAddress.classList.remove("invalid");
-            } else {
-                txtDeviceNetworkAddress.classList.add("invalid");
-            }
-        }
-    );
 }
 
 /// Show an info dialog which explains how to use conditional image upload
@@ -781,97 +801,261 @@ function getElementConfig(listItem) {
     };
 }
 
-function saveConfig() {
-    // If net port id is empty, return
-    if (currentNetworkDeviceId === "") {
+// Load all registered clients from the backend
+async function loadRegisteredClients() {
+    try {
+        const response = await invoke('get_registered_clients');
+        const clients = JSON.parse(response);
+
+        // Clear the select dropdown
+        cmbRegisteredClients.innerHTML = "";
+
+        // Add a default option
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.innerText = "Select a client...";
+        cmbRegisteredClients.appendChild(defaultOption);
+
+        // Add each client to the dropdown
+        Object.entries(clients).forEach(([macAddress, client]) => {
+            const option = document.createElement("option");
+            option.value = macAddress;
+            option.innerText = `${client.name} (${macAddress.substring(0, 8)}...)`;
+            cmbRegisteredClients.appendChild(option);
+        });
+
+        console.log("Loaded registered clients successfully");
+    } catch (error) {
+        console.error("Error loading registered clients:", error);
+        throw error;
+    }
+}
+
+// Remove the currently selected client
+async function removeClient() {
+    if (!currentClientMacAddress) {
+        alert("Please select a client first.");
         return;
     }
 
-    // Get device name and network address
-    // Find all list items of lcd-designer-placed-elements extract sensors and save them to the lcd config
-    const lcdDesignerPlacedElementsListItemsArray = Array.from(lstDesignerPlacedElements.getElementsByTagName("li"));
+    if (!confirm(`Are you sure you want to remove client ${currentClientMacAddress}?`)) {
+        return;
+    }
 
+    try {
+        await invoke('remove_registered_client', {macAddress: currentClientMacAddress});
+        await loadRegisteredClients();
+        currentClientMacAddress = null;
+        // Clear the form
+        onClientSelected(null);
+        console.log("Client removed successfully");
+    } catch (error) {
+        alert("Error removing client: " + error);
+    }
+}
+
+// Handle client selection from the dropdown
+function onClientSelected(selectedOption) {
+    if (!selectedOption || !selectedOption.value) {
+        // No client selected, disable interaction
+        lcdBasePanel.style.display = "none";
+        currentClientMacAddress = null;
+        return;
+    }
+
+    currentClientMacAddress = selectedOption.value;
+
+    // Enable client interaction
+    lcdBasePanel.style.display = "block";
+
+    // Load client data and populate form
+    loadClientData(currentClientMacAddress);
+}
+
+// Load client data for the selected client
+async function loadClientData(macAddress) {
+    try {
+        const response = await invoke('get_registered_clients');
+        const clients = JSON.parse(response);
+        const client = clients[macAddress];
+
+        if (!client) {
+            alert("Client not found");
+            return;
+        }
+
+        // Populate form fields
+        txtClientName.value = client.name || "";
+        txtDisplayResolutionWidth.value = client.display_config?.resolution_width || 320;
+        txtDisplayResolutionHeight.value = client.display_config?.resolution_height || 240;
+
+        // Update display dimensions
+        updateDisplayDesignPaneDimensions();
+
+        // Load sensor values and display config
+        await loadSensorValues();
+        loadDisplayConfigForClient(client.display_config);
+
+        // Update client information display
+        updateClientInfoDisplay(client);
+
+    } catch (error) {
+        alert("Error loading client data: " + error);
+    }
+}
+
+// Update the client information display section
+function updateClientInfoDisplay(client) {
+    // Hide placeholder and show content
+    clientInfoPlaceholder.style.display = "none";
+    clientInfoContent.style.display = "block";
+
+    // Update client information fields
+    clientInfoName.innerText = client.name || "N/A";
+    clientInfoIp.innerText = client.ip_address || "N/A";
+    clientInfoMac.innerText = client.mac_address || "N/A";
+    clientInfoResolution.innerText = `${client.resolution_width || 0}x${client.resolution_height || 0}`;
+
+    // Format the last seen timestamp
+    let lastSeenText = "N/A";
+    if (client.last_seen) {
+        try {
+            const lastSeenDate = new Date(client.last_seen * 1000); // Convert from Unix timestamp
+            lastSeenText = lastSeenDate.toLocaleString();
+        } catch (e) {
+            lastSeenText = "Invalid date";
+        }
+    }
+    clientInfoLastSeen.innerText = lastSeenText;
+
+    // Update client status
+    if (client.active) {
+        clientStatusText.innerText = "Active";
+        clientStatusText.style.color = "#22c55e"; // Green color
+        clientActiveToggle.checked = true;
+    } else {
+        clientStatusText.innerText = "Inactive";
+        clientStatusText.style.color = "#ef4444"; // Red color
+        clientActiveToggle.checked = false;
+    }
+}
+
+// Load display configuration for the selected client
+function loadDisplayConfigForClient(displayConfig) {
+    if (!displayConfig) {
+        // Clear designer pane and list
+        designerPane.innerHTML = "";
+        lstDesignerPlacedElements.innerHTML = "";
+        return;
+    }
+
+    // Set display resolution
+    txtDisplayResolutionWidth.value = displayConfig.resolution_width;
+    txtDisplayResolutionHeight.value = displayConfig.resolution_height;
+
+    // Clear designer pane and list
+    designerPane.innerHTML = "";
+    lstDesignerPlacedElements.innerHTML = "";
+
+    // Add elements to designer pane and list
+    if (displayConfig.elements) {
+        displayConfig.elements.forEach((element, index) => {
+            // Add element to list
+            addElementToList(element.id, element.x, element.y, element.name, element.element_type,
+                element.text_config, element.image_config, element.graph_config, element.conditional_image_config);
+
+            // Add element to designer pane
+            addElementToDesignerPane(index, element.id, element.element_type, element.x, element.y,
+                element.text_config, element.image_config, element.graph_config, element.conditional_image_config);
+        });
+
+        // If there are elements, select the first one
+        if (displayConfig.elements.length > 0) {
+            setSelectedElement(document.querySelector("#lcd-designer-placed-elements li"));
+        }
+    }
+
+    // Update designer pane dimensions
+    designerPane.style.width = displayConfig.resolution_width + "px";
+    designerPane.style.height = displayConfig.resolution_height + "px";
+}
+
+// Save the current client configuration
+async function saveConfig() {
+    if (!currentClientMacAddress) {
+        alert("No client selected");
+        return;
+    }
+
+    // Get all elements configuration
+    const lcdDesignerPlacedElementsListItemsArray = Array.from(lstDesignerPlacedElements.getElementsByTagName("li"));
     const displayElements = lcdDesignerPlacedElementsListItemsArray.map((listItem) => {
         return getElementConfig(listItem);
     });
 
-    // Build lcd config object, with integers
+    // Build display config object
     const displayConfig = {
         resolution_width: parseInt(txtDisplayResolutionWidth.value),
         resolution_height: parseInt(txtDisplayResolutionHeight.value),
         elements: displayElements,
+    };
+
+    try {
+        // Update client name
+        await invoke('update_client_name', {
+            macAddress: currentClientMacAddress,
+            name: txtClientName.value
+        });
+
+        // Update display config
+        await invoke('update_client_display_config', {
+            macAddress: currentClientMacAddress,
+            displayConfig: JSON.stringify(displayConfig)
+        });
+
+        // Reload clients to update the dropdown
+        await loadRegisteredClients();
+
+        // Reselect the current client
+        cmbRegisteredClients.value = currentClientMacAddress;
+
+        console.log("Configuration saved successfully");
+    } catch (error) {
+        alert("Error saving configuration: " + error);
     }
-
-    invoke('save_app_config', {
-        id: currentNetworkDeviceId,
-        name: txtDeviceName.value,
-        address: txtDeviceNetworkAddress.value,
-        displayConfig: JSON.stringify(displayConfig),
-    }).catch(
-        (error) => {
-            alert("Error while saving config. " + error);
-        }
-    )
-}
-
-// Selects the current network device and loads its config
-function onNetDeviceSelected(element) {
-    if (element === null || element === undefined) {
-        disableDeviceInteraction();
-        currentNetworkDeviceId = undefined;
-        return;
-    }
-
-    enableDeviceInteraction();
-
-    let networkDeviceId = element.id;
-    currentNetworkDeviceId = networkDeviceId;
-
-    invoke('get_network_device_config', {networkDeviceId: networkDeviceId}).then(
-        (portConfig) => {
-            // cast port config to json object
-            portConfig = JSON.parse(portConfig);
-
-            // Set name, host and resolution
-            txtDeviceName.value = portConfig.name;
-            txtDeviceNetworkAddress.value = portConfig.address;
-
-            // Set active sync state
-            btnActivateSync.checked = portConfig.active;
-
-            // Set as selected net port combobox
-            cmbNetworkPorts.value = networkDeviceId;
-
-            // Load sensor values
-            loadSensorValues().then(() => {
-                    // Load lcd config
-                    loadDisplayConfig(networkDeviceId);
-                }
-            );
-        }
-    ).catch((error) => {
-        alert("Error while loading config for network device id: " + networkDeviceId + ". " + error);
-    });
 }
 
 // Toggles the sync for the selected net port
-function toggleSync(checked) {
+function toggleHttpServer(checked) {
     if (checked) {
-        invoke('enable_display', {networkDeviceId: currentNetworkDeviceId})
+        invoke('start_http_server')
+            .then(() => {
+                console.log("HTTP server started successfully");
+            })
             .catch((error) => {
-                alert("Error while enabling network device. " + error);
+                alert("Error while starting HTTP server: " + error);
+                btnActivateSync.checked = false; // Reset checkbox on error
             });
     } else {
-        invoke('disable_display', {networkDeviceId: currentNetworkDeviceId})
+        invoke('stop_http_server')
+            .then(() => {
+                console.log("HTTP server stopped successfully");
+            })
             .catch((error) => {
-                alert("Error while disabling network device. " + error);
+                alert("Error while stopping HTTP server: " + error);
+                btnActivateSync.checked = true; // Reset checkbox on error
             });
     }
 }
 
 
 function toggleLivePreview() {
-    invoke('show_lcd_live_preview', {networkDeviceId: currentNetworkDeviceId})
+    if (!currentClientMacAddress) {
+        alert("Please select a client first.");
+        return;
+    }
+
+    invoke('show_lcd_live_preview', {macAddress: currentClientMacAddress})
         .catch((error) => {
             alert("Error while showing live preview. " + error);
         });
@@ -1381,7 +1565,6 @@ function addElementToDesignerPane(zIndex, elementId, sensorType, positionX, posi
             designerElement.style.width = elementGraphConfig.width + "px";
             designerElement.style.height = elementGraphConfig.height + "px";
             invoke('get_graph_preview_image', {
-                networkDeviceId: currentNetworkDeviceId,
                 graphConfig: buildGraphConfigFromAttributes(selectedListElement)
             }).then(response => {
                 designerElement.src = "data:image/png;base64," + response;
@@ -1432,26 +1615,21 @@ function toTauriAssetPath(image_path) {
     return convertFileSrc(image_path);
 }
 
-function validateUi() {
-    // Device config
-    if (txtDeviceName.value === "") {
-        alert("Please enter a name for the device.");
-        return false;
+function validateClientConfig() {
+    // Only validate client config if a client is actually selected
+    if (!currentClientMacAddress) {
+        return true; // No client selected, skip client validation
     }
-    if (txtDeviceNetworkAddress.value === "") {
-        alert("Please enter a network address for the device.");
-        return false;
-    }
-    // resolution
-    if (txtDisplayResolutionWidth.value === "") {
-        alert("Please enter a resolution width for the device.");
-        return false;
-    }
-    if (txtDisplayResolutionHeight.value === "") {
-        alert("Please enter a resolution height for the device.");
+
+    if (txtClientName.value === "") {
+        alert("Please enter a name for the client.");
         return false;
     }
 
+    return true;
+}
+
+function validateElementConfig() {
     // Element config
     if (txtElementName.value === "") {
         alert("Please enter a name for the element.");
@@ -1650,17 +1828,26 @@ function createElementByInputs() {
 }
 
 function onSave() {
-    if (!validateUi()) {
+    // Only validate client config if we have a client selected
+    if (!validateClientConfig()) {
+        return;
+    }
+
+    // Only validate element config if we have an element selected
+    if (selectedListElement && !validateElementConfig()) {
         return;
     }
 
     updateCurrentElement();
 
-    // Update the device name in list
-    let deviceNameElement = document.getElementById(currentNetworkDeviceId);
-    deviceNameElement.innerText = txtDeviceName.value;
+    // Update the client name in the list
+    if (currentClientMacAddress) {
+        const selectedOption = cmbRegisteredClients.querySelector(`option[value="${currentClientMacAddress}"]`);
+        if (selectedOption) {
+            selectedOption.innerText = `${txtClientName.value} (${currentClientMacAddress.substring(0, 8)}...)`;
+        }
+    }
 
-    // Writes config to backend
     saveConfig();
 }
 
@@ -1739,197 +1926,60 @@ function removeElement() {
     }
 }
 
-function showSelectedElementDetail() {
-    // Generic
-    txtElementName.value = selectedListElement.getAttribute(ATTR_ELEMENT_NAME);
-    cmbElementType.value = selectedListElement.getAttribute(ATTR_ELEMENT_TYPE);
-    txtElementPositionX.value = selectedListElement.getAttribute(ATTR_ELEMENT_POSITION_X);
-    txtElementPositionY.value = selectedListElement.getAttribute(ATTR_ELEMENT_POSITION_Y);
-    onElementTypeChange();
 
-    // Text
-    if (cmbElementType.value === ELEMENT_TYPE_TEXT) {
-        cmbTextSensorIdSelection.value = selectedListElement.getAttribute(ATTR_TEXT_SENSOR_ID);
-        cmbTextSensorValueModifier.value = selectedListElement.getAttribute(ATTR_TEXT_VALUE_MODIFIER);
-        txtTextFormat.value = selectedListElement.getAttribute(ATTR_TEXT_FORMAT);
-        cmbTextFontFamily.value = selectedListElement.getAttribute(ATTR_TEXT_FONT_FAMILY);
-        txtTextFontSize.value = selectedListElement.getAttribute(ATTR_TEXT_FONT_SIZE);
-        txtTextFontColor.value = selectedListElement.getAttribute(ATTR_TEXT_FONT_COLOR);
-        txtTextFontColor.dispatchEvent(new Event('input', {bubbles: true}));
-        txtTextWidth.value = selectedListElement.getAttribute(ATTR_TEXT_WIDTH);
-        txtTextHeight.value = selectedListElement.getAttribute(ATTR_TEXT_HEIGHT);
-        cmbTextAlignment.value = selectedListElement.getAttribute(ATTR_TEXT_ALIGNMENT);
-    }
-
-    // Static image
-    if (cmbElementType.value === ELEMENT_TYPE_STATIC_IMAGE) {
-        txtStaticImageFile.value = selectedListElement.getAttribute(ATTR_STATIC_IMAGE_PATH);
-        txtStaticImageWidth.value = selectedListElement.getAttribute(ATTR_STATIC_IMAGE_WIDTH);
-        txtStaticImageHeight.value = selectedListElement.getAttribute(ATTR_STATIC_IMAGE_HEIGHT);
-    }
-
-    // Graph
-    if (cmbElementType.value === ELEMENT_TYPE_GRAPH) {
-        cmbGraphSensorIdSelection.value = selectedListElement.getAttribute(ATTR_GRAPH_SENSOR_ID);
-        txtGraphMinValue.value = selectedListElement.getAttribute(ATTR_GRAPH_MIN_VALUE);
-        txtGraphMaxValue.value = selectedListElement.getAttribute(ATTR_GRAPH_MAX_VALUE);
-        txtGraphWidth.value = selectedListElement.getAttribute(ATTR_GRAPH_WIDTH);
-        txtGraphHeight.value = selectedListElement.getAttribute(ATTR_GRAPH_HEIGHT);
-        cmbGraphType.value = selectedListElement.getAttribute(ATTR_GRAPH_TYPE);
-        txtGraphColor.value = selectedListElement.getAttribute(ATTR_GRAPH_COLOR);
-        txtGraphColor.dispatchEvent(new Event('input', {bubbles: true}));
-        txtGraphStrokeWidth.value = selectedListElement.getAttribute(ATTR_GRAPH_STROKE_WIDTH);
-        txtGraphBackgroundColor.value = selectedListElement.getAttribute(ATTR_GRAPH_BACKGROUND_COLOR);
-        txtGraphBackgroundColor.dispatchEvent(new Event('input', {bubbles: true}));
-        txtGraphBorderColor.value = selectedListElement.getAttribute(ATTR_GRAPH_BORDER_COLOR);
-        txtGraphBorderColor.dispatchEvent(new Event('input', {bubbles: true}));
-    }
-
-    // Conditional image
-    if (cmbElementType.value === ELEMENT_TYPE_CONDITIONAL_IMAGE) {
-        cmbConditionalImageSensorIdSelection.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_SENSOR_ID);
-        txtConditionalImageImagesPath.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_IMAGES_PATH);
-        txtConditionalImageMinValue.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_MIN_VALUE);
-        txtConditionalImageMaxValue.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_MAX_VALUE);
-        txtConditionalImageWidth.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_WIDTH);
-        txtConditionalImageHeight.value = selectedListElement.getAttribute(ATTR_CONDITIONAL_IMAGE_HEIGHT);
-    }
-}
-
-function dropOnDesignerPane(event) {
-    event.preventDefault();
-
-    const elementId = event.dataTransfer.getData('text/plain');
-    const htmlElement = document.getElementById(elementId);
-
-    let x = event.clientX - designerPane.getBoundingClientRect().left - htmlElement.clientWidth / 2;
-    let y = event.clientY - designerPane.getBoundingClientRect().top - htmlElement.clientHeight / 2;
-
-    // allow only positive values
-    x = x < 0 ? 0 : x;
-    y = y < 0 ? 0 : y;
-
-    htmlElement.style.left = `${x}px`;
-    htmlElement.style.top = `${y}px`;
-
-    // Update element position attributes
-    selectedListElement.setAttribute(ATTR_ELEMENT_POSITION_X, x);
-    selectedListElement.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
-
-    // Select the element in the list
-    setSelectedElement(selectedListElement);
-
-    // Update X and Y position in the detail pane
-    txtElementPositionX.value = x;
-    txtElementPositionY.value = y;
-}
-
-function updateDisplayDesignPaneDimensions() {
-    let width = txtDisplayResolutionWidth.value;
-    let height = txtDisplayResolutionHeight.value;
-
-    // Check if width and height are valid numbers over 0, otherwise return
-    if (isNaN(width) || width <= 0 || isNaN(height) || height <= 0) {
+// Client active toggle handler
+function handleClientActiveToggle() {
+    if (!currentClientMacAddress) {
+        alert("Please select a client first.");
         return;
     }
 
-    designerPane.style.width = width + "px";
-    designerPane.style.height = height + "px";
-}
+    const isActive = clientActiveToggle.checked;
 
-function onListElementDragStart(event) {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', event.target.textContent);
-    draggedLiElement = event.target;
-}
-
-function onListItemDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-}
-
-function onListElementDrop(event) {
-    event.preventDefault();
-
-    if (event.target.tagName === 'LI') {
-        event.target.parentNode.insertBefore(draggedLiElement, event.target.nextSibling);
-    } else {
-        event.target.appendChild(draggedLiElement);
-    }
-
-    // Recalculate the z-index of all elements
-    recalculateZIndex();
-}
-
-// Recalculates the z-index of all designer elements
-// The z-index is the index of the element in the placed list
-// The first element in the list has the lowest z-index
-function recalculateZIndex() {
-    // Find all li element in lcd-designer-placed-elements
-    const listElements = document.querySelectorAll("#lcd-designer-placed-elements li");
-    //Iterate with index and find for each the corresponding designer element
-    listElements.forEach((listElement, index) => {
-        // Find designer element
-        const id = listElement.id.replace(LIST_ID_PREFIX, DESIGNER_ID_PREFIX);
-        const designerElement = document.getElementById(id);
-
-        // Update the z-index of the designer element
-        designerElement.style.zIndex = "" + index;
+    invoke('set_client_active', {
+        macAddress: currentClientMacAddress,
+        active: isActive
+    }).then(() => {
+        // Update client status text
+        clientStatusText.innerText = isActive ? "Active" : "Inactive";
+        clientStatusText.classList.toggle("text-green-500", isActive);
+        clientStatusText.classList.toggle("text-red-500", !isActive);
+    }).catch((error) => {
+        alert("Error while updating client active status. " + error);
+        // Reset toggle switch if there was an error
+        clientActiveToggle.checked = !isActive;
     });
 }
 
-// Moves the selected element up in the list
-function moveElementUp() {
-    if (selectedListElement === null) {
-        alert("Please select a element first.");
-        return;
+// Load current HTTP port value from backend
+async function loadHttpPort() {
+    try {
+        const port = await invoke('get_http_port');
+        httpPortInput.value = port;
+        console.log("Loaded HTTP port:", port);
+    } catch (error) {
+        console.error("Error loading HTTP port:", error);
+        // Set default if loading fails
+        httpPortInput.value = 25555;
     }
-
-    // Check if element exists in designer
-    if (selectedDesignerElement === null) {
-        alert("Please select a element first.");
-        return;
-    }
-
-    // Check if the element is already the first element
-    if (selectedListElement.previousElementSibling === null) {
-        return;
-    }
-
-    // Move the element in the list
-    selectedListElement.parentNode.insertBefore(selectedListElement, selectedListElement.previousElementSibling);
-
-    // Recalculate the z-index of all elements
-    recalculateZIndex();
 }
 
-// Moves the selected element one position down in the list
-function moveElementDown() {
-    if (selectedListElement === null) {
-        alert("Please select a element first.");
+// Save HTTP port value to backend
+async function saveHttpPort() {
+    const port = parseInt(httpPortInput.value);
+
+    // Validate port range
+    if (isNaN(port) || port < 1024 || port > 65535) {
+        alert("Port must be a number between 1024 and 65535");
+        loadHttpPort(); // Reset to current value
         return;
     }
 
-    // Check if element exists in designer
-    if (selectedDesignerElement === null) {
-        alert("Please select a element first.");
-        return;
+    try {
+        await invoke('set_http_port', {port: port});
+        console.log("HTTP port saved:", port);
+    } catch (error) {
+        alert("Error saving HTTP port: " + error);
+        loadHttpPort(); // Reset to current value
     }
-
-    // Check if the element is already the last element
-    if (selectedListElement.nextElementSibling === null) {
-        return;
-    }
-
-    // Move the element in the list
-    selectedListElement.parentNode.insertBefore(selectedListElement.nextElementSibling, selectedListElement);
-
-    // Recalculate the z-index of all elements
-    recalculateZIndex();
 }
-
-// Adds a new text format placeholder to the text format input
-function addTextFormatPlaceholder(textToAdd) {
-    txtTextFormat.value += textToAdd;
-}
-

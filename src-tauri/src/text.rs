@@ -1,19 +1,9 @@
 use std::collections::HashMap;
 use std::io::{BufWriter, Cursor};
 
-use sensor_core::{
-    DisplayConfig, ElementType, PrepareTextData, SensorValue, TextConfig, TransportMessage,
-    TransportType,
-};
+use sensor_core::{DisplayConfig, ElementType, SensorValue, TextConfig};
 
 use crate::fonts;
-
-/// Creates the PrepareTextData struct which contains the font data for each text element.
-pub fn get_preparation_data(display_config: &DisplayConfig) -> PrepareTextData {
-    PrepareTextData {
-        font_data: build_fonts_data(display_config),
-    }
-}
 
 /// Renders the preview image for the specified text element.
 /// First renders the "full sized" image and then crops it to the text element desired size.
@@ -50,18 +40,6 @@ pub fn render_preview(
 
     writer.into_inner().unwrap().into_inner()
 }
-
-/// Serializes the render data to bytes using messagepack
-/// and wraps it in a TransportMessage
-/// Returns the bytes to send
-pub fn serialize(text_data: PrepareTextData) -> Vec<u8> {
-    let transport_message = TransportMessage {
-        transport_type: TransportType::PrepareText,
-        data: bincode::serialize(&text_data).unwrap(),
-    };
-    bincode::serialize(&transport_message).unwrap()
-}
-
 /// Builds the font data hashmap for all text elements.
 pub fn build_fonts_data(display_config: &DisplayConfig) -> HashMap<String, Vec<u8>> {
     display_config
