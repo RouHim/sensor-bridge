@@ -44,6 +44,11 @@
 
         <div class="flex-container center-horizontal">
 
+            <label for="http-port-input" style="margin-right: 5px;">Port:</label>
+            <input id="http-port-input" type="number" min="1024" max="65535" value="25555"
+                   style="width: 80px; margin-right: 10px;"
+                   title="HTTP server port (1024-65535)">
+
             <select id="main-registered-clients-select" style="width: 300px; margin-right: 5px">
             </select>
 
@@ -76,11 +81,6 @@
                     title="Import configuration">
                 <i data-feather="folder"></i>
             </button>
-
-            <label for="http-port-input" style="margin-right: 5px;">Port:</label>
-            <input id="http-port-input" type="number" min="1024" max="65535" value="25555"
-                   style="width: 80px; margin-right: 10px;"
-                   title="HTTP server port (1024-65535)">
 
             <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the HTTP server">
                 <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">

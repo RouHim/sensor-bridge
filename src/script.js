@@ -1432,6 +1432,11 @@ function updateCurrentElement() {
     // Update the currently selected element in the list
     let listEntryElement = selectedListElement;
 
+    // If no element is selected, return early
+    if (!listEntryElement) {
+        return;
+    }
+
     const elementId = listEntryElement.getAttribute(ATTR_ELEMENT_ID);
 
     // Update element config
