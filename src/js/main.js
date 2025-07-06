@@ -49,6 +49,8 @@ import {
     initializeFeatherIcons
 } from './ui-utils.js';
 
+import { setSensorValues } from './app-state.js';
+import { invoke } from './dom-elements.js';
 import {
     cmbRegisteredClients,
     txtDisplayResolutionWidth,
@@ -215,9 +217,36 @@ async function loadInitialData() {
         // Load conditional image repo entries
         loadConditionalImageRepoEntries();
 
+        // Load sensor data from backend
+        await loadSensorData();
+
     } catch (error) {
         console.error('Error loading initial data:', error);
         alert("Error while loading initial application data: " + error);
+    }
+}
+
+/**
+ * Loads sensor data from the backend
+ */
+async function loadSensorData() {
+    try {
+        console.log('Loading sensor data...');
+        const sensorDataResponse = await invoke('get_sensor_values');
+
+        // Parse the JSON response
+        const sensorData = JSON.parse(sensorDataResponse);
+
+        // Update app state with sensor data
+        setSensorValues(sensorData);
+
+        console.log('Loaded', sensorData.length, 'sensors');
+
+    } catch (error) {
+        console.error('Failed to load sensor data:', error);
+        // Set empty array as fallback
+        setSensorValues([]);
+        throw error;
     }
 }
 
