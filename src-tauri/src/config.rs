@@ -195,7 +195,7 @@ pub fn write(_net_port_config: &NetworkDeviceConfig) {
 
 /// Writes the specified config to disk.
 /// If the config file does not exist, it will be created.
-fn write_to_app_config(config: &AppConfig) {
+pub fn write_to_app_config(config: &AppConfig) {
     let config_path = get_config_path();
     let config_file = File::create(config_path).expect("Failed to create config file");
     serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
@@ -281,4 +281,3 @@ pub fn set_http_port(port: u16) -> Result<(), String> {
 fn default_http_port() -> u16 {
     25555
 }
-

@@ -365,10 +365,8 @@ async fn export_config(file_path: String) -> Result<(), String> {
 #[tauri::command]
 async fn import_config(file_path: String) -> Result<(), String> {
     match export_import::import_configuration(file_path) {
-        Ok(_) => {
-            Ok(())
-        }
-        Err(e) => Err(format!("Failed to import configuration: {}", e))
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to import configuration: {}", e)),
     }
 }
 
@@ -428,27 +426,45 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
 
 /// Stops the HTTP server
 #[tauri::command]
-fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
+async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
     info!("Stopping HTTP server...");
-    let mut server_running = app_state.http_server_running.lock().unwrap();
-    let mut server_handle = app_state.http_server_handle.lock().unwrap();
 
-    if !*server_running {
-        return Err("HTTP server is not running".to_string());
-    }
+    // First check if server is running and get the handle
+    let handle = {
+        let mut server_running = app_state.http_server_running.lock().unwrap();
+        let mut server_handle = app_state.http_server_handle.lock().unwrap();
 
-    if server_handle.take().is_some() {
-        // Send the shutdown signal for graceful shutdown
-        if let Some(tx) = app_state.http_server_shutdown_tx.lock().unwrap().take() {
-            let _ = tx.send(());
-            info!("Graceful shutdown signal sent to HTTP server.");
+        if !*server_running {
+            return Err("HTTP server is not running".to_string());
         }
 
-        // Don't call handle.abort() - let the graceful shutdown complete naturally
-        // The task will complete when the server finishes gracefully
+        if let Some(handle) = server_handle.take() {
+            // Send the shutdown signal for graceful shutdown
+            if let Some(tx) = app_state.http_server_shutdown_tx.lock().unwrap().take() {
+                let _ = tx.send(());
+                info!("Graceful shutdown signal sent to HTTP server.");
+            }
 
-        *server_running = false;
-        info!("HTTP server shutdown initiated.");
+            Some(handle)
+        } else {
+            return Err("HTTP server handle not found".to_string());
+        }
+    }; // Mutex guards are dropped here
+
+    // Now await the handle outside of the mutex scope
+    if let Some(handle) = handle {
+        match handle.await {
+            Ok(_) => {
+                info!("HTTP server stopped gracefully.");
+            }
+            Err(e) => {
+                log::warn!("HTTP server task finished with error: {}", e);
+            }
+        }
+
+        // Mark as stopped after the task completes
+        *app_state.http_server_running.lock().unwrap() = false;
+        info!("HTTP server shutdown completed.");
         Ok(())
     } else {
         Err("HTTP server handle not found".to_string())
@@ -457,14 +473,54 @@ fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
 
 /// Get the HTTP server port
 #[tauri::command]
-async fn get_http_port() -> Result<u16, String> {
+fn get_http_port() -> Result<u16, String> {
     Ok(config::get_http_port())
 }
 
-/// Set the HTTP server port
+/// Set the HTTP server port and restart server if running
 #[tauri::command]
-async fn set_http_port(port: u16) -> Result<(), String> {
-    config::set_http_port(port)
+async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), String> {
+    let was_running = {
+        let server_running = app_state.http_server_running.lock().unwrap();
+        *server_running
+    };
+
+    // If server is running, stop it first and wait for it to fully stop
+    if was_running {
+        info!(
+            "HTTP server is running, stopping it before changing port to {}",
+            port
+        );
+
+        // Use the existing stop_http_server function which properly waits for shutdown
+        if let Err(e) = stop_http_server(app_state.clone()).await {
+            return Err(format!("Failed to stop HTTP server: {}", e));
+        }
+
+        info!("HTTP server fully stopped, proceeding with port change");
+    }
+
+    // Set the new port in configuration
+    config::set_http_port(port)?;
+
+    // If server was running, restart it with the new port
+    if was_running {
+        info!("Restarting HTTP server with new port {}", port);
+
+        // Use the existing start_http_server function
+        if let Err(e) = start_http_server(app_state.clone()) {
+            return Err(format!("Failed to restart HTTP server: {}", e));
+        }
+
+        info!("HTTP server successfully restarted on port {}", port);
+    }
+
+    // Save the new port to the app configuration including the new port
+    let mut app_config = config::read_from_app_config();
+    app_config.http_port = port;
+    config::write_to_app_config(&app_config);
+
+    Ok(())
 }
 
 /// Get the entire app configuration

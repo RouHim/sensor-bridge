@@ -44,48 +44,58 @@
 
         <div class="flex-container center-horizontal">
 
-            <label for="http-port-input" style="margin-right: 5px;">Port:</label>
-            <input id="http-port-input" type="number" min="1024" max="65535" value="25555"
-                   style="width: 80px; margin-right: 10px;"
-                   title="HTTP server port (1024-65535)">
+            <!-- HTTP Server Controls Group -->
+            <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #444; border-radius: 6px; margin-right: 20px; background-color: #333;">
+                <label for="http-port-input" style="margin-right: 5px; font-weight: bold;">HTTP Server Port:</label>
+                <input id="http-port-input" type="number" min="1024" max="65535" value="25555"
+                       style="width: 80px; margin-right: 10px;"
+                       title="HTTP server port (1024-65535) - Auto-saves when changed">
+                <span style="font-size: 0.8em; color: #888; margin-right: 10px;">(auto-saves)</span>
 
-            <select id="main-registered-clients-select" style="width: 300px; margin-right: 5px">
-            </select>
+                <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the HTTP server">
+                    <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
+                    <i class="kill-switch-icon" data-feather="power"></i>
+                </label>
+            </div>
 
-            <button class="icon-button" id="btn-refresh-clients" style="font-size: 2em; margin-right: 10px;"
-                    title="Refresh registered clients">
-                <i data-feather="refresh-cw"></i>
-            </button>
+            <!-- Client Management Controls Group -->
+            <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #444; border-radius: 6px; margin-right: 20px; background-color: #333;">
+                <select id="main-registered-clients-select" style="width: 300px; margin-right: 5px">
+                </select>
 
-            <button class="icon-button" id="lcd-btn-save-client-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Save client configuration">
-                <i data-feather="save"></i>
-            </button>
+                <button class="icon-button" id="btn-refresh-clients" style="font-size: 2em; margin-right: 10px;"
+                        title="Refresh registered clients">
+                    <i data-feather="refresh-cw"></i>
+                </button>
 
-            <button class="icon-button" id="lcd-btn-remove-client" style="font-size: 2em; margin-right: 10px;"
-                    title="Remove registered client">
-                <i data-feather="trash"></i>
-            </button>
+                <button class="icon-button" id="lcd-btn-save-client-config" style="font-size: 2em; margin-right: 10px;"
+                        title="Save client configuration (requires client selection)">
+                    <i data-feather="save"></i>
+                </button>
 
-            <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
-                    title="Open live preview">
-                <i data-feather="monitor"></i>
-            </button>
+                <button class="icon-button" id="lcd-btn-remove-client" style="font-size: 2em; margin-right: 10px;"
+                        title="Remove registered client">
+                    <i data-feather="trash"></i>
+                </button>
 
-            <button class="icon-button" id="btn-export-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Export configuration">
-                <i data-feather="external-link"></i>
-            </button>
+                <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
+                        title="Open live preview">
+                    <i data-feather="monitor"></i>
+                </button>
+            </div>
 
-            <button class="icon-button" id="btn-import-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Import configuration">
-                <i data-feather="folder"></i>
-            </button>
+            <!-- Configuration Management Controls Group -->
+            <div style="display: flex; align-items: center;">
+                <button class="icon-button" id="btn-export-config" style="font-size: 2em; margin-right: 10px;"
+                        title="Export configuration">
+                    <i data-feather="external-link"></i>
+                </button>
 
-            <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the HTTP server">
-                <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
-                <i class="kill-switch-icon" data-feather="power"></i>
-            </label>
+                <button class="icon-button" id="btn-import-config" style="font-size: 2em; margin-right: 10px;"
+                        title="Import configuration">
+                    <i data-feather="folder"></i>
+                </button>
+            </div>
 
         </div>
 
@@ -107,7 +117,8 @@
                 </div>
             </div>
 
-            <div id="lcd-lbl-client-info" style="text-align: center; color: #888; font-size: 0.9em; margin: 10px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; background-color: #1a1a1a;">
+            <div id="lcd-lbl-client-info"
+                 style="text-align: center; color: #888; font-size: 0.9em; margin: 10px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; background-color: #1a1a1a;">
                 <div id="client-info-content" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h4 style="margin: 0; color: #fff;">Client Information</h4>
@@ -121,7 +132,8 @@
                         <div><strong>IP Address:</strong> <span id="client-info-ip">-</span></div>
                         <div><strong>MAC Address:</strong> <span id="client-info-mac">-</span></div>
                         <div><strong>Resolution:</strong> <span id="client-info-resolution">-</span></div>
-                        <div style="grid-column: 1 / -1;"><strong>Last Seen:</strong> <span id="client-info-last-seen">-</span></div>
+                        <div style="grid-column: 1 / -1;"><strong>Last Seen:</strong> <span
+                                id="client-info-last-seen">-</span></div>
                     </div>
                 </div>
                 <div id="client-info-placeholder" style="color: #666;">

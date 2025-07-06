@@ -20,6 +20,72 @@
 - Add configuration validation improvements
 ## Current Session Notes
 
+- [8:54:15 PM] [Unknown User] Fixed save_client_elements command error: Resolved "Command save_client_elements not found" error by updating frontend to use correct Tauri command 'update_client_display_config' with proper parameter name 'displayConfig' instead of 'elements'. This was a frontend-backend command mismatch from the architecture migration.
+- [8:20:37 PM] [Unknown User] Completed HTTP server race condition fix: Fully resolved the "HTTP server is already running" error by eliminating conflicting restart mechanisms:
+
+**Root Cause Identified**: 
+Two different systems were trying to restart the HTTP server simultaneously when the port changed:
+1. Backend `set_http_port` function (properly implemented with async coordination)
+2. Frontend JavaScript manual toggle logic (redundant and conflicting)
+
+**Complete Solution**:
+1. **Backend Fix**: Made `set_http_port` async and properly coordinate server shutdown before restart
+2. **Frontend Fix**: Removed redundant manual server restart logic from `onPortInputChange()` function
+3. **Result**: Now only the backend handles server restarts, eliminating race conditions
+
+**Technical Details**:
+- Frontend now just calls `saveHttpPort()` when port changes
+- Backend `set_http_port` automatically handles server restart if server is running
+- No more `toggleHttpServer(false)` → wait → `toggleHttpServer(true)` sequence
+- Single responsibility: backend manages server lifecycle, frontend manages UI
+
+This should completely resolve the rapid port change issues.
+- [8:17:35 PM] [Unknown User] Fixed HTTP server race condition: Resolved the "HTTP server is already running" error that occurred when changing ports rapidly. The issue was a race condition in the `set_http_port` function where it would immediately set `server_running = false` after sending a shutdown signal, but then spawn a background task to wait for the server to actually stop. This allowed new server starts before the previous server had fully stopped.
+
+**Solution implemented**:
+1. Made `set_http_port` function async to properly handle shutdown coordination
+2. Used the existing `stop_http_server` function which properly waits for server task completion
+3. Only proceed with port change and restart after the server has fully stopped
+4. Eliminated the race condition by ensuring synchronous shutdown before restart
+
+This ensures that when users change ports rapidly, each server change waits for the previous server to fully stop before starting the new one.
+- [8:01:54 PM] [Unknown User] Fixed HTTP server race condition: Resolved the "HTTP server is already running" error that occurred when changing ports rapidly. The issue was a race condition in the server start/stop mechanism:
+
+**Problem**: 
+- `stop_http_server` was immediately setting `server_running = false` after sending shutdown signal
+- But it wasn't waiting for the actual server task to complete
+- This caused conflicts when users quickly changed ports
+
+**Solution**:
+1. Modified `stop_http_server` to properly wait for server task completion before marking as stopped
+2. Enhanced `set_http_port` to handle server restarts when port is changed while server is running
+3. Made the port change function synchronous to avoid thread safety issues with Tauri State
+4. Added proper graceful shutdown coordination
+
+**Key Changes**:
+- `stop_http_server` now awaits the server handle completion before setting `server_running = false`
+- `set_http_port` detects if server is running, stops it, changes port config, then restarts
+- Used spawn for background cleanup to avoid async/thread safety issues
+- Proper mutex lock management to prevent deadlocks
+
+This eliminates the race condition and allows users to change ports rapidly without conflicts.
+- [7:49:55 PM] [Unknown User] Fixed HTTP server command implementation: Updated toggleHttpServer function to use the correct backend commands: 'start_http_server' and 'stop_http_server' instead of the non-existent 'toggle_http_server'. The auto-restart functionality should now work properly when the port changes.
+- [7:44:38 PM] [Unknown User] Identified HTTP server command mismatch: The frontend was calling 'toggle_http_server' which doesn't exist. The backend actually has separate 'start_http_server' and 'stop_http_server' commands. Need to update the toggleHttpServer function to use the correct commands.
+- [7:40:03 PM] [Unknown User] Implemented automatic HTTP server restart on port change: Successfully implemented the requested functionality: 1) The port input field is already positioned before the server toggle button in the HTML. 2) Added automatic server restart when the port value changes and loses focus. The implementation includes: - onPortInputFocus() to store the original port value when input gains focus - onPortInputChange() to detect port changes, save the new value, and restart the server if it's currently running - Updated event listeners in main.js to use the new functions - Server restart is only triggered if the port actually changed and the server is currently active
+- [7:28:40 PM] [Unknown User] Analyzed current HTTP server port configuration structure: Found that the port input is already positioned before the server toggle button in the HTML. The current implementation saves the port value but doesn't automatically restart the server when the port changes. Need to implement auto-restart functionality when port changes and loses focus.
+- [7:24:04 PM] [Unknown User] Identified HTTP port save button confusion: Found that the "Save client configuration" button is positioned next to the HTTP port input field, causing users to click it thinking it will save the HTTP port. The HTTP port actually auto-saves on change/blur events, but the confusing button placement leads users to click the wrong save button which requires client selection.
+- [8:22:27 AM] [Unknown User] Refactored monolithic script.js into modular architecture: Successfully broke down the 1990-line script.js file into 9 focused modules:
+- constants.js: Application constants and data attributes
+- dom-elements.js: Centralized DOM references and Tauri API
+- app-state.js: Global state management with controlled access
+- sensor-selection.js: Sensor selection dialog functionality
+- config-management.js: Configuration import/export and HTTP server
+- client-management.js: Client registration and lifecycle management
+- element-management.js: LCD display element CRUD operations
+- ui-utils.js: UI helpers, file selection, and system utilities
+- main.js: Main coordination and event handling
+
+The main script.js is now just 8 lines that import and initialize the modular application. This follows the established architectural patterns from the Rust backend and significantly improves maintainability, testability, and code organization.
 - [9:11:24 PM] [Unknown User] File Update: Updated system-patterns.md
 - [9:10:50 PM] [Unknown User] File Update: Updated product-context.md
 - [9:02:19 PM] [Unknown User] Fixed export/import button functionality: Identified and fixed critical bug in importConfig function where confirm() was being used as async Promise instead of synchronous boolean. Export and import buttons should now work correctly.
