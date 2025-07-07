@@ -269,7 +269,24 @@ export async function saveElementConfiguration() {
 
     try {
         const elements = collectAllElements();
-        await invoke('update_client_display_config', { macAddress, displayConfig: JSON.stringify(elements) });
+
+        // Get the current client's resolution from the backend
+        const clientsResponse = await invoke('get_registered_clients');
+        const parsedClients = JSON.parse(clientsResponse);
+        const currentClient = parsedClients[macAddress];
+
+        if (!currentClient) {
+            throw new Error('Current client not found');
+        }
+
+        // Create the complete DisplayConfig structure
+        const displayConfig = {
+            resolution_width: currentClient.resolution_width || 0,
+            resolution_height: currentClient.resolution_height || 0,
+            elements: elements
+        };
+
+        await invoke('update_client_display_config', {macAddress, displayConfig: JSON.stringify(displayConfig)});
         console.log('Element configuration saved successfully');
     } catch (error) {
         console.error('Failed to save element configuration:', error);
@@ -287,7 +304,7 @@ export function loadDisplayElements(elements = []) {
 
     // Load each element from the configuration
     elements.forEach(elementData => {
-        const { id, name, type, x, y } = elementData;
+        const {id, name, type, x, y} = elementData;
 
         // Generate new ID if not provided or use existing
         const elementId = id || generateElementId();
