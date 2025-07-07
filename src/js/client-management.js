@@ -18,7 +18,7 @@ import {
     lcdBasePanel
 } from './dom-elements.js';
 import { setCurrentClientMacAddress, getCurrentClientMacAddress } from './app-state.js';
-import { loadDisplayElements } from './element-management.js';
+import { loadDisplayElements, updateDisplayDesignPaneDimensions } from './element-management.js';
 
 /**
  * Loads all registered clients from the backend
@@ -160,6 +160,9 @@ function loadClientConfiguration(clientData) {
         if (txtClientName) txtClientName.value = clientData.name || '';
         if (txtDisplayResolutionWidth) txtDisplayResolutionWidth.value = clientData.resolution_width || 800;
         if (txtDisplayResolutionHeight) txtDisplayResolutionHeight.value = clientData.resolution_height || 600;
+
+        // Update the designer pane dimensions to match the client's resolution
+        updateDisplayDesignPaneDimensions();
 
         // Load display elements
         loadDisplayElements(clientData.display_config ? clientData.display_config.elements : []);

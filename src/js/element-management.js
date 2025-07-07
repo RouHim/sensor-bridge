@@ -119,6 +119,9 @@ export function onElementTypeChange() {
         selectedList.removeAttribute('data-config');
         selectedDesigner.removeAttribute('data-config');
 
+        // Apply current form values to create new configuration for the new type
+        applyFormToSelectedElement();
+
         // Update the preview to show the new element type
         updateElementPreview();
 
@@ -350,12 +353,12 @@ export function loadDisplayElements(elements = []) {
 
     // Load each element from the configuration
     elements.forEach(elementData => {
-        const {id, name, type, x, y, config} = elementData;
+        const {id, name, element_type, x, y, text_config, image_config, graph_config, conditional_image_config} = elementData;
 
         // Generate new ID if not provided or use existing
         const elementId = id || generateElementId();
         const elementName = name || `Element ${elementId}`;
-        const elementType = type || ELEMENT_TYPE_TEXT;
+        const elementType = element_type || ELEMENT_TYPE_TEXT;
         const posX = parseInt(x) || 0;
         const posY = parseInt(y) || 0;
 
@@ -363,6 +366,23 @@ export function loadDisplayElements(elements = []) {
         const listElement = createListElement(elementId, elementName, elementType);
         listElement.setAttribute(ATTR_ELEMENT_POSITION_X, posX);
         listElement.setAttribute(ATTR_ELEMENT_POSITION_Y, posY);
+
+        // Determine which config to use based on element type
+        let config = null;
+        switch (elementType) {
+            case ELEMENT_TYPE_TEXT:
+                config = text_config;
+                break;
+            case ELEMENT_TYPE_STATIC_IMAGE:
+                config = image_config;
+                break;
+            case ELEMENT_TYPE_GRAPH:
+                config = graph_config;
+                break;
+            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                config = conditional_image_config;
+                break;
+        }
 
         // Store configuration if available
         if (config) {
@@ -633,9 +653,14 @@ function collectAllElements() {
         const elementData = {
             id: li.getAttribute(ATTR_ELEMENT_ID),
             name: li.getAttribute(ATTR_ELEMENT_NAME),
-            type: li.getAttribute(ATTR_ELEMENT_TYPE),
+            element_type: li.getAttribute(ATTR_ELEMENT_TYPE), // Changed from 'type' to 'element_type'
             x: parseInt(li.getAttribute(ATTR_ELEMENT_POSITION_X) || 0),
-            y: parseInt(li.getAttribute(ATTR_ELEMENT_POSITION_Y) || 0)
+            y: parseInt(li.getAttribute(ATTR_ELEMENT_POSITION_Y) || 0),
+            // Initialize all config fields as null
+            text_config: null,
+            image_config: null,
+            graph_config: null,
+            conditional_image_config: null
         };
 
         // Include detailed configuration if available
@@ -643,7 +668,25 @@ function collectAllElements() {
         if (configAttr) {
             try {
                 const config = JSON.parse(configAttr);
-                elementData.config = config;
+                const elementType = li.getAttribute(ATTR_ELEMENT_TYPE);
+
+                // Map the generic config to the appropriate typed config field
+                switch (elementType) {
+                    case ELEMENT_TYPE_TEXT:
+                        elementData.text_config = config;
+                        break;
+                    case ELEMENT_TYPE_STATIC_IMAGE:
+                        elementData.image_config = config;
+                        break;
+                    case ELEMENT_TYPE_GRAPH:
+                        elementData.graph_config = config;
+                        break;
+                    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                        elementData.conditional_image_config = config;
+                        break;
+                    default:
+                        console.warn(`Unknown element type: ${elementType}`);
+                }
             } catch (error) {
                 console.warn('Failed to parse element config:', error);
             }

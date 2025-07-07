@@ -123,9 +123,8 @@ function setupEventListeners() {
 
     clientActiveToggle?.addEventListener("change", handleClientActiveToggle);
 
-    // Display resolution events
-    txtDisplayResolutionWidth?.addEventListener("input", updateDisplayDesignPaneDimensions);
-    txtDisplayResolutionHeight?.addEventListener("input", updateDisplayDesignPaneDimensions);
+    // Resolution inputs are read-only (determined by client hardware)
+    // No event listeners needed since they cannot be manually changed
 
     // Element type change
     cmbElementType?.addEventListener("change", onElementTypeChange);
