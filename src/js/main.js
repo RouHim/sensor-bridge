@@ -27,7 +27,8 @@ import {
     moveElementControlPad,
     changeMoveUnit,
     dropOnDesignerPane,
-    saveElementConfiguration
+    saveElementConfiguration,
+    updateElementPreview
 } from './element-management.js';
 
 import {
@@ -197,6 +198,49 @@ function setupEventListeners() {
                 sensorSelectionDialog.close(sensorSelectionTable.getElementsByTagName("tr")[1].id);
             }
         }
+    });
+
+    // Element configuration preview update events
+    setupPreviewUpdateListeners();
+}
+
+/**
+ * Sets up event listeners that trigger preview updates
+ */
+function setupPreviewUpdateListeners() {
+    // Text element configuration events
+    document.getElementById('lcd-txt-element-text-format')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-cmb-element-font-family')?.addEventListener('change', updateElementPreview);
+    document.getElementById('lcd-txt-element-font-size')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-font-color')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-width')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-height')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-cmb-element-text-alignment')?.addEventListener('change', updateElementPreview);
+
+    // Static image element configuration events
+    document.getElementById('lcd-txt-element-static-image-file')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-static-image-width')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-static-image-height')?.addEventListener('input', updateElementPreview);
+
+    // Graph element configuration events
+    document.getElementById('lcd-graph-width')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-graph-height')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-graph-type')?.addEventListener('change', updateElementPreview);
+    document.getElementById('lcd-graph-color')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-graph-stroke-width')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-graph-background-color')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-graph-border-color')?.addEventListener('input', updateElementPreview);
+
+    // Conditional image element configuration events
+    document.getElementById('lcd-txt-element-conditional-image-images-path')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-conditional-image-width')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-conditional-image-height')?.addEventListener('input', updateElementPreview);
+
+    // Also update preview when element type changes
+    document.getElementById('lcd-cmb-element-type')?.addEventListener('change', () => {
+        onElementTypeChange();
+        // Delay preview update to allow config panel to show
+        setTimeout(updateElementPreview, 50);
     });
 }
 

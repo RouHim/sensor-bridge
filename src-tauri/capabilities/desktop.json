@@ -9,6 +9,9 @@
     "main"
   ],
   "permissions": [
-    "updater:default"
+    "updater:default",
+    "fs:default",
+    "fs:allow-read-file",
+    "core:default"
   ]
 }

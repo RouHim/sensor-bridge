@@ -37,6 +37,7 @@ ureq = { version = "2.9.6", features = ["json"] }                               
 dirs = "5.0.1"                                                                                                        # System directories
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
 lm-sensors = "0.2.1"                                                                                                  # Read sensor values from lm-sensors
 dmidecode = "0.8.0"
 
