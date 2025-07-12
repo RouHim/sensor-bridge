@@ -33,7 +33,9 @@ import {
 
 import {
     showSensorSelectionDialog,
-    onCloseSensorSelectionDialog
+    onCloseSensorSelectionDialog,
+    populateAllSensorDropdowns,
+    onSensorDropdownChange
 } from './sensor-selection.js';
 
 import {
@@ -90,7 +92,10 @@ import {
     btnTextFormatAddValueMax,
     clientActiveToggle,
     sensorSelectionDialog,
-    designerPane
+    designerPane,
+    cmbTextSensorIdSelection,
+    cmbGraphSensorIdSelection,
+    cmbConditionalImageSensorIdSelection
 } from './dom-elements.js';
 
 /**
@@ -169,6 +174,11 @@ function setupEventListeners() {
     btnGraphSensorIdSelectionDialog?.addEventListener("click", showSensorSelectionDialog);
     btnConditionalImageSensorIdSelectionDialog?.addEventListener("click", showSensorSelectionDialog);
     btnConditionalImageApplyCatalogEntry?.addEventListener("click", applyConditionalImageCatalogEntry);
+
+    // Direct sensor dropdown selection events
+    cmbTextSensorIdSelection?.addEventListener("change", (event) => onSensorDropdownChange(event.target));
+    cmbGraphSensorIdSelection?.addEventListener("change", (event) => onSensorDropdownChange(event.target));
+    cmbConditionalImageSensorIdSelection?.addEventListener("change", (event) => onSensorDropdownChange(event.target));
 
     // Text format placeholder events
     btnTextFormatAddValue?.addEventListener("click", () => addTextFormatPlaceholder("{value}"));
@@ -282,6 +292,9 @@ async function loadSensorData() {
 
         // Update app state with sensor data
         setSensorValues(sensorData);
+
+        // Populate all sensor dropdowns with the loaded sensors
+        populateAllSensorDropdowns();
 
         console.log('Loaded', sensorData.length, 'sensors');
 

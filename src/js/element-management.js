@@ -29,6 +29,8 @@ import {
     layoutConditionalImageConfig,
     btnControlPadChangeMoveUnit,
     invoke,
+    cmbTextSensorIdSelection,
+    cmbTextSensorValueModifier,
     txtTextFormat,
     cmbTextFontFamily,
     txtTextFontSize,
@@ -586,10 +588,13 @@ function updateElementForm() {
 function loadConfigIntoForm(config, elementType) {
     switch (elementType) {
         case ELEMENT_TYPE_TEXT:
+            // Handle both old camelCase and new snake_case field names for backward compatibility
+            if (cmbTextSensorIdSelection) cmbTextSensorIdSelection.value = config.sensor_id || config.sensorId || '';
+            if (cmbTextSensorValueModifier) cmbTextSensorValueModifier.value = config.value_modifier || config.valueModifier || 'none';
             if (txtTextFormat) txtTextFormat.value = config.format || '{value} {unit}';
-            if (cmbTextFontFamily) cmbTextFontFamily.value = config.fontFamily || 'Arial';
-            if (txtTextFontSize) txtTextFontSize.value = config.fontSize || 12;
-            if (txtTextFontColor) txtTextFontColor.value = config.fontColor || '#ffffffff';
+            if (cmbTextFontFamily) cmbTextFontFamily.value = config.font_family || config.fontFamily || 'Arial';
+            if (txtTextFontSize) txtTextFontSize.value = config.font_size || config.fontSize || 12;
+            if (txtTextFontColor) txtTextFontColor.value = config.font_color || config.fontColor || '#ffffffff';
             if (txtTextWidth) txtTextWidth.value = config.width || 100;
             if (txtTextHeight) txtTextHeight.value = config.height || 20;
             if (cmbTextAlignment) cmbTextAlignment.value = config.alignment || 'left';
@@ -703,10 +708,12 @@ function collectAllElements() {
  */
 function getTextElementConfig() {
     return {
+        sensor_id: cmbTextSensorIdSelection?.value || '',
+        value_modifier: cmbTextSensorValueModifier?.value || 'none',
         format: txtTextFormat?.value || '{value} {unit}',
-        fontFamily: cmbTextFontFamily?.value || 'Arial',
-        fontSize: parseInt(txtTextFontSize?.value) || 12,
-        fontColor: txtTextFontColor?.value || '#ffffffff',  // Match HTML default
+        font_family: cmbTextFontFamily?.value || 'Arial',
+        font_size: parseInt(txtTextFontSize?.value) || 12,
+        font_color: txtTextFontColor?.value || '#ffffffff',  // Match HTML default
         width: parseInt(txtTextWidth?.value) || 100,
         height: parseInt(txtTextHeight?.value) || 20,
         alignment: cmbTextAlignment?.value || 'left'
@@ -735,7 +742,7 @@ function getGraphElementConfig() {
         width: parseInt(txtGraphWidth?.value) || 200,
         height: parseInt(txtGraphHeight?.value) || 50,
         type: cmbGraphType?.value || 'line',
-        color: txtGraphColor?.value || '#000000ff',
+        color: txtGraphColor?.value || '#000000',
         strokeWidth: parseInt(txtGraphStrokeWidth?.value) || 1,
         backgroundColor: txtGraphBackgroundColor?.value || '#00000000',
         borderColor: txtGraphBorderColor?.value || '#00000000'
@@ -759,26 +766,66 @@ function getConditionalImageElementConfig() {
  */
 function renderTextElementPreview(config) {
     const div = document.createElement('div');
-    div.style.fontFamily = config.fontFamily;
-    div.style.fontSize = `${config.fontSize}px`;
-    div.style.color = config.fontColor;
-    div.style.width = `${config.width}px`;
-    div.style.height = `${config.height}px`;
-    div.style.textAlign = config.alignment;
+    // Handle both snake_case (new) and camelCase (old) field names
+    div.style.fontFamily = config.font_family || config.fontFamily || 'Arial';
+    div.style.fontSize = `${config.font_size || config.fontSize || 12}px`;
+    div.style.color = config.font_color || config.fontColor || '#ffffffff';
+    div.style.width = `${config.width || 100}px`;
+    div.style.height = `${config.height || 20}px`;
+    div.style.textAlign = config.alignment || 'left';
     div.style.overflow = 'hidden';
-    div.style.lineHeight = `${config.height}px`;
+    div.style.lineHeight = `${config.height || 20}px`;
     div.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
     div.style.border = '1px solid #666';
 
-    // Replace placeholders with sample data
-    let previewText = config.format;
-    previewText = previewText.replace(/{value}/g, '42.5');
-    previewText = previewText.replace(/{unit}/g, '°C');
-    previewText = previewText.replace(/{value-avg}/g, '41.2');
-    previewText = previewText.replace(/{value-min}/g, '38.1');
-    previewText = previewText.replace(/{value-max}/g, '45.3');
+    // Get real sensor data if a sensor is selected
+    const sensorId = config.sensor_id || config.sensorId;
+    let previewText = config.format || '{value} {unit}';
+    
+    if (sensorId) {
+        // Import getSensorValues to get real sensor data
+        import('./app-state.js').then(module => {
+            const sensorValues = module.getSensorValues();
+            const selectedSensor = sensorValues.find(sensor => sensor.id === sensorId);
+            
+            if (selectedSensor) {
+                // Replace placeholders with real sensor data
+                let realText = previewText;
+                realText = realText.replace(/{value}/g, selectedSensor.value);
+                realText = realText.replace(/{unit}/g, selectedSensor.unit);
+                realText = realText.replace(/{value-avg}/g, selectedSensor.value); // TODO: implement actual avg
+                realText = realText.replace(/{value-min}/g, selectedSensor.value); // TODO: implement actual min
+                realText = realText.replace(/{value-max}/g, selectedSensor.value); // TODO: implement actual max
+                
+                div.textContent = realText;
+            } else {
+                // Fallback to sample data if sensor not found
+                previewText = previewText.replace(/{value}/g, '42.5');
+                previewText = previewText.replace(/{unit}/g, '°C');
+                previewText = previewText.replace(/{value-avg}/g, '41.2');
+                previewText = previewText.replace(/{value-min}/g, '38.1');
+                previewText = previewText.replace(/{value-max}/g, '45.3');
+                div.textContent = previewText;
+            }
+        }).catch(() => {
+            // Fallback to sample data if import fails
+            previewText = previewText.replace(/{value}/g, '42.5');
+            previewText = previewText.replace(/{unit}/g, '°C');
+            previewText = previewText.replace(/{value-avg}/g, '41.2');
+            previewText = previewText.replace(/{value-min}/g, '38.1');
+            previewText = previewText.replace(/{value-max}/g, '45.3');
+            div.textContent = previewText;
+        });
+    } else {
+        // No sensor selected, use sample data
+        previewText = previewText.replace(/{value}/g, '42.5');
+        previewText = previewText.replace(/{unit}/g, '°C');
+        previewText = previewText.replace(/{value-avg}/g, '41.2');
+        previewText = previewText.replace(/{value-min}/g, '38.1');
+        previewText = previewText.replace(/{value-max}/g, '45.3');
+        div.textContent = previewText;
+    }
 
-    div.textContent = previewText;
     return div;
 }
 
@@ -900,7 +947,7 @@ function renderConditionalImageElementPreview(config) {
 /**
  * Applies current form values to the selected element
  */
-function applyFormToSelectedElement() {
+export function applyFormToSelectedElement() {
     const selectedList = getSelectedListElement();
     const selectedDesigner = getSelectedDesignerElement();
 
