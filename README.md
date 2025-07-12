@@ -1,3 +1,5 @@
+# Sensor Bridge
+
 <p align="center">
     <img src=".github/readme/banner.png" width="300"/>
 </p>
@@ -9,105 +11,83 @@
 </p>
 
 <p align="center">
-    <i>Sensor bridge is a desktop application for Linux that allows you to display sensor information on another device's screen.</i>
+    <i>Sensor Bridge is a desktop application for Linux that serves sensor information via HTTP API, allowing multiple display clients to connect and show real-time system data.</i>
 </p>
 
 <p align="center">
     <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.41.13/sensor-bridge_0.41.13_amd64.AppImage"><img src=".github/readme/dl-linux.png" width="250"/></a>
 </p>
 
-## Current state
+## Architecture Overview
 
-The software is still in a very early and immature state. If you want to use it, expect bugs.
+Sensor Bridge has been completely redesigned with a modern HTTP-based architecture:
 
-## Features
+- **Server Application**: The main sensor-bridge application runs on your computer and serves sensor data via HTTP API
+- **Client Registration**: Display clients automatically register themselves with the server using their MAC address
+- **RESTful API**: Clean HTTP API for easy integration with custom clients
 
-* Display sensor information of your computer on another device screen
-* Design your display using an intuitive user interface
-* Works on Linux
-* Rendering is offloaded to the other device, reducing memory and CPU consumption on your computer
-* Supports multiple display devices at the same time
-* Custom font support
-* Display your data as: Text, Graph or Gauge
-* Export and import your designs
-* Live preview of your design
+## Key Features
 
-## Roadmap
+* **HTTP API Server**: Serves sensor data via RESTful endpoints
+* **Automatic Client Discovery**: Clients register themselves with MAC address, IP, and resolution
+* **Multiple Display Support**: Connect unlimited display clients simultaneously
+* **WUSIWUG Configuration**: Design and manage displays
+* **Real-time Data**: Live sensor data updates with configurable refresh rates
+* **Flexible Display Elements**: Support for text, graphs, images, and conditional displays
+* **Client Management**: Enable/disable clients, assign custom names, and remove devices
+* **Export/Import**: Save and share your display configurations
+* **Live Preview**: See your designs in real-time before deploying
 
-* RTSS support
-* Android app
-* Aquacomputer aqua suite sensor support
-* Local display
+## Getting Started
 
-## Motivation
+### 1. Start the Server
 
-Since I recently switched my gaming computer from windows to linux I was desperately looking for a way to display sensor
-data (CPU load, GPU load, etc...) from my computer on a display. On windows I always did this with AIDA64, but
-unfortunately it costs money and doesn't run on linux.
-So the following problems had to be solved:
-
-* Collect and display sensor data on Linux
-* Free and open-source
-* Do NOT render the display on the computer (what AIDA64 does) to save resources
-* A user-friendly UI to configure the display
-
-Since I have not found any software that meets all these requirements, I have decided to write it myself.
-
-## Screenshot
-
-![](.github/readme/screenshot.jpg "Screenshot")
-
-## Architecture
-
-For the whole thing to work, you need **two applications**. One is the **sensor-bridge** that runs on your computer and
-collects sensor data. In addition, a second computer (can also be a raspberry pi or similar) that has a screen
-connected. The **[sensor-display](https://github.com/RouHim/sensor-display)** application runs on this other computer.
-This is where the sensor information is sent from your computer and displayed.
-
-![](.github/readme/architecture.png "Architecture")
-
-## Prerequisites
-
-The following software is required to be installed on your system:
-
-### Linux
-
-* [lm-sensors](https://github.com/lm-sensors/lm-sensors) (`apt install lm-sensors` or `pacman -S lm_sensors`
-  or `dnf install lm_sensors`)
-
-## Build
-
-This section describes how to build and run the project from source.
-
-### Prerequisites
-
-* [Rust](https://www.rust-lang.org/tools/install)
-* [Tauri prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
-* clang
-    * On Linux: `apt install clang` or `pacman -S clang` or `dnf install clang`
-* lm-sensors dev on linux: `apt install libsensors4-dev` or `pacman -S lm_sensors`
-  or `dnf install lm_sensors`
-
-### Debug run
-
-For running the project, run the following command in the root directory of the project:
+Download and run the Sensor Bridge application on your main computer (the one with sensors you want to monitor):
 
 ```bash
-cargo tauri dev
+./sensor-bridge_0.41.13_amd64.AppImage
 ```
 
-### Build
+### 2. Start the Display Client
 
-For building a release version, run the following command in the root directory of the project:
+Download and run the sensor-display client on the device that will show the sensor data (this could be another computer,
+Raspberry Pi, etc.):
 
-```bash
-cargo tauri build
-```
+Head over to the sensor-display [Releases](https://github.com/rouhim/sensor-display/releases) page and download the
+latest version of
+the sensor-display client for your platform.
 
-#### Debug version
+## Display Elements
 
-In order to build a debuggable version of a release build follow this steps:
+Create rich displays using these element types:
 
-* Add this feature to the tauri crate in the Cargo.toml: `devtools`
-* Build a debug release version with: `cargo tauri build --debug`
-* Enable debug logging with: `RUST_LOG=debug`
+### Text Elements
+
+- Display sensor values with custom formatting
+- Support for system fonts and colors
+- Alignment and sizing options
+- Value modifiers (raw, average, min, max)
+
+### Graph Elements
+
+- Real-time line graphs of sensor data
+- Configurable colors, stroke width, and background
+- Auto-scaling or fixed value ranges
+- Historical data visualization
+
+### Image Elements
+
+- Static images for logos and backgrounds
+- Conditional images that change based on sensor values
+- Support for multiple image formats
+- Automatic scaling and positioning
+
+## API Reference
+
+For complete API documentation, see [API.md](API.md).
+
+Quick reference:
+
+- `POST /api/register` - Register/update client
+- `GET /api/sensor-data?mac_address={mac}` - Get sensor data
+- `GET /api/health` - Server health check

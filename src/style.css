@@ -5,6 +5,21 @@ html, body {
     padding: 0;
 }
 
+/* Hide spinner buttons for read-only resolution inputs */
+#lcd-txt-resolution-width::-webkit-outer-spin-button,
+#lcd-txt-resolution-width::-webkit-inner-spin-button,
+#lcd-txt-resolution-height::-webkit-outer-spin-button,
+#lcd-txt-resolution-height::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+#lcd-txt-resolution-width[type=number],
+#lcd-txt-resolution-height[type=number] {
+    -moz-appearance: textfield;
+}
+
 #base-container {
 }
 

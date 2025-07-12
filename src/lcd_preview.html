@@ -17,12 +17,18 @@
 
     /// Set the preview image
     function set_lcd_preview_image() {
-        // Load the current net port id from the url after the # symbol
-        const currentNetworkDeviceId = window.location.hash.substr(1);
+        // Load the current mac address from the url after the # symbol
+        const macAddress = window.location.hash.substr(1);
 
-        console.log("currentNetworkDeviceId: " + currentNetworkDeviceId);
+        console.log("macAddress: " + macAddress);
 
-        invoke('get_lcd_preview_image', {networkDeviceId: currentNetworkDeviceId}).then(
+        // If no mac address is provided, we can't get the preview
+        if (!macAddress) {
+            console.error("No MAC address provided in URL hash");
+            return;
+        }
+
+        invoke('get_lcd_preview_image', {macAddress: macAddress}).then(
             (preview_image) => {
                 const img = document.getElementById("lcd-preview-image");
                 img.src = "data:image/jpeg;base64," + preview_image;

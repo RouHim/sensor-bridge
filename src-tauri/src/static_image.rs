@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use sensor_core::{
-    DisplayConfig, ElementConfig, ElementType, ImageConfig, PrepareStaticImageData,
-    TransportMessage, TransportType,
-};
+use sensor_core::{DisplayConfig, ElementConfig, ElementType, ImageConfig};
 
 use crate::utils;
 
@@ -37,26 +34,13 @@ pub fn prepare(element: &ElementConfig) {
 }
 
 /// Pre-renders static images and serializes the render data to bytes using messagepack
-pub fn get_preparation_data(lcd_config: &DisplayConfig) -> PrepareStaticImageData {
-    let images_data: HashMap<String, Vec<u8>> = lcd_config
+pub fn get_preparation_data(lcd_config: &DisplayConfig) -> HashMap<String, Vec<u8>> {
+    lcd_config
         .elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .map(|element| prepare_image(&element.id, element.image_config.as_ref().unwrap()))
-        .collect();
-
-    PrepareStaticImageData { images_data }
-}
-
-/// Serializes the render data to bytes using messagepack
-/// and wraps it in a TransportMessage
-/// Returns the bytes to send
-pub fn serialize(static_image_data: PrepareStaticImageData) -> Vec<u8> {
-    let transport_message = TransportMessage {
-        transport_type: TransportType::PrepareStaticImage,
-        data: bincode::serialize(&static_image_data).unwrap(),
-    };
-    bincode::serialize(&transport_message).unwrap()
+        .collect()
 }
 
 /// Reads each image into memory, scales it to the desired resolution, and returns it

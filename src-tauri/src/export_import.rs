@@ -28,8 +28,8 @@ pub fn export_configuration(file_path: String) {
 
 /// Inlines all files in the config as base64 encoded string.
 fn inline_files(app_config: &mut AppConfig) {
-    for network_device in app_config.network_devices.values_mut() {
-        for element in &mut network_device.display_config.elements {
+    for registered_client in app_config.registered_clients.values_mut() {
+        for element in &mut registered_client.display_config.elements {
             match element.element_type {
                 ElementType::Text => {
                     // Inline font data
@@ -85,8 +85,8 @@ pub fn import_configuration(file_path: String) -> Result<AppConfig, Error> {
     let _ = fs::remove_dir_all(sensor_core::get_config_dir());
     let _ = fs::create_dir_all(sensor_core::get_config_dir());
 
-    for network_device in app_config.network_devices.values_mut() {
-        for element in &mut network_device.display_config.elements {
+    for registered_client in app_config.registered_clients.values_mut() {
+        for element in &mut registered_client.display_config.elements {
             match element.element_type {
                 ElementType::Text => {
                     let text_config = element.text_config.as_mut().unwrap();
