@@ -1,6 +1,7 @@
 // UI utilities and helper functions
 
 import { invoke } from './dom-elements.js';
+import { getCurrentClientMacAddress } from './app-state.js';
 import {
     cmbTextFontFamily,
     cmbConditionalImageCatalogEntrySelection,
@@ -156,6 +157,13 @@ export async function toggleLivePreview() {
         // Import WebviewWindow from Tauri API
         const { WebviewWindow } = window.__TAURI__.webviewWindow;
 
+        // Get the current client MAC address
+        const macAddress = getCurrentClientMacAddress();
+        if (!macAddress) {
+            console.error('No client selected. Cannot open LCD preview.');
+            return;
+        }
+
         // Check if preview window already exists using static method
         const existingWindow = await WebviewWindow.getByLabel('lcd-preview');
 
@@ -164,9 +172,9 @@ export async function toggleLivePreview() {
             await existingWindow.setFocus();
             console.log('LCD preview window focused');
         } else {
-            // Create new preview window with corrected URL format
+            // Create new preview window with MAC address in URL hash
             const previewWindow = new WebviewWindow('lcd-preview', {
-                url: '/lcd_preview.html',
+                url: `/lcd_preview.html#${macAddress}`,
                 title: 'LCD Preview',
                 width: 800,
                 height: 600,

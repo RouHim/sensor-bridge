@@ -589,7 +589,7 @@ function loadConfigIntoForm(config, elementType) {
             if (txtTextFormat) txtTextFormat.value = config.format || '{value} {unit}';
             if (cmbTextFontFamily) cmbTextFontFamily.value = config.fontFamily || 'Arial';
             if (txtTextFontSize) txtTextFontSize.value = config.fontSize || 12;
-            if (txtTextFontColor) txtTextFontColor.value = config.fontColor || '#ffffff';
+            if (txtTextFontColor) txtTextFontColor.value = config.fontColor || '#ffffffff';
             if (txtTextWidth) txtTextWidth.value = config.width || 100;
             if (txtTextHeight) txtTextHeight.value = config.height || 20;
             if (cmbTextAlignment) cmbTextAlignment.value = config.alignment || 'left';
@@ -610,8 +610,8 @@ function loadConfigIntoForm(config, elementType) {
             if (cmbGraphType) cmbGraphType.value = config.type || 'line';
             if (txtGraphColor) txtGraphColor.value = config.color || '#000000';
             if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.strokeWidth || 1;
-            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.backgroundColor || 'transparent';
-            if (txtGraphBorderColor) txtGraphBorderColor.value = config.borderColor || 'transparent';
+            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.backgroundColor || '#00000000';
+            if (txtGraphBorderColor) txtGraphBorderColor.value = config.borderColor || '#00000000';
             break;
 
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
@@ -706,7 +706,7 @@ function getTextElementConfig() {
         format: txtTextFormat?.value || '{value} {unit}',
         fontFamily: cmbTextFontFamily?.value || 'Arial',
         fontSize: parseInt(txtTextFontSize?.value) || 12,
-        fontColor: txtTextFontColor?.value || '#ffffff',
+        fontColor: txtTextFontColor?.value || '#ffffffff',  // Match HTML default
         width: parseInt(txtTextWidth?.value) || 100,
         height: parseInt(txtTextHeight?.value) || 20,
         alignment: cmbTextAlignment?.value || 'left'
@@ -735,10 +735,10 @@ function getGraphElementConfig() {
         width: parseInt(txtGraphWidth?.value) || 200,
         height: parseInt(txtGraphHeight?.value) || 50,
         type: cmbGraphType?.value || 'line',
-        color: txtGraphColor?.value || '#000000',
+        color: txtGraphColor?.value || '#000000ff',
         strokeWidth: parseInt(txtGraphStrokeWidth?.value) || 1,
-        backgroundColor: txtGraphBackgroundColor?.value || 'transparent',
-        borderColor: txtGraphBorderColor?.value || 'transparent'
+        backgroundColor: txtGraphBackgroundColor?.value || '#00000000',
+        borderColor: txtGraphBorderColor?.value || '#00000000'
     };
 }
 

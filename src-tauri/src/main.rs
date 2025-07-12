@@ -273,7 +273,7 @@ async fn get_lcd_preview_image(
         &app_state.static_sensor_values,
         display_config,
     )
-    .map_err(|_| "Error rendering preview image".to_string())
+    .map_err(|e| format!("Error rendering preview image: {:?}", e))
 }
 
 #[tauri::command]
