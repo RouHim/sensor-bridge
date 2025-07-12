@@ -153,11 +153,41 @@ Image files should be named with numbers corresponding to sensor values.`;
  */
 export async function toggleLivePreview() {
     try {
-        // Implementation for live preview toggle
-        console.log('Toggle live preview');
-        // This would typically communicate with the backend to enable/disable live preview
+        // Import WebviewWindow from Tauri API
+        const { WebviewWindow } = window.__TAURI__.webviewWindow;
+
+        // Check if preview window already exists using static method
+        const existingWindow = await WebviewWindow.getByLabel('lcd-preview');
+
+        if (existingWindow) {
+            // If window exists, focus it (toggle behavior)
+            await existingWindow.setFocus();
+            console.log('LCD preview window focused');
+        } else {
+            // Create new preview window with corrected URL format
+            const previewWindow = new WebviewWindow('lcd-preview', {
+                url: '/lcd_preview.html',
+                title: 'LCD Preview',
+                width: 800,
+                height: 600,
+                resizable: true,
+                center: true
+            });
+
+            // Listen for window ready event
+            previewWindow.once('tauri://created', () => {
+                console.log('LCD preview window created successfully');
+            });
+
+            // Listen for any errors with detailed logging
+            previewWindow.once('tauri://error', (e) => {
+                console.error('Failed to create LCD preview window:', e);
+                console.error('Error details:', JSON.stringify(e, null, 2));
+            });
+        }
     } catch (error) {
         console.error('Failed to toggle live preview:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
     }
 }
 

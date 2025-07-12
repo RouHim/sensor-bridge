@@ -6,12 +6,14 @@
     "linux"
   ],
   "windows": [
-    "main"
+    "main",
+    "lcd-preview"
   ],
   "permissions": [
     "updater:default",
     "fs:default",
     "fs:allow-read-file",
-    "core:default"
+    "core:default",
+    "core:webview:allow-create-webview-window"
   ]
 }
