@@ -9,10 +9,10 @@ use crate::utils;
 
 /// Pre-renders static images and saves them into the cache folder.
 /// Thus they can be loaded without modification from filesystem in the render loop.
-pub fn prepare(element: &ElementConfig) {
+pub fn prepare(element: &ElementConfig) -> Result<(), String> {
     // Pre-Render image to desired size
     let image_config = element.image_config.as_ref().unwrap();
-    let image = load_image(&image_config.image_path);
+    let image = load_image(&image_config.image_path)?;
 
     let image = image.resize_exact(
         image_config.width,
@@ -31,6 +31,8 @@ pub fn prepare(element: &ElementConfig) {
     // Save to cache folder
     let cache_file = static_image_cache_folder.join(&element.id);
     fs::write(cache_file, image_data).unwrap();
+    
+    Ok(())
 }
 
 /// Pre-renders static images and serializes the render data to bytes using messagepack
@@ -39,13 +41,21 @@ pub fn get_preparation_data(lcd_config: &DisplayConfig) -> HashMap<String, Vec<u
         .elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
-        .map(|element| prepare_image(&element.id, element.image_config.as_ref().unwrap()))
+        .filter_map(|element| {
+            match prepare_image(&element.id, element.image_config.as_ref().unwrap()) {
+                Ok(result) => Some(result),
+                Err(e) => {
+                    log::error!("Failed to prepare image for element {}: {}", element.id, e);
+                    None
+                }
+            }
+        })
         .collect()
 }
 
 /// Reads each image into memory, scales it to the desired resolution, and returns it
-pub fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, Vec<u8>) {
-    let image = load_image(&image_config.image_path);
+pub fn prepare_image(element_id: &str, image_config: &ImageConfig) -> Result<(String, Vec<u8>), String> {
+    let image = load_image(&image_config.image_path)?;
     let image = image.resize_exact(
         image_config.width,
         image_config.height,
@@ -55,23 +65,33 @@ pub fn prepare_image(element_id: &str, image_config: &ImageConfig) -> (String, V
     let image_data = utils::rgba_to_png_bytes(image);
 
     // Build response entry
-    (element_id.to_string(), image_data)
+    Ok((element_id.to_string(), image_data))
 }
 
 /// Reads an image from the filesystem or from a url and returns it as a DynamicImage
 /// # Arguments
 /// * `path_to_image` - A string that either contains a local path to an image file or a image url
-fn load_image(path_to_image: &str) -> DynamicImage {
+fn load_image(path_to_image: &str) -> Result<DynamicImage, String> {
     if utils::is_reachable_url(path_to_image) {
         let mut image_data = vec![];
-        ureq::get(path_to_image)
+        let response = ureq::get(path_to_image)
             .call()
-            .unwrap()
+            .map_err(|e| format!("Failed to fetch image from URL {}: {}", path_to_image, e))?;
+            
+        response
             .into_reader()
             .read_to_end(&mut image_data)
-            .unwrap();
-        image::load_from_memory(&image_data).unwrap()
+            .map_err(|e| format!("Failed to read image data from URL {}: {}", path_to_image, e))?;
+            
+        image::load_from_memory(&image_data)
+            .map_err(|e| format!("Failed to decode image from URL {}: {}", path_to_image, e))
     } else {
-        image::open(path_to_image).unwrap()
+        // Check if file exists before trying to open it
+        if !std::path::Path::new(path_to_image).exists() {
+            return Err(format!("Image file not found: {}", path_to_image));
+        }
+        
+        image::open(path_to_image)
+            .map_err(|e| format!("Failed to open image file {}: {}", path_to_image, e))
     }
 }

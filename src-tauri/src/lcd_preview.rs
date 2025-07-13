@@ -80,7 +80,9 @@ fn prepare_assets(elements: Vec<ElementConfig>) {
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .for_each(|element| {
-            static_image::prepare(element);
+            if let Err(e) = static_image::prepare(element) {
+                log::error!("Failed to prepare static image for element {}: {}", element.id, e);
+            }
         });
 
     elements
