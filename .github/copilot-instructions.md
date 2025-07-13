@@ -13,7 +13,7 @@ You are a coding assistant. For every task, follow these principles:
 
 ## Project Overview
 
-**Sensor Bridge** is a cross-platform desktop application built with **Tauri v2** that provides a bridge between system sensors and external display devices. The application serves as both a sensor data aggregator and a WYSIWYG display configuration tool.
+**Sensor Bridge** is a linux desktop application built with **Tauri v2** that provides a bridge between system sensors and external display devices. The application serves as both a sensor data aggregator and a WYSIWYG display configuration tool.
 
 ### Architecture
 - **Backend**: Rust with Tauri v2 framework
