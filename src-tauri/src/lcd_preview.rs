@@ -13,7 +13,7 @@ use crate::utils::LockResultExt;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
 /// Constant for the window label
-pub const WINDOW_LABEL: &str = "lcd_preview";
+pub const WINDOW_LABEL: &str = "lcd-preview";
 
 /// Shows the display preview window
 /// This function is called from the main thread

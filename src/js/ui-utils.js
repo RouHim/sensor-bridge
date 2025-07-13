@@ -154,9 +154,6 @@ Image files should be named with numbers corresponding to sensor values.`;
  */
 export async function toggleLivePreview() {
     try {
-        // Import WebviewWindow from Tauri API
-        const { WebviewWindow } = window.__TAURI__.webviewWindow;
-
         // Get the current client MAC address
         const macAddress = getCurrentClientMacAddress();
         if (!macAddress) {
@@ -164,35 +161,19 @@ export async function toggleLivePreview() {
             return;
         }
 
-        // Check if preview window already exists using static method
-        const existingWindow = await WebviewWindow.getByLabel('lcd-preview');
+        // Use the backend Tauri command instead of frontend WebviewWindow API
+        // This approach has better window lifecycle management
+        console.log('Opening LCD preview via backend command...');
+        
+        // Import the invoke function from Tauri API
+        const { invoke } = window.__TAURI__.core;
+        
+        await invoke('show_lcd_live_preview', { 
+            macAddress: macAddress 
+        });
+        
+        console.log('LCD preview command sent successfully');
 
-        if (existingWindow) {
-            // If window exists, focus it (toggle behavior)
-            await existingWindow.setFocus();
-            console.log('LCD preview window focused');
-        } else {
-            // Create new preview window with MAC address in URL hash
-            const previewWindow = new WebviewWindow('lcd-preview', {
-                url: `/lcd_preview.html#${macAddress}`,
-                title: 'LCD Preview',
-                width: 800,
-                height: 600,
-                resizable: true,
-                center: true
-            });
-
-            // Listen for window ready event
-            previewWindow.once('tauri://created', () => {
-                console.log('LCD preview window created successfully');
-            });
-
-            // Listen for any errors with detailed logging
-            previewWindow.once('tauri://error', (e) => {
-                console.error('Failed to create LCD preview window:', e);
-                console.error('Error details:', JSON.stringify(e, null, 2));
-            });
-        }
     } catch (error) {
         console.error('Failed to toggle live preview:', error);
         console.error('Error details:', JSON.stringify(error, null, 2));
