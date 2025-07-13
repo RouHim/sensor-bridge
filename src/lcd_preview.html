@@ -34,7 +34,10 @@
                 img.src = "data:image/jpeg;base64," + preview_image;
             }
         ).catch((error) => {
-                console.log("Error getting lcd preview image: " + error);
+                console.error("Error getting lcd preview image: ", error);
+                // Show error in the UI as well
+                const img = document.getElementById("lcd-preview-image");
+                img.alt = "Error loading preview: " + error;
             }
         );
     }

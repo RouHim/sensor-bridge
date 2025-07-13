@@ -251,22 +251,13 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
 #[tauri::command]
 async fn get_lcd_preview_image(
     app_state: State<'_, AppState>,
-    app_handle: AppHandle,
+    _app_handle: AppHandle,
     mac_address: String,
 ) -> Result<String, String> {
     let client = config::get_client(&mac_address)
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
     let display_config = client.display_config;
-
-    // If the window is not visible, return an empty string
-    let maybe_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
-    if let Some(window) = maybe_window {
-        if !window.is_visible().unwrap_or(false) {
-            // The window is not visible, return an empty string
-            return Ok("".to_string());
-        }
-    }
 
     lcd_preview::render(
         &app_state.sensor_value_history,
