@@ -92,34 +92,49 @@ export function onElementTypeChange() {
     layoutGraphConfig.style.display = 'none';
     layoutConditionalImageConfig.style.display = 'none';
 
-    // Show relevant config panel
+    // Get current selected element to check if we're changing types
+    const selectedList = getSelectedListElement();
+    const selectedDesigner = getSelectedDesignerElement();
+    const isChangingType = selectedList && selectedList.getAttribute(ATTR_ELEMENT_TYPE) !== selectedType;
+
+    // Show relevant config panel and set defaults only when changing types
     switch (selectedType) {
         case ELEMENT_TYPE_TEXT:
             layoutTextConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultTextConfig();
+            }
             break;
         case ELEMENT_TYPE_STATIC_IMAGE:
             layoutStaticImageConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultStaticImageConfig();
+            }
             break;
         case ELEMENT_TYPE_GRAPH:
             layoutGraphConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultGraphConfig();
+            }
             break;
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
             layoutConditionalImageConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultConditionalImageConfig();
+            }
             break;
     }
-
-    // If we have a selected element, update its type immediately
-    const selectedList = getSelectedListElement();
-    const selectedDesigner = getSelectedDesignerElement();
 
     if (selectedList && selectedDesigner) {
         // Update the element type attributes
         selectedList.setAttribute(ATTR_ELEMENT_TYPE, selectedType);
         selectedDesigner.setAttribute(ATTR_ELEMENT_TYPE, selectedType);
 
-        // Clear any existing configuration for the old type
-        selectedList.removeAttribute('data-config');
-        selectedDesigner.removeAttribute('data-config');
+        // Clear any existing configuration for the old type when changing types
+        if (isChangingType) {
+            selectedList.removeAttribute('data-config');
+            selectedDesigner.removeAttribute('data-config');
+        }
 
         // Apply current form values to create new configuration for the new type
         applyFormToSelectedElement();
@@ -138,16 +153,27 @@ export function addNewElement() {
     const elementId = generateElementId();
     const elementName = `Element ${elementId}`;
 
-    // Create list item
+    // Create list item with reasonable default position
     const listItem = createListElement(elementId, elementName, ELEMENT_TYPE_TEXT);
+    // Set default position attributes
+    listItem.setAttribute(ATTR_ELEMENT_POSITION_X, '10');
+    listItem.setAttribute(ATTR_ELEMENT_POSITION_Y, '10');
     lstDesignerPlacedElements.appendChild(listItem);
 
-    // Create designer element
-    const designerElement = createDesignerElement(elementId, elementName, ELEMENT_TYPE_TEXT, 0, 0);
+    // Create designer element with reasonable default position (offset from top-left)
+    const defaultX = 10;
+    const defaultY = 10;
+    const designerElement = createDesignerElement(elementId, elementName, ELEMENT_TYPE_TEXT, defaultX, defaultY);
     designerPane.appendChild(designerElement);
 
-    // Select the new element
+    // Set form defaults first before selecting the element
+    clearElementForm();
+    
+    // Select the new element 
     selectElement(listItem, designerElement);
+    
+    // Apply default configuration for text elements
+    applyFormToSelectedElement();
 }
 
 /**
@@ -225,13 +251,13 @@ export function duplicateElement() {
     newDesignerElement.setAttribute(ATTR_ELEMENT_ID, newElementId);
     newDesignerElement.setAttribute(ATTR_ELEMENT_NAME, newName);
 
-    // Offset position slightly
+    // Offset position slightly to make the duplicate visible
     const currentX = parseInt(selectedDesigner.getAttribute(ATTR_ELEMENT_POSITION_X) || 0);
     const currentY = parseInt(selectedDesigner.getAttribute(ATTR_ELEMENT_POSITION_Y) || 0);
-    newDesignerElement.setAttribute(ATTR_ELEMENT_POSITION_X, currentX + 10);
-    newDesignerElement.setAttribute(ATTR_ELEMENT_POSITION_Y, currentY + 10);
-    newDesignerElement.style.left = (currentX + 10) + 'px';
-    newDesignerElement.style.top = (currentY + 10) + 'px';
+    newDesignerElement.setAttribute(ATTR_ELEMENT_POSITION_X, currentX + 20);
+    newDesignerElement.setAttribute(ATTR_ELEMENT_POSITION_Y, currentY + 20);
+    newDesignerElement.style.left = (currentX + 20) + 'px';
+    newDesignerElement.style.top = (currentY + 20) + 'px';
 
     // Add to DOM
     lstDesignerPlacedElements.appendChild(newListItem);
@@ -552,22 +578,96 @@ function clearElementSelection() {
 
 function clearElementForm() {
     txtElementName.value = '';
-    cmbElementType.value = '';
-    txtElementPositionX.value = '';
-    txtElementPositionY.value = '';
+    cmbElementType.value = ELEMENT_TYPE_TEXT; // Set default element type
+    txtElementPositionX.value = '10'; // Set reasonable default position
+    txtElementPositionY.value = '10';
+    
+    // Set defaults for all element type configs
+    setDefaultTextConfig();
+    setDefaultStaticImageConfig();
+    setDefaultGraphConfig();
+    setDefaultConditionalImageConfig();
 }
 
+/**
+ * Sets default values for text element configuration
+ */
+function setDefaultTextConfig() {
+    if (cmbTextSensorIdSelection) cmbTextSensorIdSelection.value = '';
+    if (cmbTextSensorValueModifier) cmbTextSensorValueModifier.value = 'none';
+    if (txtTextFormat) txtTextFormat.value = '{value} {unit}';
+    if (cmbTextFontFamily) {
+        // Try to set Arial as default, fallback to first available font
+        const options = cmbTextFontFamily.options;
+        let foundArial = false;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value.toLowerCase().includes('arial')) {
+                cmbTextFontFamily.value = options[i].value;
+                foundArial = true;
+                break;
+            }
+        }
+        // If Arial not found, set to first available font or empty
+        if (!foundArial && options.length > 0) {
+            cmbTextFontFamily.value = options[0].value;
+        }
+    }
+    if (txtTextFontSize) txtTextFontSize.value = '12';
+    if (txtTextFontColor) txtTextFontColor.value = '#ffffffff';
+    if (txtTextWidth) txtTextWidth.value = '100';
+    if (txtTextHeight) txtTextHeight.value = '20';
+    if (cmbTextAlignment) cmbTextAlignment.value = 'left';
+}
+
+/**
+ * Sets default values for static image element configuration
+ */
+function setDefaultStaticImageConfig() {
+    if (txtStaticImageFile) txtStaticImageFile.value = '';
+    if (txtStaticImageWidth) txtStaticImageWidth.value = '100';
+    if (txtStaticImageHeight) txtStaticImageHeight.value = '100';
+}
+
+/**
+ * Sets default values for graph element configuration
+ */
+function setDefaultGraphConfig() {
+    if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = '';
+    if (txtGraphMinValue) txtGraphMinValue.value = '';
+    if (txtGraphMaxValue) txtGraphMaxValue.value = '';
+    if (txtGraphWidth) txtGraphWidth.value = '200';
+    if (txtGraphHeight) txtGraphHeight.value = '50';
+    if (cmbGraphType) cmbGraphType.value = 'line';
+    if (txtGraphColor) txtGraphColor.value = '#000000ff';
+    if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = '1';
+    if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = '#00000000';
+    if (txtGraphBorderColor) txtGraphBorderColor.value = '#ffffff00';
+}
+
+/**
+ * Sets default values for conditional image element configuration  
+ */
+function setDefaultConditionalImageConfig() {
+    if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = '';
+    if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = '';
+    if (txtConditionalImageWidth) txtConditionalImageWidth.value = '100';
+    if (txtConditionalImageHeight) txtConditionalImageHeight.value = '100';
+}
+
+/**
+ * Updates the form fields for the selected element
+ */
 function updateElementForm() {
     const selectedList = getSelectedListElement();
     if (!selectedList) return;
 
-    // Load basic properties
-    txtElementName.value = selectedList.getAttribute(ATTR_ELEMENT_NAME) || '';
-    cmbElementType.value = selectedList.getAttribute(ATTR_ELEMENT_TYPE) || '';
-    txtElementPositionX.value = selectedList.getAttribute(ATTR_ELEMENT_POSITION_X) || '';
-    txtElementPositionY.value = selectedList.getAttribute(ATTR_ELEMENT_POSITION_Y) || '';
+    // Load basic properties with fallbacks to current form values
+    txtElementName.value = selectedList.getAttribute(ATTR_ELEMENT_NAME) || txtElementName.value || '';
+    cmbElementType.value = selectedList.getAttribute(ATTR_ELEMENT_TYPE) || cmbElementType.value || ELEMENT_TYPE_TEXT;
+    txtElementPositionX.value = selectedList.getAttribute(ATTR_ELEMENT_POSITION_X) || txtElementPositionX.value || '10';
+    txtElementPositionY.value = selectedList.getAttribute(ATTR_ELEMENT_POSITION_Y) || txtElementPositionY.value || '10';
 
-    // Load detailed configuration if available
+    // Load detailed configuration if available, otherwise keep current form values
     const configAttr = selectedList.getAttribute('data-config');
     if (configAttr) {
         try {
@@ -577,6 +677,7 @@ function updateElementForm() {
             console.warn('Failed to parse element config:', error);
         }
     }
+    // If no config exists, don't override the current form values (which should be defaults)
 
     // Trigger element type change to show correct config panel
     onElementTypeChange();
