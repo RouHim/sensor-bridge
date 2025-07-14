@@ -163,7 +163,7 @@ export function addNewElement() {
     // Create designer element with reasonable default position (offset from top-left)
     const defaultX = 10;
     const defaultY = 10;
-    const designerElement = createDesignerElement(elementId, elementName, ELEMENT_TYPE_TEXT, defaultX, defaultY);
+    const designerElement = createDesignerElement(elementId, elementName, ELEMENT_TYPE_TEXT, defaultX, defaultY, null);
     designerPane.appendChild(designerElement);
 
     // Set form defaults first before selecting the element
@@ -418,9 +418,9 @@ export function loadDisplayElements(elements = []) {
         }
 
         // Create designer element
-        const designerElement = createDesignerElement(elementId, elementName, elementType, posX, posY);
+        const designerElement = createDesignerElement(elementId, elementName, elementType, posX, posY, config);
 
-        // Store configuration in designer element too
+        // Store configuration in designer element too (for consistency)
         if (config) {
             designerElement.setAttribute('data-config', JSON.stringify(config));
         }
@@ -509,7 +509,7 @@ function createListElement(id, name, type) {
     return li;
 }
 
-function createDesignerElement(id, name, type, x, y) {
+function createDesignerElement(id, name, type, x, y, config = null) {
     const div = document.createElement('div');
     div.id = DESIGNER_ID_PREFIX + id;
     div.className = 'designer-element';
@@ -530,16 +530,16 @@ function createDesignerElement(id, name, type, x, y) {
     let preview;
     switch (type) {
         case ELEMENT_TYPE_TEXT:
-            preview = renderTextElementPreview(getTextElementConfig());
+            preview = renderTextElementPreview(config || getTextElementConfig());
             break;
         case ELEMENT_TYPE_STATIC_IMAGE:
-            preview = renderStaticImageElementPreview(getStaticImageElementConfig());
+            preview = renderStaticImageElementPreview(config || getStaticImageElementConfig());
             break;
         case ELEMENT_TYPE_GRAPH:
-            preview = renderGraphElementPreview(getGraphElementConfig());
+            preview = renderGraphElementPreview(config || getGraphElementConfig());
             break;
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            preview = renderConditionalImageElementPreview(getConditionalImageElementConfig());
+            preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig());
             break;
     }
 
@@ -702,7 +702,7 @@ function loadConfigIntoForm(config, elementType) {
             break;
 
         case ELEMENT_TYPE_STATIC_IMAGE:
-            if (txtStaticImageFile) txtStaticImageFile.value = config.imagePath || '';
+            if (txtStaticImageFile) txtStaticImageFile.value = config.image_path || config.imagePath || '';
             if (txtStaticImageWidth) txtStaticImageWidth.value = config.width || 100;
             if (txtStaticImageHeight) txtStaticImageHeight.value = config.height || 100;
             break;
@@ -826,7 +826,7 @@ function getTextElementConfig() {
  */
 function getStaticImageElementConfig() {
     return {
-        imagePath: txtStaticImageFile?.value || '',
+        image_path: txtStaticImageFile?.value || '',
         width: parseInt(txtStaticImageWidth?.value) || 100,
         height: parseInt(txtStaticImageHeight?.value) || 100
     };
@@ -946,10 +946,11 @@ function renderStaticImageElementPreview(config) {
     div.style.fontSize = '10px';
     div.style.overflow = 'hidden';
 
-    if (config.imagePath) {
+    if (config.image_path || config.imagePath) {
         const img = document.createElement('img');
         // Convert the file path to a secure URL that Tauri can access using global API
-        img.src = window.__TAURI__.core.convertFileSrc(config.imagePath);
+        const imagePath = config.image_path || config.imagePath;
+        img.src = window.__TAURI__.core.convertFileSrc(imagePath);
         img.style.maxWidth = '100%';
         img.style.maxHeight = '100%';
         img.style.objectFit = 'contain';
