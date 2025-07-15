@@ -179,7 +179,7 @@ export function addNewElement() {
 /**
  * Removes the currently selected element
  */
-export function removeElement() {
+export async function removeElement() {
     const selectedList = getSelectedListElement();
     const selectedDesigner = getSelectedDesignerElement();
 
@@ -188,7 +188,15 @@ export function removeElement() {
         return;
     }
 
-    const confirmRemoval = confirm('Are you sure you want to remove this element?');
+    // Use Tauri's dialog plugin instead of browser confirm()
+    const confirmRemoval = await window.__TAURI__.dialog.ask(
+        'Are you sure you want to remove this element?\n\nThis action cannot be undone.',
+        {
+            title: 'Remove Element',
+            kind: 'warning'
+        }
+    );
+    
     if (!confirmRemoval) return;
 
     // Remove from DOM
