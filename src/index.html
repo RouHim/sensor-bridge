@@ -44,43 +44,58 @@
 
         <div class="flex-container center-horizontal">
 
-            <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
-            </select>
+            <!-- HTTP Server Controls Group -->
+            <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #444; border-radius: 6px; margin-right: 20px; background-color: #333;">
+                <label for="http-port-input" style="margin-right: 5px; font-weight: bold;">HTTP Server Port:</label>
+                <input id="http-port-input" type="number" min="1024" max="65535" value="25555"
+                       style="width: 80px; margin-right: 10px;"
+                       title="HTTP server port (1024-65535) - Auto-saves when changed">
+                <span style="font-size: 0.8em; color: #888; margin-right: 10px;">(auto-saves)</span>
 
-            <button class="icon-button" id="btn-add-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Add a new network device">
-                <i data-feather="plus"></i>
-            </button>
+                <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the HTTP server">
+                    <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
+                    <i class="kill-switch-icon" data-feather="power"></i>
+                </label>
+            </div>
 
-            <button class="icon-button" id="lcd-btn-save-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Save device configuration">
-                <i data-feather="save"></i>
-            </button>
+            <!-- Client Management Controls Group -->
+            <div style="display: flex; align-items: center; padding: 8px; border: 1px solid #444; border-radius: 6px; margin-right: 20px; background-color: #333;">
+                <select id="main-registered-clients-select" style="width: 300px; margin-right: 5px">
+                </select>
 
-            <button class="icon-button" id="lcd-btn-remove-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Remove device configuration">
-                <i data-feather="trash"></i>
-            </button>
+                <button class="icon-button" id="btn-refresh-clients" style="font-size: 2em; margin-right: 10px;"
+                        title="Refresh registered clients">
+                    <i data-feather="refresh-cw"></i>
+                </button>
 
-            <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
-                    title="Open live preview">
-                <i data-feather="monitor"></i>
-            </button>
+                <button class="icon-button" id="lcd-btn-save-client-config" style="font-size: 2em; margin-right: 10px;"
+                        title="Save client configuration (requires client selection)">
+                    <i data-feather="save"></i>
+                </button>
 
-            <button class="icon-button" id="btn-export-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Export configuration">
-                <i data-feather="external-link"></i>
-            </button>
+                <button class="icon-button" id="lcd-btn-remove-client" style="font-size: 2em; margin-right: 10px;"
+                        title="Remove registered client">
+                    <i data-feather="trash"></i>
+                </button>
 
-            <button class="icon-button" id="btn-import-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Import configuration">
-                <i data-feather="folder"></i>
-            </button>
+                <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
+                        title="Open live preview">
+                    <i data-feather="monitor"></i>
+                </button>
+            </div>
 
-            <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the display">
-                <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
-                <i class="kill-switch-icon" data-feather="power"></i>
-            </label>
+            <!-- Configuration Management Controls Group -->
+            <div style="display: flex; align-items: center;">
+                <button class="icon-button" id="btn-export-config" style="font-size: 2em; margin-right: 10px;"
+                        title="Export configuration">
+                    <i data-feather="external-link"></i>
+                </button>
+
+                <button class="icon-button" id="btn-import-config" style="font-size: 2em; margin-right: 10px;"
+                        title="Import configuration">
+                    <i data-feather="folder"></i>
+                </button>
+            </div>
 
         </div>
 
@@ -88,22 +103,41 @@
 
         <div id="lcd-panel" style="display: none;">
 
-            <div class="flex-container center-horizontal" id="device-config">
-                <label for="lcd-txt-device-name" style="margin-right: 5px">Device name:</label>
-                <input id="lcd-txt-device-name" style="width: 150px;" title="Enter a simple name of your device">
-
-                <label for="lcd-txt-device-network-address" style="margin-left: 25px; margin-right: 5px;">Network
-                    address:</label>
-                <input id="lcd-txt-device-network-address" style="width: 150px;"
-                       title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
+            <div class="flex-container center-horizontal" id="client-info">
+                <label for="lcd-txt-client-name" style="margin-right: 5px">Client name:</label>
+                <input id="lcd-txt-client-name" style="width: 200px;" title="Enter a friendly name for this client">
 
                 <div class="flex-container" id="lcd-config" style="margin-left: 25px">
-                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
+                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">Resolution (read-only):</label>
                     <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="1024">
+                           value="1920" readonly>
                     <div style="margin-left: 5px; margin-right: 5px">x</div>
                     <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="600">
+                           value="1080" readonly>
+                </div>
+            </div>
+
+            <div id="lcd-lbl-client-info"
+                 style="text-align: center; color: #888; font-size: 0.9em; margin: 10px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; background-color: #1a1a1a;">
+                <div id="client-info-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #fff;">Client Information</h4>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="client-active-toggle" style="transform: scale(1.2);">
+                            <span id="client-status-text" style="font-weight: bold;">Active</span>
+                        </label>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left;">
+                        <div><strong>Name:</strong> <span id="client-info-name">-</span></div>
+                        <div><strong>IP Address:</strong> <span id="client-info-ip">-</span></div>
+                        <div><strong>MAC Address:</strong> <span id="client-info-mac">-</span></div>
+                        <div><strong>Resolution:</strong> <span id="client-info-resolution">-</span></div>
+                        <div style="grid-column: 1 / -1;"><strong>Last Seen:</strong> <span
+                                id="client-info-last-seen">-</span></div>
+                    </div>
+                </div>
+                <div id="client-info-placeholder" style="color: #666;">
+                    Select a client to view information...
                 </div>
             </div>
 
@@ -194,12 +228,12 @@
                         <tr>
                             <td>Position X:</td>
                             <td><input id="lcd-txt-element-position-x" max="2147483647" min="0" type="number"
-                                       value="0"></td>
+                                       value="10"></td>
                         </tr>
                         <tr>
                             <td>Position Y:</td>
                             <td><input id="lcd-txt-element-position-y" max="2147483647" min="0" type="number"
-                                       value="0"></td>
+                                       value="10"></td>
                         </tr>
                         </tbody>
                     </table>
@@ -213,7 +247,7 @@
                         <tr>
                             <td>Sensor:</td>
                             <td>
-                                <select id="lcd-cmb-sensor-id-selection" style="float: left"></select>
+                                <select id="lcd-cmb-sensor-id-selection" style="float: left; max-width: 200px; overflow: hidden;"></select>
                                 <button class="icon-button" id="lcd-text-config-btn-select-sensor-id"
                                         style="float: left; margin-top: 5px; margin-left: 5px;"
                                         title="Show extended sensor selection dialog">

@@ -13,7 +13,7 @@ use crate::utils::LockResultExt;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
 /// Constant for the window label
-pub const WINDOW_LABEL: &str = "lcd_preview";
+pub const WINDOW_LABEL: &str = "lcd-preview";
 
 /// Shows the display preview window
 /// This function is called from the main thread
@@ -80,7 +80,9 @@ fn prepare_assets(elements: Vec<ElementConfig>) {
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .for_each(|element| {
-            static_image::prepare(element);
+            if let Err(e) = static_image::prepare(element) {
+                log::error!("Failed to prepare static image for element {}: {}", element.id, e);
+            }
         });
 
     elements
