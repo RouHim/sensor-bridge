@@ -643,15 +643,15 @@ function setDefaultStaticImageConfig() {
  */
 function setDefaultGraphConfig() {
     if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = '';
-    if (txtGraphMinValue) txtGraphMinValue.value = '';
-    if (txtGraphMaxValue) txtGraphMaxValue.value = '';
+    if (txtGraphMinValue) txtGraphMinValue.value = ''; // Leave empty for auto-scaling
+    if (txtGraphMaxValue) txtGraphMaxValue.value = ''; // Leave empty for auto-scaling
     if (txtGraphWidth) txtGraphWidth.value = '200';
     if (txtGraphHeight) txtGraphHeight.value = '50';
     if (cmbGraphType) cmbGraphType.value = 'line';
-    if (txtGraphColor) txtGraphColor.value = '#000000ff';
-    if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = '1';
-    if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = '#00000000';
-    if (txtGraphBorderColor) txtGraphBorderColor.value = '#ffffff00';
+    if (txtGraphColor) txtGraphColor.value = '#0066ccff'; // Nice blue color with alpha
+    if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = '2'; // Better visibility
+    if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = '#00000000'; // Transparent
+    if (txtGraphBorderColor) txtGraphBorderColor.value = '#ffffff00'; // Transparent border
 }
 
 /**
@@ -660,8 +660,8 @@ function setDefaultGraphConfig() {
 function setDefaultConditionalImageConfig() {
     if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = '';
     if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = '';
-    if (txtConditionalImageWidth) txtConditionalImageWidth.value = '100';
-    if (txtConditionalImageHeight) txtConditionalImageHeight.value = '100';
+    if (txtConditionalImageWidth) txtConditionalImageWidth.value = '130'; // Match backend default
+    if (txtConditionalImageHeight) txtConditionalImageHeight.value = '25'; // Match backend default
 }
 
 /**
@@ -718,23 +718,25 @@ function loadConfigIntoForm(config, elementType) {
             break;
 
         case ELEMENT_TYPE_GRAPH:
-            if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = config.sensorId || '';
-            if (txtGraphMinValue) txtGraphMinValue.value = config.minValue || '';
-            if (txtGraphMaxValue) txtGraphMaxValue.value = config.maxValue || '';
+            // Handle both old camelCase and new snake_case field names for backward compatibility
+            if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = config.sensor_id || config.sensorId || '';
+            if (txtGraphMinValue) txtGraphMinValue.value = config.min_sensor_value || config.minValue || '';
+            if (txtGraphMaxValue) txtGraphMaxValue.value = config.max_sensor_value || config.maxValue || '';
             if (txtGraphWidth) txtGraphWidth.value = config.width || 200;
             if (txtGraphHeight) txtGraphHeight.value = config.height || 50;
-            if (cmbGraphType) cmbGraphType.value = config.type || 'line';
-            if (txtGraphColor) txtGraphColor.value = config.color || '#000000';
-            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.strokeWidth || 1;
-            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.backgroundColor || '#00000000';
-            if (txtGraphBorderColor) txtGraphBorderColor.value = config.borderColor || '#00000000';
+            if (cmbGraphType) cmbGraphType.value = config.graph_type || config.type || 'line';
+            if (txtGraphColor) txtGraphColor.value = config.graph_color || config.color || '#0066ccff';
+            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.graph_stroke_width || config.strokeWidth || 2;
+            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.background_color || config.backgroundColor || '#00000000';
+            if (txtGraphBorderColor) txtGraphBorderColor.value = config.border_color || config.borderColor || '#ffffff00';
             break;
 
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = config.sensorId || '';
-            if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = config.imagesPath || '';
-            if (txtConditionalImageWidth) txtConditionalImageWidth.value = config.width || 100;
-            if (txtConditionalImageHeight) txtConditionalImageHeight.value = config.height || 100;
+            // Handle both old camelCase and new snake_case field names for backward compatibility
+            if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = config.sensor_id || config.sensorId || '';
+            if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = config.images_path || config.imagesPath || '';
+            if (txtConditionalImageWidth) txtConditionalImageWidth.value = config.width || 130;
+            if (txtConditionalImageHeight) txtConditionalImageHeight.value = config.height || 25;
             break;
     }
 }
@@ -847,16 +849,17 @@ function getStaticImageElementConfig() {
  */
 function getGraphElementConfig() {
     return {
-        sensorId: cmbGraphSensorIdSelection?.value || '',
-        minValue: txtGraphMinValue?.value || null,
-        maxValue: txtGraphMaxValue?.value || null,
+        sensor_id: cmbGraphSensorIdSelection?.value || '',
+        sensor_values: [], // Initialize empty array for sensor values history
+        min_sensor_value: txtGraphMinValue?.value ? parseFloat(txtGraphMinValue.value) : null,
+        max_sensor_value: txtGraphMaxValue?.value ? parseFloat(txtGraphMaxValue.value) : null,
         width: parseInt(txtGraphWidth?.value) || 200,
         height: parseInt(txtGraphHeight?.value) || 50,
-        type: cmbGraphType?.value || 'line',
-        color: txtGraphColor?.value || '#000000',
-        strokeWidth: parseInt(txtGraphStrokeWidth?.value) || 1,
-        backgroundColor: txtGraphBackgroundColor?.value || '#00000000',
-        borderColor: txtGraphBorderColor?.value || '#00000000'
+        graph_type: cmbGraphType?.value || 'line',
+        graph_color: txtGraphColor?.value || '#0066ccff',
+        graph_stroke_width: parseInt(txtGraphStrokeWidth?.value) || 2,
+        background_color: txtGraphBackgroundColor?.value || '#00000000',
+        border_color: txtGraphBorderColor?.value || '#ffffff00'
     };
 }
 
@@ -865,8 +868,11 @@ function getGraphElementConfig() {
  */
 function getConditionalImageElementConfig() {
     return {
-        sensorId: cmbConditionalImageSensorIdSelection?.value || '',
-        imagesPath: txtConditionalImageImagesPath?.value || '',
+        sensor_id: cmbConditionalImageSensorIdSelection?.value || '',
+        sensor_value: '', // Current sensor value (will be populated at render time)
+        images_path: txtConditionalImageImagesPath?.value || '',
+        min_sensor_value: 0.0,
+        max_sensor_value: 100.0,
         width: parseInt(txtConditionalImageWidth?.value) || 100,
         height: parseInt(txtConditionalImageHeight?.value) || 100
     };
@@ -982,8 +988,11 @@ function renderGraphElementPreview(graphConfig) {
     const container = document.createElement('div');
     container.style.width = `${graphConfig.width}px`;
     container.style.height = `${graphConfig.height}px`;
-    container.style.backgroundColor = graphConfig.backgroundColor;
-    container.style.border = `1px solid ${graphConfig.borderColor === 'transparent' ? '#666' : graphConfig.borderColor}`;
+    // Handle both old and new field names for background color
+    const bgColor = graphConfig.background_color || graphConfig.backgroundColor || '#00000000';
+    const borderColor = graphConfig.border_color || graphConfig.borderColor || '#ffffff00';
+    container.style.backgroundColor = bgColor;
+    container.style.border = `1px solid ${borderColor === 'transparent' || borderColor === '#ffffff00' ? '#666' : borderColor}`;
     container.style.position = 'relative';
 
     // Invoke get_graph_preview_image and show base64 response data
@@ -997,7 +1006,16 @@ function renderGraphElementPreview(graphConfig) {
                 img.style.objectFit = 'contain';
                 container.appendChild(img);
             }
-        );
+        ).catch((error) => {
+            // Fallback preview if backend call fails
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
+                    <div style="font-size: 14px; margin-bottom: 2px;">📊</div>
+                    <div>Graph Preview</div>
+                    <div style="font-size: 8px; opacity: 0.7;">${graphConfig.graph_type || graphConfig.type || 'line'}</div>
+                </div>
+            `;
+        });
 
     return container;
 }
@@ -1019,11 +1037,14 @@ function renderConditionalImageElementPreview(config) {
     div.style.flexDirection = 'column';
     div.style.overflow = 'hidden';
 
-    if (config.imagesPath) {
+    // Handle both old and new field names for images path
+    const imagesPath = config.images_path || config.imagesPath || '';
+    
+    if (imagesPath) {
         div.innerHTML = `
             <div style="font-size: 14px; margin-bottom: 2px;">🔄</div>
             <div style="text-align: center; word-break: break-all;">Conditional Image</div>
-            <div style="font-size: 8px; opacity: 0.7;">${config.imagesPath}</div>
+            <div style="font-size: 8px; opacity: 0.7;">${imagesPath}</div>
         `;
     } else {
         div.innerHTML = `
