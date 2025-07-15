@@ -168,10 +168,10 @@ export function addNewElement() {
 
     // Set form defaults first before selecting the element
     clearElementForm();
-    
+
     // Select the new element 
     selectElement(listItem, designerElement);
-    
+
     // Apply default configuration for text elements
     applyFormToSelectedElement();
 }
@@ -381,7 +381,17 @@ export function loadDisplayElements(elements = []) {
 
     // Load each element from the configuration
     elements.forEach(elementData => {
-        const {id, name, element_type, x, y, text_config, image_config, graph_config, conditional_image_config} = elementData;
+        const {
+            id,
+            name,
+            element_type,
+            x,
+            y,
+            text_config,
+            image_config,
+            graph_config,
+            conditional_image_config
+        } = elementData;
 
         // Generate new ID if not provided or use existing
         const elementId = id || generateElementId();
@@ -581,7 +591,7 @@ function clearElementForm() {
     cmbElementType.value = ELEMENT_TYPE_TEXT; // Set default element type
     txtElementPositionX.value = '10'; // Set reasonable default position
     txtElementPositionY.value = '10';
-    
+
     // Set defaults for all element type configs
     setDefaultTextConfig();
     setDefaultStaticImageConfig();
@@ -645,7 +655,7 @@ function setDefaultGraphConfig() {
 }
 
 /**
- * Sets default values for conditional image element configuration  
+ * Sets default values for conditional image element configuration
  */
 function setDefaultConditionalImageConfig() {
     if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = '';
@@ -882,13 +892,13 @@ function renderTextElementPreview(config) {
     // Get real sensor data if a sensor is selected
     const sensorId = config.sensor_id || config.sensorId;
     let previewText = config.format || '{value} {unit}';
-    
+
     if (sensorId) {
         // Import getSensorValues to get real sensor data
         import('./app-state.js').then(module => {
             const sensorValues = module.getSensorValues();
             const selectedSensor = sensorValues.find(sensor => sensor.id === sensorId);
-            
+
             if (selectedSensor) {
                 // Replace placeholders with real sensor data
                 let realText = previewText;
@@ -897,7 +907,7 @@ function renderTextElementPreview(config) {
                 realText = realText.replace(/{value-avg}/g, selectedSensor.value); // TODO: implement actual avg
                 realText = realText.replace(/{value-min}/g, selectedSensor.value); // TODO: implement actual min
                 realText = realText.replace(/{value-max}/g, selectedSensor.value); // TODO: implement actual max
-                
+
                 div.textContent = realText;
             } else {
                 // Fallback to sample data if sensor not found
@@ -968,48 +978,27 @@ function renderStaticImageElementPreview(config) {
 /**
  * Renders a graph element preview
  */
-function renderGraphElementPreview(config) {
+function renderGraphElementPreview(graphConfig) {
     const container = document.createElement('div');
-    container.style.width = `${config.width}px`;
-    container.style.height = `${config.height}px`;
-    container.style.backgroundColor = config.backgroundColor;
-    container.style.border = `1px solid ${config.borderColor === 'transparent' ? '#666' : config.borderColor}`;
+    container.style.width = `${graphConfig.width}px`;
+    container.style.height = `${graphConfig.height}px`;
+    container.style.backgroundColor = graphConfig.backgroundColor;
+    container.style.border = `1px solid ${graphConfig.borderColor === 'transparent' ? '#666' : graphConfig.borderColor}`;
     container.style.position = 'relative';
 
-    // Create SVG for graph preview
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', config.width);
-    svg.setAttribute('height', config.height);
-    svg.style.display = 'block';
+    // Invoke get_graph_preview_image and show base64 response data
+    invoke('get_graph_preview_image', {graphConfig: graphConfig})
+        .then(
+            (base64Data) => {
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${base64Data}`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                container.appendChild(img);
+            }
+        );
 
-    // Generate sample data points
-    const points = [];
-    const numPoints = Math.min(config.width / 4, 20);
-    for (let i = 0; i < numPoints; i++) {
-        const x = (i / (numPoints - 1)) * config.width;
-        const y = config.height - (Math.sin(i * 0.5) * 0.3 + 0.5 + Math.random() * 0.2) * config.height;
-        points.push(`${x},${y}`);
-    }
-
-    if (config.type === 'line-fill') {
-        // Create filled area
-        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        const fillPoints = `0,${config.height} ${points.join(' ')} ${config.width},${config.height}`;
-        polygon.setAttribute('points', fillPoints);
-        polygon.setAttribute('fill', config.color + '40'); // Add transparency
-        polygon.setAttribute('stroke', 'none');
-        svg.appendChild(polygon);
-    }
-
-    // Create line
-    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    polyline.setAttribute('points', points.join(' '));
-    polyline.setAttribute('fill', 'none');
-    polyline.setAttribute('stroke', config.color);
-    polyline.setAttribute('stroke-width', config.strokeWidth);
-    svg.appendChild(polyline);
-
-    container.appendChild(svg);
     return container;
 }
 
