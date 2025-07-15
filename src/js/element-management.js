@@ -699,42 +699,39 @@ function updateElementForm() {
 function loadConfigIntoForm(config, elementType) {
     switch (elementType) {
         case ELEMENT_TYPE_TEXT:
-            // Handle both old camelCase and new snake_case field names for backward compatibility
-            if (cmbTextSensorIdSelection) cmbTextSensorIdSelection.value = config.sensor_id || config.sensorId || '';
-            if (cmbTextSensorValueModifier) cmbTextSensorValueModifier.value = config.value_modifier || config.valueModifier || 'none';
+            if (cmbTextSensorIdSelection) cmbTextSensorIdSelection.value = config.sensor_id || '';
+            if (cmbTextSensorValueModifier) cmbTextSensorValueModifier.value = config.value_modifier || 'none';
             if (txtTextFormat) txtTextFormat.value = config.format || '{value} {unit}';
-            if (cmbTextFontFamily) cmbTextFontFamily.value = config.font_family || config.fontFamily || 'Arial';
-            if (txtTextFontSize) txtTextFontSize.value = config.font_size || config.fontSize || 12;
-            if (txtTextFontColor) txtTextFontColor.value = config.font_color || config.fontColor || '#ffffffff';
+            if (cmbTextFontFamily) cmbTextFontFamily.value = config.font_family || 'Arial';
+            if (txtTextFontSize) txtTextFontSize.value = config.font_size || 12;
+            if (txtTextFontColor) txtTextFontColor.value = config.font_color || '#ffffffff';
             if (txtTextWidth) txtTextWidth.value = config.width || 100;
             if (txtTextHeight) txtTextHeight.value = config.height || 20;
             if (cmbTextAlignment) cmbTextAlignment.value = config.alignment || 'left';
             break;
 
         case ELEMENT_TYPE_STATIC_IMAGE:
-            if (txtStaticImageFile) txtStaticImageFile.value = config.image_path || config.imagePath || '';
+            if (txtStaticImageFile) txtStaticImageFile.value = config.image_path || '';
             if (txtStaticImageWidth) txtStaticImageWidth.value = config.width || 100;
             if (txtStaticImageHeight) txtStaticImageHeight.value = config.height || 100;
             break;
 
         case ELEMENT_TYPE_GRAPH:
-            // Handle both old camelCase and new snake_case field names for backward compatibility
-            if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = config.sensor_id || config.sensorId || '';
-            if (txtGraphMinValue) txtGraphMinValue.value = config.min_sensor_value || config.minValue || '';
-            if (txtGraphMaxValue) txtGraphMaxValue.value = config.max_sensor_value || config.maxValue || '';
+            if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = config.sensor_id || '';
+            if (txtGraphMinValue) txtGraphMinValue.value = config.min_sensor_value || '';
+            if (txtGraphMaxValue) txtGraphMaxValue.value = config.max_sensor_value || '';
             if (txtGraphWidth) txtGraphWidth.value = config.width || 200;
             if (txtGraphHeight) txtGraphHeight.value = config.height || 50;
-            if (cmbGraphType) cmbGraphType.value = config.graph_type || config.type || 'line';
-            if (txtGraphColor) txtGraphColor.value = config.graph_color || config.color || '#0066ccff';
-            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.graph_stroke_width || config.strokeWidth || 2;
-            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.background_color || config.backgroundColor || '#00000000';
-            if (txtGraphBorderColor) txtGraphBorderColor.value = config.border_color || config.borderColor || '#ffffff00';
+            if (cmbGraphType) cmbGraphType.value = config.graph_type || 'line';
+            if (txtGraphColor) txtGraphColor.value = config.graph_color || '#0066ccff';
+            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.graph_stroke_width || 2;
+            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.background_color || '#00000000';
+            if (txtGraphBorderColor) txtGraphBorderColor.value = config.border_color || '#ffffff00';
             break;
 
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            // Handle both old camelCase and new snake_case field names for backward compatibility
-            if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = config.sensor_id || config.sensorId || '';
-            if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = config.images_path || config.imagesPath || '';
+            if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = config.sensor_id || '';
+            if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = config.images_path || '';
             if (txtConditionalImageWidth) txtConditionalImageWidth.value = config.width || 130;
             if (txtConditionalImageHeight) txtConditionalImageHeight.value = config.height || 25;
             break;
@@ -883,10 +880,9 @@ function getConditionalImageElementConfig() {
  */
 function renderTextElementPreview(config) {
     const div = document.createElement('div');
-    // Handle both snake_case (new) and camelCase (old) field names
-    div.style.fontFamily = config.font_family || config.fontFamily || 'Arial';
-    div.style.fontSize = `${config.font_size || config.fontSize || 12}px`;
-    div.style.color = config.font_color || config.fontColor || '#ffffffff';
+    div.style.fontFamily = config.font_family || 'Arial';
+    div.style.fontSize = `${config.font_size || 12}px`;
+    div.style.color = config.font_color || '#ffffffff';
     div.style.width = `${config.width || 100}px`;
     div.style.height = `${config.height || 20}px`;
     div.style.textAlign = config.alignment || 'left';
@@ -896,7 +892,7 @@ function renderTextElementPreview(config) {
     div.style.border = '1px solid #666';
 
     // Get real sensor data if a sensor is selected
-    const sensorId = config.sensor_id || config.sensorId;
+    const sensorId = config.sensor_id;
     let previewText = config.format || '{value} {unit}';
 
     if (sensorId) {
@@ -962,10 +958,10 @@ function renderStaticImageElementPreview(config) {
     div.style.fontSize = '10px';
     div.style.overflow = 'hidden';
 
-    if (config.image_path || config.imagePath) {
+    if (config.image_path) {
         const img = document.createElement('img');
         // Convert the file path to a secure URL that Tauri can access using global API
-        const imagePath = config.image_path || config.imagePath;
+        const imagePath = config.image_path;
         img.src = window.__TAURI__.core.convertFileSrc(imagePath);
         img.style.maxWidth = '100%';
         img.style.maxHeight = '100%';
@@ -988,9 +984,8 @@ function renderGraphElementPreview(graphConfig) {
     const container = document.createElement('div');
     container.style.width = `${graphConfig.width}px`;
     container.style.height = `${graphConfig.height}px`;
-    // Handle both old and new field names for background color
-    const bgColor = graphConfig.background_color || graphConfig.backgroundColor || '#00000000';
-    const borderColor = graphConfig.border_color || graphConfig.borderColor || '#ffffff00';
+    const bgColor = graphConfig.background_color || '#00000000';
+    const borderColor = graphConfig.border_color || '#ffffff00';
     container.style.backgroundColor = bgColor;
     container.style.border = `1px solid ${borderColor === 'transparent' || borderColor === '#ffffff00' ? '#666' : borderColor}`;
     container.style.position = 'relative';
@@ -1012,7 +1007,7 @@ function renderGraphElementPreview(graphConfig) {
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
                     <div style="font-size: 14px; margin-bottom: 2px;">📊</div>
                     <div>Graph Preview</div>
-                    <div style="font-size: 8px; opacity: 0.7;">${graphConfig.graph_type || graphConfig.type || 'line'}</div>
+                    <div style="font-size: 8px; opacity: 0.7;">${graphConfig.graph_type || 'line'}</div>
                 </div>
             `;
         });
@@ -1037,8 +1032,8 @@ function renderConditionalImageElementPreview(config) {
     div.style.flexDirection = 'column';
     div.style.overflow = 'hidden';
 
-    // Handle both old and new field names for images path
-    const imagesPath = config.images_path || config.imagesPath || '';
+    // Handle images path
+    const imagesPath = config.images_path || '';
     
     if (imagesPath) {
         div.innerHTML = `
