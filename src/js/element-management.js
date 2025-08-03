@@ -502,23 +502,8 @@ export async function updateElementPreview() {
             preview = renderGraphElementPreview(getGraphElementConfig());
             break;
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            // Handle async preview for conditional images
-            try {
-                preview = await renderConditionalImageElementPreview(getConditionalImageElementConfig());
-            } catch (error) {
-                console.warn('Failed to render conditional image preview:', error);
-                // Create fallback preview
-                preview = document.createElement('div');
-                preview.style.width = '100px';
-                preview.style.height = '100px';
-                preview.style.backgroundColor = '#333';
-                preview.style.border = '1px solid #666';
-                preview.style.display = 'flex';
-                preview.style.alignItems = 'center';
-                preview.style.justifyContent = 'center';
-                preview.style.color = '#999';
-                preview.innerHTML = '⚠️ Error';
-            }
+            const elementId = selectedDesigner.getAttribute(ATTR_ELEMENT_ID);
+            preview = renderConditionalImageElementPreview(getConditionalImageElementConfig(), elementId);
             break;
     }
 
@@ -576,7 +561,7 @@ function createDesignerElement(id, name, type, x, y, config = null) {
             preview = renderGraphElementPreview(config || getGraphElementConfig());
             break;
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig());
+            preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig(), id);
             break;
     }
 
@@ -1047,18 +1032,17 @@ function renderGraphElementPreview(graphConfig) {
 /**
  * Renders a conditional image element preview
  */
-function renderConditionalImageElementPreview(config) {
-    console.log('Rendering conditional image preview with config:', config);
-
+function renderConditionalImageElementPreview(config, elementId) {
     const container = document.createElement('div');
     container.style.width = `${config.width}px`;
     container.style.height = `${config.height}px`;
     container.style.position = 'relative';
 
-    console.log('Conditional image config:', config);
-
     // Invoke get_conditional_image_preview_image and show base64 response data
-    invoke('get_conditional_image_preview_image', {conditionalImageConfig: config})
+    invoke('get_conditional_image_preview_image', {
+        elementId: elementId,
+        conditionalImageConfig: config
+    })
         .then(
             (base64Data) => {
                 const img = document.createElement('img');
@@ -1070,7 +1054,6 @@ function renderConditionalImageElementPreview(config) {
             }
         ).catch((error) => {
         console.log('Failed to render conditional image preview:', error);
-        // Fallback preview if backend call fails
         container.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
                     <div style="font-size: 14px; margin-bottom: 2px;">🖼️</div>

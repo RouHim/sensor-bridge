@@ -315,29 +315,13 @@ async fn get_conditional_image_preview_image(
     element_id: String,
     mut conditional_image_config: ConditionalImageConfig,
 ) -> Result<String, ()> {
-    // Debug: log entry and input parameters
-    log::debug!(
-        "get_conditional_image_preview_image called with element_id: {}, sensor_id: {}",
-        element_id,
-        conditional_image_config.sensor_id
-    );
-
     let sensor_values = &app_state.sensor_value_history.lock().ignore_poison()[0];
     let sensor_id = &conditional_image_config.sensor_id;
-
-    // Debug: log sensor values length
-    log::debug!("Sensor values count: {}", sensor_values.len());
 
     // Filter sensor values for provided sensor id
     let sensor_value = sensor_values
         .iter()
         .find(|sensor_value| sensor_value.id.eq(sensor_id));
-
-    // Debug: log found sensor value
-    match sensor_value {
-        Some(val) => log::debug!("Found sensor value: id={}, value={}", val.id, val.value),
-        None => log::debug!("No sensor value found for id: {}", sensor_id),
-    }
 
     let (value, sensor_type): (&str, &SensorType) = match sensor_value {
         Some(sensor_value) => (&sensor_value.value, &sensor_value.sensor_type),
@@ -348,22 +332,12 @@ async fn get_conditional_image_preview_image(
     conditional_image_config.images_path =
         conditional_image::prepare_element(&element_id, &conditional_image_config).unwrap();
 
-    // Debug: log prepared config
-    log::debug!(
-        "Prepared ConditionalImageConfig: sensor_value={}, images_path={}",
-        conditional_image_config.sensor_value,
-        conditional_image_config.images_path
-    );
-
     let graph_data: Vec<u8> = match conditional_image_renderer::render(
         &element_id,
         sensor_type,
         &conditional_image_config,
     ) {
-        Some(data) => {
-            log::debug!("Conditional image rendered successfully for element_id: {}", element_id);
-            data
-        }
+        Some(data) => data,
         None => {
             error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {value}");
             return Err(());
@@ -371,12 +345,7 @@ async fn get_conditional_image_preview_image(
     };
 
     let engine = base64::engine::general_purpose::STANDARD;
-    let encoded = base64::Engine::encode(&engine, graph_data);
-
-    // Debug: log output size
-    log::debug!("Encoded image size: {}", encoded.len());
-
-    Ok(encoded)
+    Ok(base64::Engine::encode(&engine, graph_data))
 }
 
 #[tauri::command]
