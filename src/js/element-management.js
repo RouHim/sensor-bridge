@@ -576,29 +576,7 @@ function createDesignerElement(id, name, type, x, y, config = null) {
             preview = renderGraphElementPreview(config || getGraphElementConfig());
             break;
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            // Handle async preview for conditional images
-            renderConditionalImageElementPreview(config || getConditionalImageElementConfig())
-                .then(asyncPreview => {
-                    if (asyncPreview) {
-                        div.innerHTML = '';
-                        div.appendChild(asyncPreview);
-                    }
-                })
-                .catch(error => {
-                    console.warn('Failed to render conditional image preview:', error);
-                });
-            // Set a temporary placeholder while loading
-            preview = document.createElement('div');
-            preview.style.width = `${(config?.width || 100)}px`;
-            preview.style.height = `${(config?.height || 100)}px`;
-            preview.style.backgroundColor = '#333';
-            preview.style.border = '1px solid #666';
-            preview.style.display = 'flex';
-            preview.style.alignItems = 'center';
-            preview.style.justifyContent = 'center';
-            preview.style.color = '#999';
-            preview.style.fontSize = '10px';
-            preview.innerHTML = '🔄 Loading...';
+            preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig());
             break;
     }
 
@@ -1053,15 +1031,15 @@ function renderGraphElementPreview(graphConfig) {
                 container.appendChild(img);
             }
         ).catch((error) => {
-            // Fallback preview if backend call fails
-            container.innerHTML = `
+        // Fallback preview if backend call fails
+        container.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
                     <div style="font-size: 14px; margin-bottom: 2px;">📊</div>
                     <div>Graph Preview</div>
                     <div style="font-size: 8px; opacity: 0.7;">${graphConfig.graph_type || 'line'}</div>
                 </div>
             `;
-        });
+    });
 
     return container;
 }
@@ -1069,37 +1047,40 @@ function renderGraphElementPreview(graphConfig) {
 /**
  * Renders a conditional image element preview
  */
-async function renderConditionalImageElementPreview(config) {
-    const div = document.createElement('div');
-    div.style.width = `${config.width}px`;
-    div.style.height = `${config.height}px`;
-    div.style.backgroundColor = '#333';
-    div.style.border = '1px solid #666';
-    div.style.display = 'flex';
-    div.style.alignItems = 'center';
-    div.style.justifyContent = 'center';
-    div.style.color = '#999';
-    div.style.fontSize = '10px';
-    div.style.flexDirection = 'column';
-    div.style.overflow = 'hidden';
+function renderConditionalImageElementPreview(config) {
+    console.log('Rendering conditional image preview with config:', config);
 
-    // Handle images path
-    const imagesPath = config.images_path || '';
+    const container = document.createElement('div');
+    container.style.width = `${config.width}px`;
+    container.style.height = `${config.height}px`;
+    container.style.position = 'relative';
 
-    if (imagesPath) {
-        div.innerHTML = `
-            <div style="font-size: 14px; margin-bottom: 2px;">🔄</div>
-            <div style="text-align: center; word-break: break-all;">Conditional Image</div>
-            <div style="font-size: 8px; opacity: 0.7;">${imagesPath}</div>
-        `;
-    } else {
-        div.innerHTML = `
-            <div style="font-size: 14px; margin-bottom: 2px;">🔄</div>
-            <div>No image package</div>
-        `;
-    }
+    console.log('Conditional image config:', config);
 
-    return div;
+    // Invoke get_conditional_image_preview_image and show base64 response data
+    invoke('get_conditional_image_preview_image', {conditionalImageConfig: config})
+        .then(
+            (base64Data) => {
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${base64Data}`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                container.appendChild(img);
+            }
+        ).catch((error) => {
+        console.log('Failed to render conditional image preview:', error);
+        // Fallback preview if backend call fails
+        container.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
+                    <div style="font-size: 14px; margin-bottom: 2px;">🖼️</div>
+                    <div>Conditional Image Preview</div>
+                    <div style="font-size: 8px; opacity: 0.7;">${config.sensor_id || 'No sensor selected'}</div>
+                </div>
+            `;
+    });
+
+    return container;
 }
 
 /**
