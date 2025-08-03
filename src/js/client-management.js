@@ -201,14 +201,39 @@ export async function handleClientActiveToggle() {
  * Removes the currently selected client
  */
 export async function removeClient() {
-    const macAddress = getCurrentClientMacAddress();
-    if (!macAddress) return;
+    console.log('removeClient function called');
     
-    const confirmRemoval = confirm('Are you sure you want to remove this client? This action cannot be undone.');
-    if (!confirmRemoval) return;
+    const macAddress = getCurrentClientMacAddress();
+    if (!macAddress) {
+        console.log('No client selected for removal');
+        alert('Please select a client to remove.');
+        return;
+    }
+    
+    console.log('Showing confirmation dialog for client:', macAddress);
+    
+    // Use Tauri's dialog plugin instead of browser confirm()
+    const confirmRemoval = await window.__TAURI__.dialog.ask(
+        `Are you sure you want to remove this client?\n\nThis action cannot be undone.\n\nMAC Address: ${macAddress}`,
+        {
+            title: 'Remove Client',
+            kind: 'warning'
+        }
+    );
+    
+    console.log('Confirmation result:', confirmRemoval);
+    
+    if (!confirmRemoval) {
+        console.log('User cancelled removal');
+        return;
+    }
+    
+    console.log('User confirmed removal, proceeding...');
     
     try {
-        await invoke('remove_client', { macAddress });
+        await invoke('remove_registered_client', { macAddress });
+        
+        console.log('Client removed successfully');
         
         // Reload clients list
         await loadRegisteredClients();

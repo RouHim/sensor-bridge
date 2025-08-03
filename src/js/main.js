@@ -136,7 +136,11 @@ function setupEventListeners() {
 
     // Button click events
     btnRefreshClients?.addEventListener("click", loadRegisteredClients);
-    btnRemoveClient?.addEventListener("click", removeClient);
+    btnRemoveClient?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        removeClient();
+    });
     btnExportConfig?.addEventListener("click", exportConfig);
     btnImportConfig?.addEventListener("click", importConfig);
     btnSaveClientConfig?.addEventListener("click", onSave);
@@ -152,7 +156,11 @@ function setupEventListeners() {
 
     // Element management events
     btnAddElement?.addEventListener("click", addNewElement);
-    btnRemoveElement?.addEventListener("click", removeElement);
+    btnRemoveElement?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        removeElement();
+    });
     btnMoveElementUp?.addEventListener("click", moveElementUp);
     btnMoveElementDown?.addEventListener("click", moveElementDown);
     btnDuplicateElement?.addEventListener("click", duplicateElement);

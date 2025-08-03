@@ -171,10 +171,10 @@ export function addNewElement() {
 
     // Set form defaults first before selecting the element
     clearElementForm();
-    
+
     // Select the new element 
     selectElement(listItem, designerElement);
-    
+
     // Apply default configuration for text elements
     applyFormToSelectedElement();
 }
@@ -182,7 +182,7 @@ export function addNewElement() {
 /**
  * Removes the currently selected element
  */
-export function removeElement() {
+export async function removeElement() {
     const selectedList = getSelectedListElement();
     const selectedDesigner = getSelectedDesignerElement();
 
@@ -191,7 +191,15 @@ export function removeElement() {
         return;
     }
 
-    const confirmRemoval = confirm('Are you sure you want to remove this element?');
+    // Use Tauri's dialog plugin instead of browser confirm()
+    const confirmRemoval = await window.__TAURI__.dialog.ask(
+        'Are you sure you want to remove this element?\n\nThis action cannot be undone.',
+        {
+            title: 'Remove Element',
+            kind: 'warning'
+        }
+    );
+
     if (!confirmRemoval) return;
 
     // Remove from DOM
@@ -384,7 +392,17 @@ export function loadDisplayElements(elements = []) {
 
     // Load each element from the configuration
     elements.forEach(elementData => {
-        const {id, name, element_type, x, y, text_config, image_config, graph_config, conditional_image_config} = elementData;
+        const {
+            id,
+            name,
+            element_type,
+            x,
+            y,
+            text_config,
+            image_config,
+            graph_config,
+            conditional_image_config
+        } = elementData;
 
         // Generate new ID if not provided or use existing
         const elementId = id || generateElementId();
@@ -622,7 +640,7 @@ function clearElementForm() {
     cmbElementType.value = ELEMENT_TYPE_TEXT; // Set default element type
     txtElementPositionX.value = '10'; // Set reasonable default position
     txtElementPositionY.value = '10';
-    
+
     // Set defaults for all element type configs
     setDefaultTextConfig();
     setDefaultStaticImageConfig();
@@ -674,27 +692,27 @@ function setDefaultStaticImageConfig() {
  */
 function setDefaultGraphConfig() {
     if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = '';
-    if (txtGraphMinValue) txtGraphMinValue.value = '';
-    if (txtGraphMaxValue) txtGraphMaxValue.value = '';
+    if (txtGraphMinValue) txtGraphMinValue.value = ''; // Leave empty for auto-scaling
+    if (txtGraphMaxValue) txtGraphMaxValue.value = ''; // Leave empty for auto-scaling
     if (txtGraphWidth) txtGraphWidth.value = '200';
     if (txtGraphHeight) txtGraphHeight.value = '50';
     if (cmbGraphType) cmbGraphType.value = 'line';
-    if (txtGraphColor) txtGraphColor.value = '#000000ff';
-    if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = '1';
-    if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = '#00000000';
-    if (txtGraphBorderColor) txtGraphBorderColor.value = '#ffffff00';
+    if (txtGraphColor) txtGraphColor.value = '#0066ccff'; // Nice blue color with alpha
+    if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = '2'; // Better visibility
+    if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = '#00000000'; // Transparent
+    if (txtGraphBorderColor) txtGraphBorderColor.value = '#ffffff00'; // Transparent border
 }
 
 /**
- * Sets default values for conditional image element configuration  
+ * Sets default values for conditional image element configuration
  */
 function setDefaultConditionalImageConfig() {
     if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = '';
     if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = '';
     if (txtConditionalImageMinValue) txtConditionalImageMinValue.value = '0';
     if (txtConditionalImageMaxValue) txtConditionalImageMaxValue.value = '100';
-    if (txtConditionalImageWidth) txtConditionalImageWidth.value = '100';
-    if (txtConditionalImageHeight) txtConditionalImageHeight.value = '100';
+    if (txtConditionalImageWidth) txtConditionalImageWidth.value = '130'; // Match backend default
+    if (txtConditionalImageHeight) txtConditionalImageHeight.value = '25'; // Match backend default
 }
 
 /**
@@ -751,24 +769,22 @@ function loadConfigIntoForm(config, elementType) {
 
         case ELEMENT_TYPE_GRAPH:
             if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = config.sensor_id || '';
-            if (txtGraphMinValue) txtGraphMinValue.value = config.min_value || '';
-            if (txtGraphMaxValue) txtGraphMaxValue.value = config.max_value || '';
+            if (txtGraphMinValue) txtGraphMinValue.value = config.min_sensor_value || '';
+            if (txtGraphMaxValue) txtGraphMaxValue.value = config.max_sensor_value || '';
             if (txtGraphWidth) txtGraphWidth.value = config.width || 200;
             if (txtGraphHeight) txtGraphHeight.value = config.height || 50;
-            if (cmbGraphType) cmbGraphType.value = config.type || 'line';
-            if (txtGraphColor) txtGraphColor.value = config.color || '#000000';
-            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.stroke_width || 1;
+            if (cmbGraphType) cmbGraphType.value = config.graph_type || 'line';
+            if (txtGraphColor) txtGraphColor.value = config.graph_color || '#0066ccff';
+            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.graph_stroke_width || 2;
             if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.background_color || '#00000000';
-            if (txtGraphBorderColor) txtGraphBorderColor.value = config.border_color || '#00000000';
+            if (txtGraphBorderColor) txtGraphBorderColor.value = config.border_color || '#ffffff00';
             break;
 
         case ELEMENT_TYPE_CONDITIONAL_IMAGE:
             if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = config.sensor_id || '';
             if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = config.images_path || '';
-            if (txtConditionalImageMinValue) txtConditionalImageMinValue.value = config.min_value || 0;
-            if (txtConditionalImageMaxValue) txtConditionalImageMaxValue.value = config.max_value || 100;
-            if (txtConditionalImageWidth) txtConditionalImageWidth.value = config.width || 100;
-            if (txtConditionalImageHeight) txtConditionalImageHeight.value = config.height || 100;
+            if (txtConditionalImageWidth) txtConditionalImageWidth.value = config.width || 130;
+            if (txtConditionalImageHeight) txtConditionalImageHeight.value = config.height || 25;
             break;
     }
 }
@@ -882,15 +898,16 @@ function getStaticImageElementConfig() {
 function getGraphElementConfig() {
     return {
         sensor_id: cmbGraphSensorIdSelection?.value || '',
-        min_value: txtGraphMinValue?.value || null,
-        max_value: txtGraphMaxValue?.value || null,
+        sensor_values: [], // Initialize empty array for sensor values history
+        min_sensor_value: txtGraphMinValue?.value ? parseFloat(txtGraphMinValue.value) : null,
+        max_sensor_value: txtGraphMaxValue?.value ? parseFloat(txtGraphMaxValue.value) : null,
         width: parseInt(txtGraphWidth?.value) || 200,
         height: parseInt(txtGraphHeight?.value) || 50,
-        type: cmbGraphType?.value || 'line',
-        color: txtGraphColor?.value || '#000000',
-        stroke_width: parseInt(txtGraphStrokeWidth?.value) || 1,
+        graph_type: cmbGraphType?.value || 'line',
+        graph_color: txtGraphColor?.value || '#0066ccff',
+        graph_stroke_width: parseInt(txtGraphStrokeWidth?.value) || 2,
         background_color: txtGraphBackgroundColor?.value || '#00000000',
-        border_color: txtGraphBorderColor?.value || '#00000000'
+        border_color: txtGraphBorderColor?.value || '#ffffff00'
     };
 }
 
@@ -900,9 +917,10 @@ function getGraphElementConfig() {
 function getConditionalImageElementConfig() {
     return {
         sensor_id: cmbConditionalImageSensorIdSelection?.value || '',
+        sensor_value: '', // Current sensor value (will be populated at render time)
         images_path: txtConditionalImageImagesPath?.value || '',
-        min_value: parseFloat(txtConditionalImageMinValue?.value) || 0,
-        max_value: parseFloat(txtConditionalImageMaxValue?.value) || 100,
+        min_sensor_value: 0.0,
+        max_sensor_value: 100.0,
         width: parseInt(txtConditionalImageWidth?.value) || 100,
         height: parseInt(txtConditionalImageHeight?.value) || 100
     };
@@ -927,13 +945,13 @@ function renderTextElementPreview(config) {
     // Get real sensor data if a sensor is selected
     const sensorId = config.sensor_id;
     let previewText = config.format || '{value} {unit}';
-    
+
     if (sensorId) {
         // Import getSensorValues to get real sensor data
         import('./app-state.js').then(module => {
             const sensorValues = module.getSensorValues();
             const selectedSensor = sensorValues.find(sensor => sensor.id === sensorId);
-            
+
             if (selectedSensor) {
                 // Replace placeholders with real sensor data
                 let realText = previewText;
@@ -942,7 +960,7 @@ function renderTextElementPreview(config) {
                 realText = realText.replace(/{value-avg}/g, selectedSensor.value); // TODO: implement actual avg
                 realText = realText.replace(/{value-min}/g, selectedSensor.value); // TODO: implement actual min
                 realText = realText.replace(/{value-max}/g, selectedSensor.value); // TODO: implement actual max
-                
+
                 div.textContent = realText;
             } else {
                 // Fallback to sample data if sensor not found
@@ -994,7 +1012,8 @@ function renderStaticImageElementPreview(config) {
     if (config.image_path) {
         const img = document.createElement('img');
         // Convert the file path to a secure URL that Tauri can access using global API
-        img.src = window.__TAURI__.core.convertFileSrc(config.image_path);
+        const imagePath = config.image_path;
+        img.src = window.__TAURI__.core.convertFileSrc(imagePath);
         img.style.maxWidth = '100%';
         img.style.maxHeight = '100%';
         img.style.objectFit = 'contain';
@@ -1012,48 +1031,38 @@ function renderStaticImageElementPreview(config) {
 /**
  * Renders a graph element preview
  */
-function renderGraphElementPreview(config) {
+function renderGraphElementPreview(graphConfig) {
     const container = document.createElement('div');
-    container.style.width = `${config.width}px`;
-    container.style.height = `${config.height}px`;
-    container.style.backgroundColor = config.background_color;
-    container.style.border = `1px solid ${config.border_color === 'transparent' ? '#666' : config.border_color}`;
+    container.style.width = `${graphConfig.width}px`;
+    container.style.height = `${graphConfig.height}px`;
+    const bgColor = graphConfig.background_color || '#00000000';
+    const borderColor = graphConfig.border_color || '#ffffff00';
+    container.style.backgroundColor = bgColor;
+    container.style.border = `1px solid ${borderColor === 'transparent' || borderColor === '#ffffff00' ? '#666' : borderColor}`;
     container.style.position = 'relative';
 
-    // Create SVG for graph preview
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', config.width);
-    svg.setAttribute('height', config.height);
-    svg.style.display = 'block';
+    // Invoke get_graph_preview_image and show base64 response data
+    invoke('get_graph_preview_image', {graphConfig: graphConfig})
+        .then(
+            (base64Data) => {
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${base64Data}`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                container.appendChild(img);
+            }
+        ).catch((error) => {
+            // Fallback preview if backend call fails
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
+                    <div style="font-size: 14px; margin-bottom: 2px;">📊</div>
+                    <div>Graph Preview</div>
+                    <div style="font-size: 8px; opacity: 0.7;">${graphConfig.graph_type || 'line'}</div>
+                </div>
+            `;
+        });
 
-    // Generate sample data points
-    const points = [];
-    const numPoints = Math.min(config.width / 4, 20);
-    for (let i = 0; i < numPoints; i++) {
-        const x = (i / (numPoints - 1)) * config.width;
-        const y = config.height - (Math.sin(i * 0.5) * 0.3 + 0.5 + Math.random() * 0.2) * config.height;
-        points.push(`${x},${y}`);
-    }
-
-    if (config.type === 'line-fill') {
-        // Create filled area
-        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        const fillPoints = `0,${config.height} ${points.join(' ')} ${config.width},${config.height}`;
-        polygon.setAttribute('points', fillPoints);
-        polygon.setAttribute('fill', config.color + '40'); // Add transparency
-        polygon.setAttribute('stroke', 'none');
-        svg.appendChild(polygon);
-    }
-
-    // Create line
-    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    polyline.setAttribute('points', points.join(' '));
-    polyline.setAttribute('fill', 'none');
-    polyline.setAttribute('stroke', config.color);
-    polyline.setAttribute('stroke-width', config.stroke_width);
-    svg.appendChild(polyline);
-
-    container.appendChild(svg);
     return container;
 }
 
@@ -1074,48 +1083,14 @@ async function renderConditionalImageElementPreview(config) {
     div.style.flexDirection = 'column';
     div.style.overflow = 'hidden';
 
-    if (config.images_path && config.sensor_id) {
-        try {
-            // Show loading state
-            div.innerHTML = `
-                <div style="font-size: 14px; margin-bottom: 2px;">⏳</div>
-                <div>Loading preview...</div>
-            `;
+    // Handle images path
+    const imagesPath = config.images_path || '';
 
-            // Generate a unique element ID for this preview
-            const elementId = `preview_${Date.now()}`;
-            
-            // Call backend to get real preview
-            const base64Image = await invoke('get_conditional_image_preview_image', {
-                elementId: elementId,
-                conditionalImageConfig: config
-            });
-
-            // Create and display the actual image
-            const img = document.createElement('img');
-            img.src = `data:image/png;base64,${base64Image}`;
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '100%';
-            img.style.objectFit = 'contain';
-            
-            // Clear loading state and show image
-            div.innerHTML = '';
-            div.appendChild(img);
-            
-        } catch (error) {
-            console.warn('Failed to load conditional image preview:', error);
-            div.innerHTML = `
-                <div style="font-size: 14px; margin-bottom: 2px;">⚠️</div>
-                <div style="text-align: center; word-break: break-all;">Preview Error</div>
-                <div style="font-size: 8px; opacity: 0.7;">${config.images_path}</div>
-            `;
-        }
-    } else if (config.images_path) {
+    if (imagesPath) {
         div.innerHTML = `
             <div style="font-size: 14px; margin-bottom: 2px;">🔄</div>
             <div style="text-align: center; word-break: break-all;">Conditional Image</div>
-            <div style="font-size: 8px; opacity: 0.7;">${config.images_path}</div>
-            <div style="font-size: 8px; opacity: 0.5;">Select sensor for preview</div>
+            <div style="font-size: 8px; opacity: 0.7;">${imagesPath}</div>
         `;
     } else {
         div.innerHTML = `
@@ -1193,14 +1168,14 @@ export function applyFormToSelectedElement() {
  */
 export async function loadConditionalImageCatalog() {
     if (!cmbConditionalImageCatalogEntrySelection) return;
-    
+
     try {
         const catalogResponse = await invoke('get_conditional_image_repo_entries');
         const catalogEntries = JSON.parse(catalogResponse);
-        
+
         // Clear existing options
         cmbConditionalImageCatalogEntrySelection.innerHTML = '<option value="">Select from catalog...</option>';
-        
+
         // Add catalog entries to dropdown
         catalogEntries.forEach(entry => {
             const option = document.createElement('option');
@@ -1209,7 +1184,7 @@ export async function loadConditionalImageCatalog() {
             option.dataset.entryData = JSON.stringify(entry);
             cmbConditionalImageCatalogEntrySelection.appendChild(option);
         });
-        
+
         console.log(`Loaded ${catalogEntries.length} conditional image catalog entries`);
     } catch (error) {
         console.error('Failed to load conditional image catalog:', error);
@@ -1225,12 +1200,12 @@ export async function loadConditionalImageCatalog() {
  */
 export function onConditionalImageCatalogEntrySelected() {
     if (!cmbConditionalImageCatalogEntrySelection || !txtConditionalImageImagesPath) return;
-    
+
     const selectedOption = cmbConditionalImageCatalogEntrySelection.selectedOptions[0];
     if (selectedOption && selectedOption.value) {
         txtConditionalImageImagesPath.value = selectedOption.value;
         console.log('Applied catalog entry:', selectedOption.textContent);
-        
+
         // Update preview if element is selected
         updateElementPreview();
     }
