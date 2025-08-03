@@ -31,7 +31,7 @@ pub fn prepare(element: &ElementConfig) -> Result<(), String> {
     // Save to cache folder
     let cache_file = static_image_cache_folder.join(&element.id);
     fs::write(cache_file, image_data).unwrap();
-    
+
     Ok(())
 }
 
@@ -54,7 +54,10 @@ pub fn get_preparation_data(lcd_config: &DisplayConfig) -> HashMap<String, Vec<u
 }
 
 /// Reads each image into memory, scales it to the desired resolution, and returns it
-pub fn prepare_image(element_id: &str, image_config: &ImageConfig) -> Result<(String, Vec<u8>), String> {
+pub fn prepare_image(
+    element_id: &str,
+    image_config: &ImageConfig,
+) -> Result<(String, Vec<u8>), String> {
     let image = load_image(&image_config.image_path)?;
     let image = image.resize_exact(
         image_config.width,
@@ -77,12 +80,17 @@ fn load_image(path_to_image: &str) -> Result<DynamicImage, String> {
         let response = ureq::get(path_to_image)
             .call()
             .map_err(|e| format!("Failed to fetch image from URL {}: {}", path_to_image, e))?;
-            
+
         response
             .into_reader()
             .read_to_end(&mut image_data)
-            .map_err(|e| format!("Failed to read image data from URL {}: {}", path_to_image, e))?;
-            
+            .map_err(|e| {
+                format!(
+                    "Failed to read image data from URL {}: {}",
+                    path_to_image, e
+                )
+            })?;
+
         image::load_from_memory(&image_data)
             .map_err(|e| format!("Failed to decode image from URL {}: {}", path_to_image, e))
     } else {
@@ -90,7 +98,7 @@ fn load_image(path_to_image: &str) -> Result<DynamicImage, String> {
         if !std::path::Path::new(path_to_image).exists() {
             return Err(format!("Image file not found: {}", path_to_image));
         }
-        
+
         image::open(path_to_image)
             .map_err(|e| format!("Failed to open image file {}: {}", path_to_image, e))
     }

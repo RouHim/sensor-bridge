@@ -330,7 +330,7 @@ async fn get_conditional_image_preview_image(
 
     conditional_image_config.sensor_value = value.to_string();
     conditional_image_config.images_path =
-        conditional_image::prepare_element(&element_id, &conditional_image_config);
+        conditional_image::prepare_element(&element_id, &conditional_image_config).unwrap();
 
     let graph_data: Vec<u8> = match conditional_image_renderer::render(
         &element_id,
@@ -423,7 +423,7 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
 
     // First check if server is running and get the handle
     let handle = {
-        let mut server_running = app_state.http_server_running.lock().unwrap();
+        let server_running = app_state.http_server_running.lock().unwrap();
         let mut server_handle = app_state.http_server_handle.lock().unwrap();
 
         if !*server_running {

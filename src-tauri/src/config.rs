@@ -267,7 +267,7 @@ pub fn get_http_port() -> u16 {
 
 /// Sets the HTTP server port in configuration
 pub fn set_http_port(port: u16) -> Result<(), String> {
-    if port == 0 || port < 1024 || port > 65535 {
+    if port == 0 || !(1024..=65535).contains(&port) {
         return Err("Port must be between 1024 and 65535".to_string());
     }
 
