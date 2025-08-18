@@ -517,7 +517,34 @@ export async function updateElementPreview() {
 // Helper functions
 
 function generateElementId() {
-    return Date.now().toString();
+    // Get all existing element IDs from the list
+    const existingIds = [];
+    if (lstDesignerPlacedElements) {
+        const listElements = lstDesignerPlacedElements.querySelectorAll('li');
+        listElements.forEach(li => {
+            const id = li.getAttribute(ATTR_ELEMENT_ID);
+            // Only consider numeric IDs for sequential numbering
+            const numericId = parseInt(id);
+            if (!isNaN(numericId) && numericId > 0) {
+                existingIds.push(numericId);
+            }
+        });
+    }
+    
+    // Find the next available sequential number
+    existingIds.sort((a, b) => a - b);
+    
+    // Start from 1 and find the first gap or next number
+    let nextId = 1;
+    for (const id of existingIds) {
+        if (id === nextId) {
+            nextId++;
+        } else if (id > nextId) {
+            break; // Found a gap, use nextId
+        }
+    }
+    
+    return nextId.toString();
 }
 
 function createListElement(id, name, type) {
