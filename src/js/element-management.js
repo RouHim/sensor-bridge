@@ -152,15 +152,32 @@ export function onElementTypeChange() {
 /**
  * Adds a new element to the designer
  */
-export function addNewElement() {
+export async function addNewElement() {
+    // Store the current element info before validation check
+    const previousElement = getSelectedListElement();
+    const previousElementName = previousElement ? previousElement.getAttribute(ATTR_ELEMENT_NAME) : 'None';
+    
+    console.log(`Adding new element, current selection: ${previousElementName}`);
+    
+    // Check if we can leave the current element (modal validation)
+    const canLeave = await canLeaveCurrentElement();
+    if (!canLeave) {
+        console.log('Cannot leave current element, canceling new element creation');
+        return; // Don't create new element
+    }
+
     const elementId = generateElementId();
     const elementName = `Element ${elementId}`;
+    
+    console.log(`Creating new element: ${elementName}`);
 
     // Create list item with reasonable default position
     const listItem = createListElement(elementId, elementName, ELEMENT_TYPE_TEXT);
     // Set default position attributes
     listItem.setAttribute(ATTR_ELEMENT_POSITION_X, '10');
     listItem.setAttribute(ATTR_ELEMENT_POSITION_Y, '10');
+    // Mark as new/untouched
+    listItem.setAttribute('data-touched', 'false');
     lstDesignerPlacedElements.appendChild(listItem);
 
     // Create designer element with reasonable default position (offset from top-left)
@@ -169,14 +186,24 @@ export function addNewElement() {
     const designerElement = createDesignerElement(elementId, elementName, ELEMENT_TYPE_TEXT, defaultX, defaultY, null);
     designerPane.appendChild(designerElement);
 
-    // Set form defaults first before selecting the element
+    // IMPORTANT: Clear form BEFORE selection to avoid contamination
     clearElementForm();
+    
+    console.log(`Selecting new element: ${elementName}`);
 
-    // Select the new element 
-    selectElement(listItem, designerElement);
+    // Select the new element (skip validation check and display for clean start)
+    await selectElement(listItem, designerElement, true, true);
 
     // Apply default configuration for text elements
     applyFormToSelectedElement();
+    
+    // Setup event handlers for the new element (if not already set up in createListElement/createDesignerElement)
+    setupElementEventHandlers(listItem, designerElement);
+    
+    console.log(`New element created and selected: ${elementName}`);
+    
+    // Don't validate immediately - let user work with the new element
+    // Validation will only occur when they try to navigate away or make changes
 }
 
 /**
@@ -254,13 +281,19 @@ export function moveElementDown() {
 /**
  * Duplicates the currently selected element
  */
-export function duplicateElement() {
+export async function duplicateElement() {
     const selectedList = getSelectedListElement();
     const selectedDesigner = getSelectedDesignerElement();
 
     if (!selectedList || !selectedDesigner) {
         alert('Please select an element to duplicate.');
         return;
+    }
+
+    // Check if we can leave the current element (modal validation)
+    const canLeave = await canLeaveCurrentElement();
+    if (!canLeave) {
+        return; // Don't duplicate
     }
 
     const newElementId = generateElementId();
@@ -600,6 +633,165 @@ function validateAllElements() {
 }
 
 /**
+ * Validates the currently selected element
+ * @returns {Object} Object with isValid boolean and errors array
+ */
+function validateCurrentElement() {
+    const selectedList = getSelectedListElement();
+    if (!selectedList) {
+        return { isValid: true, errors: [] }; // No element selected is considered valid
+    }
+
+    const element = {
+        id: selectedList.getAttribute(ATTR_ELEMENT_ID),
+        name: selectedList.getAttribute(ATTR_ELEMENT_NAME),
+        element_type: selectedList.getAttribute(ATTR_ELEMENT_TYPE)
+    };
+    
+    const elementName = element.name || `Element ${element.id}`;
+    const configToValidate = getElementConfigForValidation(element, selectedList);
+    
+    let errors = [];
+    
+    switch (element.element_type) {
+        case ELEMENT_TYPE_TEXT:
+            errors = validateTextElement(configToValidate, elementName);
+            break;
+            
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            errors = validateStaticImageElement(configToValidate, elementName);
+            break;
+            
+        case ELEMENT_TYPE_GRAPH:
+            errors = validateGraphElement(configToValidate, elementName);
+            break;
+            
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            errors = validateConditionalImageElement(configToValidate, elementName);
+            break;
+            
+        default:
+            errors = [`${elementName}: Unknown element type: ${element.element_type}`];
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
+ * Updates the validation state visual indicators for an element
+ * @param {HTMLElement} listElement - The list element to update
+ */
+function updateElementValidationState(listElement) {
+    if (!listElement) {
+        console.warn('updateElementValidationState called with null element');
+        return;
+    }
+    
+    const elementName = listElement.getAttribute(ATTR_ELEMENT_NAME) || 'Unknown';
+    
+    // Validate the element directly without changing selection
+    const validationResult = validateElementDirectly(listElement);
+    
+    // Update visual indicators for the SPECIFIC element passed in
+    // Only show indicators for INVALID elements - valid elements look normal
+    if (validationResult.isValid) {
+        listElement.classList.remove('invalid');
+        listElement.classList.remove('valid'); // Remove any existing valid class
+        listElement.title = ''; // Clear title
+    } else {
+        listElement.classList.remove('valid');
+        listElement.classList.add('invalid');
+        listElement.title = 'Invalid: ' + validationResult.errors.join('; ');
+    }
+}
+
+/**
+ * Validates an element directly without changing selection state
+ * @param {HTMLElement} listElement - The list element to validate
+ * @returns {Object} Object with isValid boolean and errors array
+ */
+function validateElementDirectly(listElement) {
+    if (!listElement) {
+        return { isValid: true, errors: [] };
+    }
+
+    const element = {
+        id: listElement.getAttribute(ATTR_ELEMENT_ID),
+        name: listElement.getAttribute(ATTR_ELEMENT_NAME),
+        element_type: listElement.getAttribute(ATTR_ELEMENT_TYPE)
+    };
+    
+    const elementName = element.name || `Element ${element.id}`;
+    const configToValidate = getElementConfigForValidation(element, listElement);
+    
+    let errors = [];
+    
+    switch (element.element_type) {
+        case ELEMENT_TYPE_TEXT:
+            errors = validateTextElement(configToValidate, elementName);
+            break;
+            
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            errors = validateStaticImageElement(configToValidate, elementName);
+            break;
+            
+        case ELEMENT_TYPE_GRAPH:
+            errors = validateGraphElement(configToValidate, elementName);
+            break;
+            
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            errors = validateConditionalImageElement(configToValidate, elementName);
+            break;
+            
+        default:
+            errors = [`${elementName}: Unknown element type: ${element.element_type}`];
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
+ * Updates validation state for all elements
+ */
+export function updateAllElementValidationStates() {
+    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
+    listElements.forEach(li => updateElementValidationState(li));
+}
+
+/**
+ * Updates validation only if the current element has been "touched" (modified after creation)
+ */
+export function updateValidationIfElementTouched() {
+    const currentElement = getSelectedListElement();
+    if (!currentElement) return;
+    
+    // Check if element has been marked as "touched"
+    const isTouched = currentElement.getAttribute('data-touched') === 'true';
+    
+    if (isTouched) {
+        updateElementValidationState(currentElement);
+    }
+}
+
+/**
+ * Marks the current element as "touched" (user has made changes)
+ */
+export function markCurrentElementAsTouched() {
+    const currentElement = getSelectedListElement();
+    if (currentElement) {
+        currentElement.setAttribute('data-touched', 'true');
+        // Now that it's touched, we can show validation - but only for this specific element
+        updateElementValidationState(currentElement);
+    }
+}
+
+/**
  * Saves the current element configuration to the backend
  */
 export async function saveElementConfiguration() {
@@ -721,6 +913,9 @@ export function loadDisplayElements(elements = []) {
     });
 
     console.log(`Loaded ${elements.length} display elements`);
+    
+    // Update validation states for all loaded elements
+    updateAllElementValidationStates();
 }
 
 /**
@@ -867,7 +1062,16 @@ function createDesignerElement(id, name, type, x, y, config = null) {
     return div;
 }
 
-function selectElement(listElement, designerElement) {
+async function selectElement(listElement, designerElement, skipValidation = false, skipValidationDisplay = false) {
+    // Skip validation check if this is a re-selection after validation dialog
+    if (!skipValidation) {
+        // Check if we can leave the current element (if any)
+        const canLeave = await canLeaveCurrentElement();
+        if (!canLeave) {
+            return; // Prevent selection change
+        }
+    }
+
     // Clear previous selection
     clearElementSelection();
 
@@ -881,14 +1085,195 @@ function selectElement(listElement, designerElement) {
 
     // Update form
     updateElementForm();
+    
+    // Only show validation state if not skipped (e.g., for new elements)
+    if (!skipValidationDisplay) {
+        updateElementValidationState(listElement);
+    }
+}
+
+/**
+ * Checks if the user can leave the currently selected element
+ * @returns {Promise<boolean>} True if can leave, false if validation prevents it
+ */
+async function canLeaveCurrentElement() {
+    const currentElement = getSelectedListElement();
+    if (!currentElement) {
+        return true; // No current element, can select anything
+    }
+
+    // Apply current form values first
+    applyFormToSelectedElement();
+    
+    // Check if current element is valid - use direct validation to avoid selection confusion
+    const validationResult = validateElementDirectly(currentElement);
+    
+    if (!validationResult.isValid) {
+        // Store current selection info before dialog (dialogs can interfere with focus)
+        const elementId = currentElement.getAttribute(ATTR_ELEMENT_ID);
+        const elementName = currentElement.getAttribute(ATTR_ELEMENT_NAME);
+        const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+        
+        // Show validation dialog with fix/delete options
+        const shouldDelete = await showValidationDialog(currentElement, validationResult);
+        
+        if (shouldDelete) {
+            // Delete the invalid element
+            await deleteInvalidElement(currentElement);
+            return true; // Can proceed after deletion
+        } else {
+            // User chose to fix - restore proper selection after dialog
+            await ensureElementStaysSelected(currentElement);
+            
+            // Add visual feedback for locked state
+            currentElement.classList.add('validation-locked');
+            setTimeout(() => {
+                currentElement.classList.remove('validation-locked');
+            }, 2000);
+            
+
+            return false; // Stay with current element to fix
+        }
+    }
+    
+    return true; // Element is valid, can leave
+}
+
+/**
+ * Shows validation dialog with fix/delete options
+ * @param {HTMLElement} element - The invalid element
+ * @param {Object} validationResult - Validation result with errors
+ * @returns {Promise<boolean>} True if user chose to delete, false to fix
+ */
+async function showValidationDialog(element, validationResult) {
+    const elementName = element.getAttribute(ATTR_ELEMENT_NAME) || 'Current element';
+    const elementType = element.getAttribute(ATTR_ELEMENT_TYPE) || 'element';
+    
+    let helpText = '';
+    if (elementType === 'text') {
+        helpText = '💡 To fix: Select a sensor and enter valid dimensions.';
+    } else if (elementType === 'static-image') {
+        helpText = '💡 To fix: Select an image file and enter valid dimensions.';
+    } else if (elementType === 'graph') {
+        helpText = '💡 To fix: Select a sensor and enter valid graph dimensions.';
+    } else if (elementType === 'conditional-image') {
+        helpText = '💡 To fix: Select a sensor, image path, and valid dimensions.';
+    }
+    
+    const errorList = validationResult.errors.map(error => 
+        `• ${error.replace(elementName + ': ', '')}`
+    ).join('\n');
+    
+    const dialogMessage = `🔒 Cannot leave "${elementName}" - Validation Required\n\n` +
+        `Issues found:\n${errorList}\n\n` +
+        `${helpText}\n\n` +
+        `What would you like to do?`;
+
+    try {
+        // Use Tauri's ask dialog with custom options
+        const result = await window.__TAURI__.dialog.ask(
+            dialogMessage,
+            {
+                title: 'Element Validation Required',
+                kind: 'warning',
+                okLabel: 'Fix Issues',
+                cancelLabel: 'Delete Element'
+            }
+        );
+        
+        return !result; // True = Fix (OK), False = Delete (Cancel), so we invert
+    } catch (error) {
+        console.error('Dialog error:', error);
+        // Fallback to simple confirm dialog
+        return confirm(
+            `${dialogMessage}\n\n` +
+            `Click OK to fix issues, or Cancel to delete the element.`
+        ) === false; // Invert: Cancel = delete (true), OK = fix (false)
+    }
+}
+
+/**
+ * Ensures the element stays properly selected after validation dialog
+ * @param {HTMLElement} listElement - The element that should remain selected
+ */
+async function ensureElementStaysSelected(listElement) {
+    const elementId = listElement.getAttribute(ATTR_ELEMENT_ID);
+    const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+    
+    // Make sure both elements are properly selected
+    if (listElement && designerElement) {
+        // Use selectElement with skipValidation=true to avoid recursion
+        await selectElement(listElement, designerElement, true);
+    }
+}
+
+/**
+ * Deletes an invalid element after confirmation
+ * @param {HTMLElement} element - The element to delete
+ */
+async function deleteInvalidElement(element) {
+    const elementName = element.getAttribute(ATTR_ELEMENT_NAME) || 'Element';
+    const elementId = element.getAttribute(ATTR_ELEMENT_ID);
+    
+    try {
+        // Additional confirmation for deletion
+        const confirmDelete = await window.__TAURI__.dialog.ask(
+            `Are you sure you want to delete "${elementName}"?\n\nThis action cannot be undone.`,
+            {
+                title: 'Confirm Deletion',
+                kind: 'warning',
+                okLabel: 'Delete',
+                cancelLabel: 'Cancel'
+            }
+        );
+        
+        if (!confirmDelete) {
+            return; // User cancelled deletion
+        }
+        
+        // Find corresponding designer element
+        const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+        
+        // Remove from DOM
+        if (designerElement) {
+            designerElement.remove();
+        }
+        element.remove();
+        
+        // Clear selection since we deleted the selected element
+        setSelectedListElement(null);
+        setSelectedDesignerElement(null);
+        clearElementForm();
+        
+        // Update validation states for all remaining elements
+        updateAllElementValidationStates();
+        
+
+        
+    } catch (error) {
+        console.error('Error in delete confirmation:', error);
+        // Fallback to basic confirm
+        if (confirm(`Delete "${elementName}"? This cannot be undone.`)) {
+            const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+            if (designerElement) designerElement.remove();
+            element.remove();
+            setSelectedListElement(null);
+            setSelectedDesignerElement(null);
+            clearElementForm();
+        }
+    }
 }
 
 function clearElementSelection() {
     const currentList = getSelectedListElement();
     const currentDesigner = getSelectedDesignerElement();
 
-    if (currentList) currentList.classList.remove('selected');
-    if (currentDesigner) currentDesigner.classList.remove('selected');
+    if (currentList) {
+        currentList.classList.remove('selected');
+    }
+    if (currentDesigner) {
+        currentDesigner.classList.remove('selected');
+    }
 }
 
 function clearElementForm() {
@@ -1063,8 +1448,14 @@ function updateElementPosition(element, x, y) {
 }
 
 function setupElementEventHandlers(listElement, designerElement) {
-    listElement.addEventListener('click', () => selectElement(listElement, designerElement));
-    designerElement.addEventListener('click', () => selectElement(listElement, designerElement));
+    listElement.addEventListener('click', async (event) => {
+        event.preventDefault();
+        await selectElement(listElement, designerElement);
+    });
+    designerElement.addEventListener('click', async (event) => {
+        event.preventDefault();
+        await selectElement(listElement, designerElement);
+    });
 }
 
 function collectAllElements() {
@@ -1367,8 +1758,11 @@ export function applyFormToSelectedElement() {
     const selectedDesigner = getSelectedDesignerElement();
 
     if (!selectedList || !selectedDesigner) {
+        console.warn('applyFormToSelectedElement: No element selected');
         return; // No element selected
     }
+    
+
 
     // Update basic properties
     const newName = txtElementName.value || selectedList.getAttribute(ATTR_ELEMENT_NAME);
@@ -1416,6 +1810,9 @@ export function applyFormToSelectedElement() {
 
     // Update the visual preview of the element
     updateElementPreview();
+    
+    // Update validation state
+    updateElementValidationState(selectedList);
 
     console.log(`Applied form values to element ${newName}:`, config);
 }

@@ -28,7 +28,10 @@ import {
     changeMoveUnit,
     dropOnDesignerPane,
     saveElementConfiguration,
-    updateElementPreview
+    updateElementPreview,
+    updateAllElementValidationStates,
+    updateValidationIfElementTouched,
+    markCurrentElementAsTouched
 } from './element-management.js';
 
 import {
@@ -157,7 +160,10 @@ function setupEventListeners() {
     btnToggleLivePreview?.addEventListener("click", toggleLivePreview);
 
     // Element management events
-    btnAddElement?.addEventListener("click", addNewElement);
+    btnAddElement?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await addNewElement();
+    });
     btnRemoveElement?.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -165,7 +171,10 @@ function setupEventListeners() {
     });
     btnMoveElementUp?.addEventListener("click", moveElementUp);
     btnMoveElementDown?.addEventListener("click", moveElementDown);
-    btnDuplicateElement?.addEventListener("click", duplicateElement);
+    btnDuplicateElement?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await duplicateElement();
+    });
 
     // File selection events
     btnSelectStaticImage?.addEventListener("click", selectStaticImage);
@@ -224,42 +233,62 @@ function setupEventListeners() {
 }
 
 /**
- * Sets up event listeners that trigger preview updates
+ * Sets up event listeners that trigger preview updates and validation
  */
 function setupPreviewUpdateListeners() {
+    // Helper function to update preview and conditionally validate
+    const updatePreviewAndValidation = () => {
+        updateElementPreview();
+        // Mark element as touched on first change, then validate
+        markCurrentElementAsTouched();
+    };
+
     // Text element configuration events
-    document.getElementById('lcd-txt-element-text-format')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-cmb-element-font-family')?.addEventListener('change', updateElementPreview);
-    document.getElementById('lcd-txt-element-font-size')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-font-color')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-width')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-height')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-cmb-element-text-alignment')?.addEventListener('change', updateElementPreview);
+    document.getElementById('lcd-txt-element-text-format')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-cmb-element-font-family')?.addEventListener('change', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-font-size')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-font-color')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-width')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-height')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-cmb-element-text-alignment')?.addEventListener('change', updatePreviewAndValidation);
 
     // Static image element configuration events
-    document.getElementById('lcd-txt-element-static-image-file')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-static-image-width')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-static-image-height')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-static-image-file')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-static-image-width')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-static-image-height')?.addEventListener('input', updatePreviewAndValidation);
 
     // Graph element configuration events
-    document.getElementById('lcd-graph-width')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-graph-height')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-graph-type')?.addEventListener('change', updateElementPreview);
-    document.getElementById('lcd-graph-color')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-graph-stroke-width')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-graph-background-color')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-graph-border-color')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-graph-width')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-graph-height')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-graph-type')?.addEventListener('change', updatePreviewAndValidation);
+    document.getElementById('lcd-graph-color')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-graph-stroke-width')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-graph-background-color')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-graph-border-color')?.addEventListener('input', updatePreviewAndValidation);
 
     // Conditional image element configuration events
-    document.getElementById('lcd-txt-element-conditional-image-images-path')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-conditional-image-width')?.addEventListener('input', updateElementPreview);
-    document.getElementById('lcd-txt-element-conditional-image-height')?.addEventListener('input', updateElementPreview);
+    document.getElementById('lcd-txt-element-conditional-image-images-path')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-conditional-image-width')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-conditional-image-height')?.addEventListener('input', updatePreviewAndValidation);
+
+    // Core element configuration events
+    document.getElementById('lcd-txt-element-name')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-position-x')?.addEventListener('input', updatePreviewAndValidation);
+    document.getElementById('lcd-txt-element-position-y')?.addEventListener('input', updatePreviewAndValidation);
+
+    // Sensor selection events that affect validation
+    document.getElementById('lcd-cmb-sensor-id-selection')?.addEventListener('change', updatePreviewAndValidation);
+    document.getElementById('lcd-cmb-number-sensor-id-selection')?.addEventListener('change', updatePreviewAndValidation);
+    document.getElementById('lcd-cmb-conditional-image-sensor-id-selection')?.addEventListener('change', updatePreviewAndValidation);
 
     // Also update preview when element type changes
     document.getElementById('lcd-cmb-element-type')?.addEventListener('change', () => {
         onElementTypeChange();
-        // Delay preview update to allow config panel to show
-        setTimeout(updateElementPreview, 50);
+        // Delay preview and validation update to allow config panel to show
+        setTimeout(() => {
+            updateElementPreview();
+            updateAllElementValidationStates();
+        }, 50);
     });
 }
 

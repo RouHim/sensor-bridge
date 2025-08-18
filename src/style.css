@@ -158,8 +158,53 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     background-color: transparent;
 }
 
+/* Element validation states */
 .invalid {
     border: 1px solid red;
+    background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+#lcd-designer-placed-elements > li.invalid {
+    border-left: 4px solid #ff4444;
+    background-color: rgba(255, 68, 68, 0.1) !important;
+    color: #ffcccc;
+}
+
+#lcd-designer-placed-elements > li.selected {
+    background-color: var(--selection) !important;
+    color: var(--background);
+}
+
+.designer-element.invalid {
+    border-color: #ff4444 !important;
+    box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+/* Validation locked state - pulsing red effect */
+#lcd-designer-placed-elements > li.validation-locked {
+    animation: validation-lock-pulse 0.6s ease-in-out 3;
+    border-left: 6px solid #ff4444 !important;
+    background-color: rgba(255, 68, 68, 0.3) !important;
+}
+
+@keyframes validation-lock-pulse {
+    0%, 100% { 
+        background-color: rgba(255, 68, 68, 0.3);
+        border-left-color: #ff4444;
+    }
+    50% { 
+        background-color: rgba(255, 68, 68, 0.6);
+        border-left-color: #ff8888;
+    }
+}
+
+/* Cursor feedback for invalid elements */
+#lcd-designer-placed-elements > li.invalid {
+    cursor: help;
+}
+
+#lcd-designer-placed-elements > li.invalid:hover {
+    background-color: rgba(255, 68, 68, 0.2) !important;
 }
 
 #lcd-designer-control-pad-left-right, #lcd-designer-control-pad-up, #lcd-designer-control-pad-down {
