@@ -123,7 +123,9 @@ export function initializeApplication() {
 function setupEventListeners() {
     // Client management events
     cmbRegisteredClients?.addEventListener("change", (event) => {
-        onClientSelected(event.target.options[event.target.selectedIndex]);
+        const selectedIndex = event.target.selectedIndex;
+        const selectedOption = selectedIndex >= 0 ? event.target.options[selectedIndex] : null;
+        onClientSelected(selectedOption);
     });
 
     clientActiveToggle?.addEventListener("change", handleClientActiveToggle);
@@ -267,19 +269,39 @@ function setupPreviewUpdateListeners() {
 async function loadInitialData() {
     try {
         // Load current HTTP port value
-        await loadHttpPort();
+        try {
+            await loadHttpPort();
+        } catch (error) {
+            console.error('Failed to load HTTP port:', error);
+        }
 
         // Load registered clients
-        await loadRegisteredClients();
+        try {
+            await loadRegisteredClients();
+        } catch (error) {
+            console.error('Failed to load registered clients:', error);
+        }
 
         // Load system fonts
-        await loadSystemFonts();
+        try {
+            await loadSystemFonts();
+        } catch (error) {
+            console.error('Failed to load system fonts:', error);
+        }
 
         // Load conditional image repo entries
-        loadConditionalImageRepoEntries();
+        try {
+            loadConditionalImageRepoEntries();
+        } catch (error) {
+            console.error('Failed to load conditional image repo entries:', error);
+        }
 
         // Load sensor data from backend
-        await loadSensorData();
+        try {
+            await loadSensorData();
+        } catch (error) {
+            console.error('Failed to load sensor data:', error);
+        }
 
     } catch (error) {
         console.error('Error loading initial data:', error);

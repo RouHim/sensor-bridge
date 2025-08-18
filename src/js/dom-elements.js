@@ -1,6 +1,17 @@
 // DOM element references for Sensor Bridge application
 
 // Tauri API references
+// Add safety checks for Tauri API availability
+if (!window.__TAURI__ || !window.__TAURI__.core) {
+    console.error('Tauri core API not available');
+    throw new Error('Tauri core API not available - make sure the application is running in Tauri context');
+}
+
+if (!window.__TAURI__.dialog) {
+    console.error('Tauri dialog API not available');
+    throw new Error('Tauri dialog API not available');
+}
+
 export const {invoke} = window.__TAURI__.core;
 export const {convertFileSrc} = window.__TAURI__.core;
 export const {open, save} = window.__TAURI__.dialog;

@@ -56,6 +56,11 @@ export async function loadRegisteredClients() {
         // If no clients, show placeholder
         if (clientList.length === 0) {
             showClientInfoPlaceholder();
+        } else {
+            // Auto-select the first client if there are any clients
+            cmbRegisteredClients.selectedIndex = 1; // Skip the "Select a client..." option
+            const firstOption = cmbRegisteredClients.options[1];
+            onClientSelected(firstOption);
         }
         
     } catch (error) {
