@@ -39,7 +39,6 @@
 - **Frontend**: `src/js/` - ES6 modules (app-state.js, client-management.js, element-management.js)
 - **API**: HTTP server on port 25555, documented in API.md
 - **CLI Rules**: `.clinerules-*` files define mode-specific agent behaviors
-- **Memory Bank**: Use for context tracking and decision logging when available
 
 **Common Patterns**
 - **Tauri Commands**: Add `#[tauri::command]` to Rust functions, register in main.rs, call with `invoke('command_name', params)`
