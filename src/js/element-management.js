@@ -343,6 +343,246 @@ export function dropOnDesignerPane(event) {
 }
 
 /**
+ * Validates a text element configuration
+ * @param {Object} config - Text element configuration
+ * @param {string} elementName - Element name for error reporting
+ * @returns {Array} Array of validation error messages
+ */
+function validateTextElement(config, elementName) {
+    const errors = [];
+    
+    if (!config.sensor_id || config.sensor_id.trim() === '') {
+        errors.push(`${elementName}: Please select a sensor`);
+    }
+    
+    if (!config.format || config.format.trim() === '') {
+        errors.push(`${elementName}: Text format cannot be empty`);
+    }
+    
+    if (!config.font_size || config.font_size <= 0) {
+        errors.push(`${elementName}: Font size must be a positive number`);
+    }
+    
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be a positive number`);
+    }
+    
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be a positive number`);
+    }
+    
+    return errors;
+}
+
+/**
+ * Validates a static image element configuration
+ * @param {Object} config - Static image element configuration
+ * @param {string} elementName - Element name for error reporting
+ * @returns {Array} Array of validation error messages
+ */
+function validateStaticImageElement(config, elementName) {
+    const errors = [];
+    
+    if (!config.image_path || config.image_path.trim() === '') {
+        errors.push(`${elementName}: Please select an image file`);
+    }
+    
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be a positive number`);
+    }
+    
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be a positive number`);
+    }
+    
+    return errors;
+}
+
+/**
+ * Validates a graph element configuration
+ * @param {Object} config - Graph element configuration
+ * @param {string} elementName - Element name for error reporting
+ * @returns {Array} Array of validation error messages
+ */
+function validateGraphElement(config, elementName) {
+    const errors = [];
+    
+    if (!config.sensor_id || config.sensor_id.trim() === '') {
+        errors.push(`${elementName}: Please select a sensor`);
+    }
+    
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be a positive number`);
+    }
+    
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be a positive number`);
+    }
+    
+    if (config.min_sensor_value !== null && config.max_sensor_value !== null) {
+        if (config.min_sensor_value >= config.max_sensor_value) {
+            errors.push(`${elementName}: Minimum sensor value must be less than maximum sensor value`);
+        }
+    }
+    
+    if (!config.graph_stroke_width || config.graph_stroke_width <= 0) {
+        errors.push(`${elementName}: Stroke width must be a positive number`);
+    }
+    
+    return errors;
+}
+
+/**
+ * Validates a conditional image element configuration
+ * @param {Object} config - Conditional image element configuration
+ * @param {string} elementName - Element name for error reporting
+ * @returns {Array} Array of validation error messages
+ */
+function validateConditionalImageElement(config, elementName) {
+    const errors = [];
+    
+    if (!config.sensor_id || config.sensor_id.trim() === '') {
+        errors.push(`${elementName}: Please select a sensor`);
+    }
+    
+    if (!config.images_path || config.images_path.trim() === '') {
+        errors.push(`${elementName}: Please select an images path or catalog entry`);
+    }
+    
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be a positive number`);
+    }
+    
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be a positive number`);
+    }
+    
+    if (config.min_sensor_value >= config.max_sensor_value) {
+        errors.push(`${elementName}: Minimum sensor value must be less than maximum sensor value`);
+    }
+    
+    return errors;
+}
+
+/**
+ * Gets configuration for a specific element by generating it from the stored data or form
+ * @param {Object} element - Element data 
+ * @param {HTMLElement} listElement - The list element DOM node
+ * @returns {Object} Configuration object for the element
+ */
+function getElementConfigForValidation(element, listElement) {
+    // Try to get config from stored data first
+    const configAttr = listElement.getAttribute('data-config');
+    if (configAttr) {
+        try {
+            return JSON.parse(configAttr);
+        } catch (error) {
+            console.warn('Failed to parse element config:', error);
+        }
+    }
+    
+    // If no stored config, generate default config based on type
+    switch (element.element_type) {
+        case ELEMENT_TYPE_TEXT:
+            return {
+                sensor_id: '', // Empty for new elements
+                value_modifier: 'none',
+                format: '{value} {unit}',
+                font_family: 'Arial',
+                font_size: 12,
+                font_color: '#ffffffff',
+                width: 100,
+                height: 20,
+                alignment: 'left'
+            };
+            
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            return {
+                image_path: '', // Empty for new elements
+                width: 100,
+                height: 100
+            };
+            
+        case ELEMENT_TYPE_GRAPH:
+            return {
+                sensor_id: '', // Empty for new elements
+                sensor_values: [],
+                min_sensor_value: null,
+                max_sensor_value: null,
+                width: 200,
+                height: 50,
+                graph_type: 'line',
+                graph_color: '#0066ccff',
+                graph_stroke_width: 2,
+                background_color: '#00000000',
+                border_color: '#ffffff00'
+            };
+            
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            return {
+                sensor_id: '', // Empty for new elements
+                sensor_value: '',
+                images_path: '', // Empty for new elements
+                min_sensor_value: 0.0,
+                max_sensor_value: 100.0,
+                width: 130,
+                height: 25
+            };
+            
+        default:
+            return {};
+    }
+}
+
+/**
+ * Validates all elements in the current configuration
+ * @returns {Array} Array of validation error messages
+ */
+function validateAllElements() {
+    const errors = [];
+    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
+    
+    if (listElements.length === 0) {
+        errors.push('No elements to save. Please add at least one element.');
+        return errors;
+    }
+    
+    listElements.forEach(li => {
+        const element = {
+            id: li.getAttribute(ATTR_ELEMENT_ID),
+            name: li.getAttribute(ATTR_ELEMENT_NAME),
+            element_type: li.getAttribute(ATTR_ELEMENT_TYPE)
+        };
+        
+        const elementName = element.name || `Element ${element.id}`;
+        const configToValidate = getElementConfigForValidation(element, li);
+        
+        switch (element.element_type) {
+            case ELEMENT_TYPE_TEXT:
+                errors.push(...validateTextElement(configToValidate, elementName));
+                break;
+                
+            case ELEMENT_TYPE_STATIC_IMAGE:
+                errors.push(...validateStaticImageElement(configToValidate, elementName));
+                break;
+                
+            case ELEMENT_TYPE_GRAPH:
+                errors.push(...validateGraphElement(configToValidate, elementName));
+                break;
+                
+            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                errors.push(...validateConditionalImageElement(configToValidate, elementName));
+                break;
+                
+            default:
+                errors.push(`${elementName}: Unknown element type: ${element.element_type}`);
+        }
+    });
+    
+    return errors;
+}
+
+/**
  * Saves the current element configuration to the backend
  */
 export async function saveElementConfiguration() {
@@ -355,6 +595,15 @@ export async function saveElementConfiguration() {
     try {
         // First, apply current form values to the selected element
         applyFormToSelectedElement();
+
+        // Validate all elements before saving
+        const validationErrors = validateAllElements();
+        if (validationErrors.length > 0) {
+            const errorMessage = 'Configuration validation failed:\n\n' + validationErrors.join('\n');
+            alert(errorMessage);
+            console.warn('Validation errors:', validationErrors);
+            return;
+        }
 
         const elements = collectAllElements();
 
