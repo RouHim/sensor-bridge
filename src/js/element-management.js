@@ -191,6 +191,20 @@ export async function removeElement() {
         return;
     }
 
+    // Find the element to select after deletion (previous sibling preferred)
+    let elementToSelectAfterDeletion = selectedList.previousElementSibling;
+    if (!elementToSelectAfterDeletion) {
+        // If no previous sibling, try next sibling
+        elementToSelectAfterDeletion = selectedList.nextElementSibling;
+    }
+
+    // Get the corresponding designer element for the element we'll select
+    let designerElementToSelect = null;
+    if (elementToSelectAfterDeletion) {
+        const elementId = elementToSelectAfterDeletion.getAttribute(ATTR_ELEMENT_ID);
+        designerElementToSelect = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+    }
+
     // Use Tauri's dialog plugin instead of browser confirm()
     const confirmRemoval = await window.__TAURI__.dialog.ask(
         'Are you sure you want to remove this element?\n\nThis action cannot be undone.',
@@ -206,12 +220,15 @@ export async function removeElement() {
     selectedList.remove();
     selectedDesigner.remove();
 
-    // Clear selection
-    setSelectedListElement(null);
-    setSelectedDesignerElement(null);
-
-    // Clear form
-    clearElementForm();
+    // Auto-select the next best element if available
+    if (elementToSelectAfterDeletion && designerElementToSelect) {
+        selectElement(elementToSelectAfterDeletion, designerElementToSelect);
+    } else {
+        // No elements left to select
+        setSelectedListElement(null);
+        setSelectedDesignerElement(null);
+        clearElementForm();
+    }
 }
 
 /**
