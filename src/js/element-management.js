@@ -1,5 +1,14 @@
 // Element management functionality for LCD display elements
 
+// Global drag state management
+const globalDragState = {
+    isDragging: false,
+    currentElement: null,
+    startPosition: { x: 0, y: 0 },
+    initialPosition: { x: 0, y: 0 },
+    deferredOperations: []
+};
+
 import {
     ELEMENT_TYPE_TEXT,
     ELEMENT_TYPE_STATIC_IMAGE,
@@ -71,7 +80,7 @@ import {
  * Updates the display design pane dimensions based on current resolution settings
  */
 export function updateDisplayDesignPaneDimensions() {
-    if (!designerPane) return;
+    if (!designerPane) {return;}
 
     const width = parseInt(txtDisplayResolutionWidth.value);
     const height = parseInt(txtDisplayResolutionHeight.value);
@@ -81,6 +90,45 @@ export function updateDisplayDesignPaneDimensions() {
     designerPane.style.height = `${height}px`;
 
     console.log(`Updated display design pane dimensions to ${width}x${height}`);
+}
+
+/**
+ * Initializes global drag safety mechanisms
+ */
+export function initializeDragSafety() {
+    // Window-level mouse up handler to catch missed mouseup events
+    window.addEventListener('mouseup', () => {
+        if (globalDragState.isDragging) {
+            console.warn('Window mouseup detected during drag - cleaning up drag state');
+            cleanupAnyStuckDragStates();
+            
+            // If we have a current element, execute deferred operations
+            if (globalDragState.currentElement) {
+                const element = globalDragState.currentElement;
+                const currentX = parseInt(element.style.left) || 0;
+                const currentY = parseInt(element.style.top) || 0;
+                executeDeferredDragOperations(element, currentX, currentY);
+            }
+        }
+    });
+
+    // Page visibility change handler (user switches tabs/windows during drag)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && globalDragState.isDragging) {
+            console.warn('Page visibility changed during drag - cleaning up drag state');
+            cleanupAnyStuckDragStates();
+        }
+    });
+
+    // Escape key handler to cancel drag operations
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && globalDragState.isDragging) {
+            console.log('Escape key pressed during drag - cancelling drag operation');
+            cleanupAnyStuckDragStates();
+        }
+    });
+
+    console.log('Drag safety mechanisms initialized');
 }
 
 /**
@@ -102,30 +150,30 @@ export function onElementTypeChange() {
 
     // Show relevant config panel and set defaults only when changing types
     switch (selectedType) {
-        case ELEMENT_TYPE_TEXT:
-            layoutTextConfig.style.display = 'block';
-            if (isChangingType || !selectedList) {
-                setDefaultTextConfig();
-            }
-            break;
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            layoutStaticImageConfig.style.display = 'block';
-            if (isChangingType || !selectedList) {
-                setDefaultStaticImageConfig();
-            }
-            break;
-        case ELEMENT_TYPE_GRAPH:
-            layoutGraphConfig.style.display = 'block';
-            if (isChangingType || !selectedList) {
-                setDefaultGraphConfig();
-            }
-            break;
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            layoutConditionalImageConfig.style.display = 'block';
-            if (isChangingType || !selectedList) {
-                setDefaultConditionalImageConfig();
-            }
-            break;
+    case ELEMENT_TYPE_TEXT:
+        layoutTextConfig.style.display = 'block';
+        if (isChangingType || !selectedList) {
+            setDefaultTextConfig();
+        }
+        break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        layoutStaticImageConfig.style.display = 'block';
+        if (isChangingType || !selectedList) {
+            setDefaultStaticImageConfig();
+        }
+        break;
+    case ELEMENT_TYPE_GRAPH:
+        layoutGraphConfig.style.display = 'block';
+        if (isChangingType || !selectedList) {
+            setDefaultGraphConfig();
+        }
+        break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        layoutConditionalImageConfig.style.display = 'block';
+        if (isChangingType || !selectedList) {
+            setDefaultConditionalImageConfig();
+        }
+        break;
     }
 
     if (selectedList && selectedDesigner) {
@@ -241,7 +289,7 @@ export async function removeElement() {
         }
     );
 
-    if (!confirmRemoval) return;
+    if (!confirmRemoval) {return;}
 
     // Remove from DOM
     selectedList.remove();
@@ -263,7 +311,7 @@ export async function removeElement() {
  */
 export function moveElementUp() {
     const selectedList = getSelectedListElement();
-    if (!selectedList || !selectedList.previousElementSibling) return;
+    if (!selectedList || !selectedList.previousElementSibling) {return;}
 
     selectedList.parentNode.insertBefore(selectedList, selectedList.previousElementSibling);
 }
@@ -273,7 +321,7 @@ export function moveElementUp() {
  */
 export function moveElementDown() {
     const selectedList = getSelectedListElement();
-    if (!selectedList || !selectedList.nextElementSibling) return;
+    if (!selectedList || !selectedList.nextElementSibling) {return;}
 
     selectedList.parentNode.insertBefore(selectedList.nextElementSibling, selectedList);
 }
@@ -350,18 +398,18 @@ export function moveElementControlPad(direction) {
     let newY = currentY;
 
     switch (direction) {
-        case 'up':
-            newY = Math.max(0, currentY - moveUnit);
-            break;
-        case 'down':
-            newY = currentY + moveUnit;
-            break;
-        case 'left':
-            newX = Math.max(0, currentX - moveUnit);
-            break;
-        case 'right':
-            newX = currentX + moveUnit;
-            break;
+    case 'up':
+        newY = Math.max(0, currentY - moveUnit);
+        break;
+    case 'down':
+        newY = currentY + moveUnit;
+        break;
+    case 'left':
+        newX = Math.max(0, currentX - moveUnit);
+        break;
+    case 'right':
+        newX = currentX + moveUnit;
+        break;
     }
 
     // Update element position
@@ -384,12 +432,88 @@ export function changeMoveUnit() {
 }
 
 /**
- * Handles drop events on designer pane
+ * Moves element to a new position
  */
-export function dropOnDesignerPane(event) {
-    event.preventDefault();
-    // Implementation for drag and drop functionality
-    console.log('Drop event on designer pane');
+function updateElementPosition(element, x, y) {
+    element.style.left = x + 'px';
+    element.style.top = y + 'px';
+    element.setAttribute(ATTR_ELEMENT_POSITION_X, x);
+    element.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
+
+    // Update corresponding list element
+    const listElement = document.getElementById(LIST_ID_PREFIX + element.getAttribute(ATTR_ELEMENT_ID));
+    if (listElement) {
+        listElement.setAttribute(ATTR_ELEMENT_POSITION_X, x);
+        listElement.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
+    }
+}
+
+/**
+ * Fast position update for form inputs during drag (no attribute updates)
+ */
+function updateFormPositionInputsOnly(x, y) {
+    if (txtElementPositionX) {txtElementPositionX.value = x;}
+    if (txtElementPositionY) {txtElementPositionY.value = y;}
+}
+
+/**
+ * Executes deferred operations after drag completion
+ */
+function executeDeferredDragOperations(element, x, y) {
+    console.log('Executing deferred drag operations');
+    
+    // Small delay to ensure drag operations are fully complete
+    setTimeout(() => {
+        // Update element position with all attributes
+        updateElementPosition(element, x, y);
+        
+        // Update form to reflect all changes
+        updateElementForm();
+        
+        // Mark element as touched for validation
+        markCurrentElementAsTouched();
+        
+        // Apply form values and trigger preview update
+        applyFormToSelectedElement();
+        
+        console.log('Deferred drag operations completed');
+    }, 10); // 10ms delay for smooth completion
+}
+
+/**
+ * Resets global drag state safely
+ */
+function resetGlobalDragState() {
+    const wasInDragMode = globalDragState.isDragging;
+    
+    globalDragState.isDragging = false;
+    globalDragState.currentElement = null;
+    globalDragState.startPosition = { x: 0, y: 0 };
+    globalDragState.initialPosition = { x: 0, y: 0 };
+    globalDragState.deferredOperations = [];
+    
+    if (wasInDragMode) {
+        console.log('Global drag state reset');
+    }
+}
+
+/**
+ * Emergency cleanup for stuck drag states
+ */
+function cleanupAnyStuckDragStates() {
+    // Remove dragging class from any elements that might have it
+    const draggingElements = document.querySelectorAll('.designer-element.dragging');
+    draggingElements.forEach(el => {
+        el.classList.remove('dragging');
+        el.style.cursor = '';
+    });
+    
+    // Reset global state
+    resetGlobalDragState();
+    
+    if (draggingElements.length > 0) {
+        console.log(`Cleaned up ${draggingElements.length} stuck drag states`);
+    }
 }
 
 /**
@@ -533,54 +657,54 @@ function getElementConfigForValidation(element, listElement) {
     
     // If no stored config, generate default config based on type
     switch (element.element_type) {
-        case ELEMENT_TYPE_TEXT:
-            return {
-                sensor_id: '', // Empty for new elements
-                value_modifier: 'none',
-                format: '{value} {unit}',
-                font_family: 'Arial',
-                font_size: 12,
-                font_color: '#ffffffff',
-                width: 100,
-                height: 20,
-                alignment: 'left'
-            };
+    case ELEMENT_TYPE_TEXT:
+        return {
+            sensor_id: '', // Empty for new elements
+            value_modifier: 'none',
+            format: '{value} {unit}',
+            font_family: 'Arial',
+            font_size: 12,
+            font_color: '#ffffffff',
+            width: 100,
+            height: 20,
+            alignment: 'left'
+        };
             
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            return {
-                image_path: '', // Empty for new elements
-                width: 100,
-                height: 100
-            };
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        return {
+            image_path: '', // Empty for new elements
+            width: 100,
+            height: 100
+        };
             
-        case ELEMENT_TYPE_GRAPH:
-            return {
-                sensor_id: '', // Empty for new elements
-                sensor_values: [],
-                min_sensor_value: null,
-                max_sensor_value: null,
-                width: 200,
-                height: 50,
-                graph_type: 'line',
-                graph_color: '#0066ccff',
-                graph_stroke_width: 2,
-                background_color: '#00000000',
-                border_color: '#ffffff00'
-            };
+    case ELEMENT_TYPE_GRAPH:
+        return {
+            sensor_id: '', // Empty for new elements
+            sensor_values: [],
+            min_sensor_value: null,
+            max_sensor_value: null,
+            width: 200,
+            height: 50,
+            graph_type: 'line',
+            graph_color: '#0066ccff',
+            graph_stroke_width: 2,
+            background_color: '#00000000',
+            border_color: '#ffffff00'
+        };
             
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            return {
-                sensor_id: '', // Empty for new elements
-                sensor_value: '',
-                images_path: '', // Empty for new elements
-                min_sensor_value: 0.0,
-                max_sensor_value: 100.0,
-                width: 130,
-                height: 25
-            };
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        return {
+            sensor_id: '', // Empty for new elements
+            sensor_value: '',
+            images_path: '', // Empty for new elements
+            min_sensor_value: 0.0,
+            max_sensor_value: 100.0,
+            width: 130,
+            height: 25
+        };
             
-        default:
-            return {};
+    default:
+        return {};
     }
 }
 
@@ -608,24 +732,24 @@ function validateAllElements() {
         const configToValidate = getElementConfigForValidation(element, li);
         
         switch (element.element_type) {
-            case ELEMENT_TYPE_TEXT:
-                errors.push(...validateTextElement(configToValidate, elementName));
-                break;
+        case ELEMENT_TYPE_TEXT:
+            errors.push(...validateTextElement(configToValidate, elementName));
+            break;
                 
-            case ELEMENT_TYPE_STATIC_IMAGE:
-                errors.push(...validateStaticImageElement(configToValidate, elementName));
-                break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            errors.push(...validateStaticImageElement(configToValidate, elementName));
+            break;
                 
-            case ELEMENT_TYPE_GRAPH:
-                errors.push(...validateGraphElement(configToValidate, elementName));
-                break;
+        case ELEMENT_TYPE_GRAPH:
+            errors.push(...validateGraphElement(configToValidate, elementName));
+            break;
                 
-            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-                errors.push(...validateConditionalImageElement(configToValidate, elementName));
-                break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            errors.push(...validateConditionalImageElement(configToValidate, elementName));
+            break;
                 
-            default:
-                errors.push(`${elementName}: Unknown element type: ${element.element_type}`);
+        default:
+            errors.push(`${elementName}: Unknown element type: ${element.element_type}`);
         }
     });
     
@@ -654,24 +778,24 @@ function validateCurrentElement() {
     let errors = [];
     
     switch (element.element_type) {
-        case ELEMENT_TYPE_TEXT:
-            errors = validateTextElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_TEXT:
+        errors = validateTextElement(configToValidate, elementName);
+        break;
             
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            errors = validateStaticImageElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        errors = validateStaticImageElement(configToValidate, elementName);
+        break;
             
-        case ELEMENT_TYPE_GRAPH:
-            errors = validateGraphElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_GRAPH:
+        errors = validateGraphElement(configToValidate, elementName);
+        break;
             
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            errors = validateConditionalImageElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        errors = validateConditionalImageElement(configToValidate, elementName);
+        break;
             
-        default:
-            errors = [`${elementName}: Unknown element type: ${element.element_type}`];
+    default:
+        errors = [`${elementName}: Unknown element type: ${element.element_type}`];
     }
     
     return {
@@ -730,24 +854,24 @@ function validateElementDirectly(listElement) {
     let errors = [];
     
     switch (element.element_type) {
-        case ELEMENT_TYPE_TEXT:
-            errors = validateTextElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_TEXT:
+        errors = validateTextElement(configToValidate, elementName);
+        break;
             
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            errors = validateStaticImageElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        errors = validateStaticImageElement(configToValidate, elementName);
+        break;
             
-        case ELEMENT_TYPE_GRAPH:
-            errors = validateGraphElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_GRAPH:
+        errors = validateGraphElement(configToValidate, elementName);
+        break;
             
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            errors = validateConditionalImageElement(configToValidate, elementName);
-            break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        errors = validateConditionalImageElement(configToValidate, elementName);
+        break;
             
-        default:
-            errors = [`${elementName}: Unknown element type: ${element.element_type}`];
+    default:
+        errors = [`${elementName}: Unknown element type: ${element.element_type}`];
     }
     
     return {
@@ -756,20 +880,14 @@ function validateElementDirectly(listElement) {
     };
 }
 
-/**
- * Updates validation state for all elements
- */
-export function updateAllElementValidationStates() {
-    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
-    listElements.forEach(li => updateElementValidationState(li));
-}
+
 
 /**
  * Updates validation only if the current element has been "touched" (modified after creation)
  */
 export function updateValidationIfElementTouched() {
     const currentElement = getSelectedListElement();
-    if (!currentElement) return;
+    if (!currentElement) {return;}
     
     // Check if element has been marked as "touched"
     const isTouched = currentElement.getAttribute('data-touched') === 'true';
@@ -780,9 +898,25 @@ export function updateValidationIfElementTouched() {
 }
 
 /**
+ * Updates validation states for all elements in the list
+ */
+export function updateAllElementValidationStates() {
+    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
+    listElements.forEach(listElement => {
+        updateElementValidationState(listElement);
+    });
+}
+
+/**
  * Marks the current element as "touched" (user has made changes)
  */
 export function markCurrentElementAsTouched() {
+    // Skip validation operations during drag for performance
+    if (globalDragState.isDragging) {
+        console.log('Skipping markCurrentElementAsTouched during drag operation');
+        return;
+    }
+
     const currentElement = getSelectedListElement();
     if (currentElement) {
         currentElement.setAttribute('data-touched', 'true');
@@ -877,18 +1011,18 @@ export function loadDisplayElements(elements = []) {
         // Determine which config to use based on element type
         let config = null;
         switch (elementType) {
-            case ELEMENT_TYPE_TEXT:
-                config = text_config;
-                break;
-            case ELEMENT_TYPE_STATIC_IMAGE:
-                config = image_config;
-                break;
-            case ELEMENT_TYPE_GRAPH:
-                config = graph_config;
-                break;
-            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-                config = conditional_image_config;
-                break;
+        case ELEMENT_TYPE_TEXT:
+            config = text_config;
+            break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            config = image_config;
+            break;
+        case ELEMENT_TYPE_GRAPH:
+            config = graph_config;
+            break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            config = conditional_image_config;
+            break;
         }
 
         // Store configuration if available
@@ -942,30 +1076,60 @@ function clearAllElements() {
     clearElementForm();
 }
 
+// Global drag state management
+let isDragModeActive = false;
+
+/**
+ * Sets the global drag mode state
+ * @param {boolean} active - Whether drag mode is active
+ */
+function setDragMode(active) {
+    isDragModeActive = active;
+    if (active) {
+        console.log('🎯 Drag mode activated - preview updates disabled');
+    } else {
+        console.log('✅ Drag mode deactivated - preview updates enabled');
+    }
+}
+
+/**
+ * Checks if drag mode is currently active
+ * @returns {boolean} True if drag mode is active
+ */
+function isDragMode() {
+    return isDragModeActive;
+}
+
 /**
  * Updates the preview of the currently selected element
  */
 export async function updateElementPreview() {
+    // Skip expensive preview rendering during drag operations
+    if (isDragMode()) {
+        console.log('⏭️ Skipping preview update - drag mode active');
+        return;
+    }
+
     const selectedDesigner = getSelectedDesignerElement();
-    if (!selectedDesigner) return;
+    if (!selectedDesigner) {return;}
 
     const elementType = selectedDesigner.getAttribute(ATTR_ELEMENT_TYPE);
     let preview;
 
     switch (elementType) {
-        case ELEMENT_TYPE_TEXT:
-            preview = renderTextElementPreview(getTextElementConfig());
-            break;
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            preview = renderStaticImageElementPreview(getStaticImageElementConfig());
-            break;
-        case ELEMENT_TYPE_GRAPH:
-            preview = renderGraphElementPreview(getGraphElementConfig());
-            break;
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            const elementId = selectedDesigner.getAttribute(ATTR_ELEMENT_ID);
-            preview = renderConditionalImageElementPreview(getConditionalImageElementConfig(), elementId);
-            break;
+    case ELEMENT_TYPE_TEXT:
+        preview = renderTextElementPreview(getTextElementConfig());
+        break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        preview = renderStaticImageElementPreview(getStaticImageElementConfig());
+        break;
+    case ELEMENT_TYPE_GRAPH:
+        preview = renderGraphElementPreview(getGraphElementConfig());
+        break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        const elementId = selectedDesigner.getAttribute(ATTR_ELEMENT_ID);
+        preview = renderConditionalImageElementPreview(getConditionalImageElementConfig(), elementId);
+        break;
     }
 
     if (preview) {
@@ -1039,18 +1203,18 @@ function createDesignerElement(id, name, type, x, y, config = null) {
     // Use renderers to show previews
     let preview;
     switch (type) {
-        case ELEMENT_TYPE_TEXT:
-            preview = renderTextElementPreview(config || getTextElementConfig());
-            break;
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            preview = renderStaticImageElementPreview(config || getStaticImageElementConfig());
-            break;
-        case ELEMENT_TYPE_GRAPH:
-            preview = renderGraphElementPreview(config || getGraphElementConfig());
-            break;
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig(), id);
-            break;
+    case ELEMENT_TYPE_TEXT:
+        preview = renderTextElementPreview(config || getTextElementConfig());
+        break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        preview = renderStaticImageElementPreview(config || getStaticImageElementConfig());
+        break;
+    case ELEMENT_TYPE_GRAPH:
+        preview = renderGraphElementPreview(config || getGraphElementConfig());
+        break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig(), id);
+        break;
     }
 
     if (preview) {
@@ -1068,7 +1232,7 @@ async function selectElement(listElement, designerElement, skipValidation = fals
         // Check if we can leave the current element (if any)
         const canLeave = await canLeaveCurrentElement();
         if (!canLeave) {
-            return; // Prevent selection change
+            return false; // Prevent selection change
         }
     }
 
@@ -1083,6 +1247,12 @@ async function selectElement(listElement, designerElement, skipValidation = fals
     listElement.classList.add('selected');
     designerElement.classList.add('selected');
 
+    // Make designer pane focusable for keyboard events
+    if (designerPane) {
+        designerPane.setAttribute('tabindex', '0');
+        // Note: Focus removed to prevent jumping to designer pane when selecting from list
+    }
+
     // Update form
     updateElementForm();
     
@@ -1090,6 +1260,8 @@ async function selectElement(listElement, designerElement, skipValidation = fals
     if (!skipValidationDisplay) {
         updateElementValidationState(listElement);
     }
+
+    return true; // Selection successful
 }
 
 /**
@@ -1100,6 +1272,14 @@ async function canLeaveCurrentElement() {
     const currentElement = getSelectedListElement();
     if (!currentElement) {
         return true; // No current element, can select anything
+    }
+    
+    // Check if element still exists in DOM (fixes bug where validation dialog appears for deleted elements)
+    if (!currentElement.isConnected) {
+        // Element was deleted, clear selection state and allow proceeding
+        setSelectedListElement(null);
+        setSelectedDesignerElement(null);
+        return true;
     }
 
     // Apply current form values first
@@ -1167,7 +1347,7 @@ async function showValidationDialog(element, validationResult) {
     const dialogMessage = `🔒 Cannot leave "${elementName}" - Validation Required\n\n` +
         `Issues found:\n${errorList}\n\n` +
         `${helpText}\n\n` +
-        `What would you like to do?`;
+        'What would you like to do?';
 
     try {
         // Use Tauri's ask dialog with custom options
@@ -1187,7 +1367,7 @@ async function showValidationDialog(element, validationResult) {
         // Fallback to simple confirm dialog
         return confirm(
             `${dialogMessage}\n\n` +
-            `Click OK to fix issues, or Cancel to delete the element.`
+            'Click OK to fix issues, or Cancel to delete the element.'
         ) === false; // Invert: Cancel = delete (true), OK = fix (false)
     }
 }
@@ -1255,7 +1435,7 @@ async function deleteInvalidElement(element) {
         // Fallback to basic confirm
         if (confirm(`Delete "${elementName}"? This cannot be undone.`)) {
             const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
-            if (designerElement) designerElement.remove();
+            if (designerElement) {designerElement.remove();}
             element.remove();
             setSelectedListElement(null);
             setSelectedDesignerElement(null);
@@ -1293,9 +1473,9 @@ function clearElementForm() {
  * Sets default values for text element configuration
  */
 function setDefaultTextConfig() {
-    if (cmbTextSensorIdSelection) cmbTextSensorIdSelection.value = '';
-    if (cmbTextSensorValueModifier) cmbTextSensorValueModifier.value = 'none';
-    if (txtTextFormat) txtTextFormat.value = '{value} {unit}';
+    if (cmbTextSensorIdSelection) {cmbTextSensorIdSelection.value = '';}
+    if (cmbTextSensorValueModifier) {cmbTextSensorValueModifier.value = 'none';}
+    if (txtTextFormat) {txtTextFormat.value = '{value} {unit}';}
     if (cmbTextFontFamily) {
         // Try to set Arial as default, fallback to first available font
         const options = cmbTextFontFamily.options;
@@ -1312,48 +1492,48 @@ function setDefaultTextConfig() {
             cmbTextFontFamily.value = options[0].value;
         }
     }
-    if (txtTextFontSize) txtTextFontSize.value = '12';
-    if (txtTextFontColor) txtTextFontColor.value = '#ffffffff';
-    if (txtTextWidth) txtTextWidth.value = '100';
-    if (txtTextHeight) txtTextHeight.value = '20';
-    if (cmbTextAlignment) cmbTextAlignment.value = 'left';
+    if (txtTextFontSize) {txtTextFontSize.value = '12';}
+    if (txtTextFontColor) {txtTextFontColor.value = '#ffffffff';}
+    if (txtTextWidth) {txtTextWidth.value = '100';}
+    if (txtTextHeight) {txtTextHeight.value = '20';}
+    if (cmbTextAlignment) {cmbTextAlignment.value = 'left';}
 }
 
 /**
  * Sets default values for static image element configuration
  */
 function setDefaultStaticImageConfig() {
-    if (txtStaticImageFile) txtStaticImageFile.value = '';
-    if (txtStaticImageWidth) txtStaticImageWidth.value = '100';
-    if (txtStaticImageHeight) txtStaticImageHeight.value = '100';
+    if (txtStaticImageFile) {txtStaticImageFile.value = '';}
+    if (txtStaticImageWidth) {txtStaticImageWidth.value = '100';}
+    if (txtStaticImageHeight) {txtStaticImageHeight.value = '100';}
 }
 
 /**
  * Sets default values for graph element configuration
  */
 function setDefaultGraphConfig() {
-    if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = '';
-    if (txtGraphMinValue) txtGraphMinValue.value = ''; // Leave empty for auto-scaling
-    if (txtGraphMaxValue) txtGraphMaxValue.value = ''; // Leave empty for auto-scaling
-    if (txtGraphWidth) txtGraphWidth.value = '200';
-    if (txtGraphHeight) txtGraphHeight.value = '50';
-    if (cmbGraphType) cmbGraphType.value = 'line';
-    if (txtGraphColor) txtGraphColor.value = '#0066ccff'; // Nice blue color with alpha
-    if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = '2'; // Better visibility
-    if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = '#00000000'; // Transparent
-    if (txtGraphBorderColor) txtGraphBorderColor.value = '#ffffff00'; // Transparent border
+    if (cmbGraphSensorIdSelection) {cmbGraphSensorIdSelection.value = '';}
+    if (txtGraphMinValue) {txtGraphMinValue.value = '';} // Leave empty for auto-scaling
+    if (txtGraphMaxValue) {txtGraphMaxValue.value = '';} // Leave empty for auto-scaling
+    if (txtGraphWidth) {txtGraphWidth.value = '200';}
+    if (txtGraphHeight) {txtGraphHeight.value = '50';}
+    if (cmbGraphType) {cmbGraphType.value = 'line';}
+    if (txtGraphColor) {txtGraphColor.value = '#0066ccff';} // Nice blue color with alpha
+    if (txtGraphStrokeWidth) {txtGraphStrokeWidth.value = '2';} // Better visibility
+    if (txtGraphBackgroundColor) {txtGraphBackgroundColor.value = '#00000000';} // Transparent
+    if (txtGraphBorderColor) {txtGraphBorderColor.value = '#ffffff00';} // Transparent border
 }
 
 /**
  * Sets default values for conditional image element configuration
  */
 function setDefaultConditionalImageConfig() {
-    if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = '';
-    if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = '';
-    if (txtConditionalImageMinValue) txtConditionalImageMinValue.value = '0';
-    if (txtConditionalImageMaxValue) txtConditionalImageMaxValue.value = '100';
-    if (txtConditionalImageWidth) txtConditionalImageWidth.value = '130'; // Match backend default
-    if (txtConditionalImageHeight) txtConditionalImageHeight.value = '25'; // Match backend default
+    if (cmbConditionalImageSensorIdSelection) {cmbConditionalImageSensorIdSelection.value = '';}
+    if (txtConditionalImageImagesPath) {txtConditionalImageImagesPath.value = '';}
+    if (txtConditionalImageMinValue) {txtConditionalImageMinValue.value = '0';}
+    if (txtConditionalImageMaxValue) {txtConditionalImageMaxValue.value = '100';}
+    if (txtConditionalImageWidth) {txtConditionalImageWidth.value = '130';} // Match backend default
+    if (txtConditionalImageHeight) {txtConditionalImageHeight.value = '25';} // Match backend default
 }
 
 /**
@@ -1361,7 +1541,7 @@ function setDefaultConditionalImageConfig() {
  */
 function updateElementForm() {
     const selectedList = getSelectedListElement();
-    if (!selectedList) return;
+    if (!selectedList) {return;}
 
     // Load basic properties with fallbacks to current form values
     txtElementName.value = selectedList.getAttribute(ATTR_ELEMENT_NAME) || txtElementName.value || '';
@@ -1390,61 +1570,67 @@ function updateElementForm() {
  */
 function loadConfigIntoForm(config, elementType) {
     switch (elementType) {
-        case ELEMENT_TYPE_TEXT:
-            if (cmbTextSensorIdSelection) cmbTextSensorIdSelection.value = config.sensor_id || '';
-            if (cmbTextSensorValueModifier) cmbTextSensorValueModifier.value = config.value_modifier || 'none';
-            if (txtTextFormat) txtTextFormat.value = config.format || '{value} {unit}';
-            if (cmbTextFontFamily) cmbTextFontFamily.value = config.font_family || 'Arial';
-            if (txtTextFontSize) txtTextFontSize.value = config.font_size || 12;
-            if (txtTextFontColor) txtTextFontColor.value = config.font_color || '#ffffffff';
-            if (txtTextWidth) txtTextWidth.value = config.width || 100;
-            if (txtTextHeight) txtTextHeight.value = config.height || 20;
-            if (cmbTextAlignment) cmbTextAlignment.value = config.alignment || 'left';
-            break;
+    case ELEMENT_TYPE_TEXT:
+        if (cmbTextSensorIdSelection) {cmbTextSensorIdSelection.value = config.sensor_id || '';}
+        if (cmbTextSensorValueModifier) {cmbTextSensorValueModifier.value = config.value_modifier || 'none';}
+        if (txtTextFormat) {txtTextFormat.value = config.format || '{value} {unit}';}
+        if (cmbTextFontFamily) {cmbTextFontFamily.value = config.font_family || 'Arial';}
+        if (txtTextFontSize) {txtTextFontSize.value = config.font_size || 12;}
+        if (txtTextFontColor) {txtTextFontColor.value = config.font_color || '#ffffffff';}
+        if (txtTextWidth) {txtTextWidth.value = config.width || 100;}
+        if (txtTextHeight) {txtTextHeight.value = config.height || 20;}
+        if (cmbTextAlignment) {cmbTextAlignment.value = config.alignment || 'left';}
+        break;
 
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            if (txtStaticImageFile) txtStaticImageFile.value = config.image_path || '';
-            if (txtStaticImageWidth) txtStaticImageWidth.value = config.width || 100;
-            if (txtStaticImageHeight) txtStaticImageHeight.value = config.height || 100;
-            break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        if (txtStaticImageFile) {txtStaticImageFile.value = config.image_path || '';}
+        if (txtStaticImageWidth) {txtStaticImageWidth.value = config.width || 100;}
+        if (txtStaticImageHeight) {txtStaticImageHeight.value = config.height || 100;}
+        break;
 
-        case ELEMENT_TYPE_GRAPH:
-            if (cmbGraphSensorIdSelection) cmbGraphSensorIdSelection.value = config.sensor_id || '';
-            if (txtGraphMinValue) txtGraphMinValue.value = config.min_sensor_value || '';
-            if (txtGraphMaxValue) txtGraphMaxValue.value = config.max_sensor_value || '';
-            if (txtGraphWidth) txtGraphWidth.value = config.width || 200;
-            if (txtGraphHeight) txtGraphHeight.value = config.height || 50;
-            if (cmbGraphType) cmbGraphType.value = config.graph_type || 'line';
-            if (txtGraphColor) txtGraphColor.value = config.graph_color || '#0066ccff';
-            if (txtGraphStrokeWidth) txtGraphStrokeWidth.value = config.graph_stroke_width || 2;
-            if (txtGraphBackgroundColor) txtGraphBackgroundColor.value = config.background_color || '#00000000';
-            if (txtGraphBorderColor) txtGraphBorderColor.value = config.border_color || '#ffffff00';
-            break;
+    case ELEMENT_TYPE_GRAPH:
+        if (cmbGraphSensorIdSelection) {cmbGraphSensorIdSelection.value = config.sensor_id || '';}
+        if (txtGraphMinValue) {txtGraphMinValue.value = config.min_sensor_value || '';}
+        if (txtGraphMaxValue) {txtGraphMaxValue.value = config.max_sensor_value || '';}
+        if (txtGraphWidth) {txtGraphWidth.value = config.width || 200;}
+        if (txtGraphHeight) {txtGraphHeight.value = config.height || 50;}
+        if (cmbGraphType) {cmbGraphType.value = config.graph_type || 'line';}
+        if (txtGraphColor) {txtGraphColor.value = config.graph_color || '#0066ccff';}
+        if (txtGraphStrokeWidth) {txtGraphStrokeWidth.value = config.graph_stroke_width || 2;}
+        if (txtGraphBackgroundColor) {txtGraphBackgroundColor.value = config.background_color || '#00000000';}
+        if (txtGraphBorderColor) {txtGraphBorderColor.value = config.border_color || '#ffffff00';}
+        break;
 
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            if (cmbConditionalImageSensorIdSelection) cmbConditionalImageSensorIdSelection.value = config.sensor_id || '';
-            if (txtConditionalImageImagesPath) txtConditionalImageImagesPath.value = config.images_path || '';
-            if (txtConditionalImageWidth) txtConditionalImageWidth.value = config.width || 130;
-            if (txtConditionalImageHeight) txtConditionalImageHeight.value = config.height || 25;
-            break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        if (cmbConditionalImageSensorIdSelection) {cmbConditionalImageSensorIdSelection.value = config.sensor_id || '';}
+        if (txtConditionalImageImagesPath) {txtConditionalImageImagesPath.value = config.images_path || '';}
+        if (txtConditionalImageWidth) {txtConditionalImageWidth.value = config.width || 130;}
+        if (txtConditionalImageHeight) {txtConditionalImageHeight.value = config.height || 25;}
+        break;
     }
 }
 
 /**
- * Moves element to a new position
+ * Fast visual-only position update during drag (no DOM attributes or form updates)
+ * @param {HTMLElement} element - Designer element to move
+ * @param {number} x - New X position
+ * @param {number} y - New Y position
  */
-function updateElementPosition(element, x, y) {
+function updateElementPositionVisual(element, x, y) {
     element.style.left = x + 'px';
     element.style.top = y + 'px';
-    element.setAttribute(ATTR_ELEMENT_POSITION_X, x);
-    element.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
+}
 
-    // Update corresponding list element
-    const listElement = document.getElementById(LIST_ID_PREFIX + element.getAttribute(ATTR_ELEMENT_ID));
-    if (listElement) {
-        listElement.setAttribute(ATTR_ELEMENT_POSITION_X, x);
-        listElement.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
-    }
+/**
+ * Fast form input updates during drag (no validation or preview updates)
+ * @param {number} x - New X position
+ * @param {number} y - New Y position
+ */
+function updateFormPositionInputs(x, y) {
+    const posXInput = document.getElementById('lcd-txt-element-position-x');
+    const posYInput = document.getElementById('lcd-txt-element-position-y');
+    if (posXInput) {posXInput.value = x;}
+    if (posYInput) {posYInput.value = y;}
 }
 
 function setupElementEventHandlers(listElement, designerElement) {
@@ -1452,9 +1638,134 @@ function setupElementEventHandlers(listElement, designerElement) {
         event.preventDefault();
         await selectElement(listElement, designerElement);
     });
+    
     designerElement.addEventListener('click', async (event) => {
         event.preventDefault();
         await selectElement(listElement, designerElement);
+    });
+
+    // Optimized drag and drop functionality
+    const localDragState = {
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        initialX: 0,
+        initialY: 0
+    };
+
+    designerElement.addEventListener('mousedown', async (event) => {
+        // Only start drag if element is selected or can be selected
+        const currentSelected = getSelectedDesignerElement();
+        if (currentSelected !== designerElement) {
+            const canSelect = await selectElement(listElement, designerElement);
+            if (!canSelect) {return;} // Validation prevented selection
+        }
+
+        localDragState.isDragging = false;
+        localDragState.startX = event.clientX;
+        localDragState.startY = event.clientY;
+        localDragState.initialX = parseInt(designerElement.style.left) || 0;
+        localDragState.initialY = parseInt(designerElement.style.top) || 0;
+
+        // Add visual feedback for potential drag
+        designerElement.style.cursor = 'grabbing';
+        
+        event.preventDefault();
+    });
+
+    designerElement.addEventListener('mousemove', (event) => {
+        if (event.buttons !== 1) {return;} // Only drag with left mouse button
+
+        const deltaX = event.clientX - localDragState.startX;
+        const deltaY = event.clientY - localDragState.startY;
+
+        // Start dragging if moved more than threshold
+        if (!localDragState.isDragging && (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)) {
+            localDragState.isDragging = true;
+            
+            // Set global drag state to disable expensive operations
+            globalDragState.isDragging = true;
+            globalDragState.currentElement = designerElement;
+            globalDragState.startPosition = { x: localDragState.startX, y: localDragState.startY };
+            globalDragState.initialPosition = { x: localDragState.initialX, y: localDragState.initialY };
+            
+            designerElement.classList.add('dragging');
+            console.log('Started drag operation - expensive operations disabled');
+        }
+
+        if (localDragState.isDragging) {
+            const newX = Math.max(0, localDragState.initialX + deltaX);
+            const newY = Math.max(0, localDragState.initialY + deltaY);
+            
+            // FAST: Only update visual position and form inputs
+            designerElement.style.left = newX + 'px';
+            designerElement.style.top = newY + 'px';
+            
+            // FAST: Update form inputs for live feedback
+            updateFormPositionInputsOnly(newX, newY);
+            
+            // SKIP: All expensive operations are now skipped:
+            // - No updateElementPosition() (expensive attribute updates)
+            // - No updateElementForm() (expensive form sync)
+            // - No markCurrentElementAsTouched() (expensive validation)
+            // - No applyFormToSelectedElement() (expensive config + preview)
+        }
+    });
+
+    designerElement.addEventListener('mouseup', () => {
+        if (localDragState.isDragging) {
+            localDragState.isDragging = false;
+            
+            // Get final position
+            const finalX = parseInt(designerElement.style.left) || 0;
+            const finalY = parseInt(designerElement.style.top) || 0;
+            
+            // Clear global drag state BEFORE executing deferred operations
+            globalDragState.isDragging = false;
+            globalDragState.currentElement = null;
+            
+            designerElement.classList.remove('dragging');
+            
+            console.log('Drag operation completed - executing deferred operations');
+            
+            // NOW: Execute all expensive operations once
+            executeDeferredDragOperations(designerElement, finalX, finalY);
+        }
+        designerElement.style.cursor = '';
+    });
+
+    designerElement.addEventListener('mouseleave', () => {
+        // Clean up drag state if mouse leaves element
+        if (localDragState.isDragging) {
+            // Get current position before cleanup
+            const currentX = parseInt(designerElement.style.left) || 0;
+            const currentY = parseInt(designerElement.style.top) || 0;
+            
+            localDragState.isDragging = false;
+            
+            // Clear global drag state
+            globalDragState.isDragging = false;
+            globalDragState.currentElement = null;
+            
+            designerElement.classList.remove('dragging');
+            designerElement.style.cursor = '';
+            
+            console.log('Drag operation cancelled (mouse leave) - executing deferred operations');
+            
+            // Execute deferred operations with current position
+            executeDeferredDragOperations(designerElement, currentX, currentY);
+        }
+    });
+
+    // Add hover effects (only when not dragging)
+    designerElement.addEventListener('mouseenter', () => {
+        if (!localDragState.isDragging && !globalDragState.isDragging) {
+            designerElement.classList.add('hovering');
+        }
+    });
+
+    designerElement.addEventListener('mouseleave', () => {
+        designerElement.classList.remove('hovering');
     });
 }
 
@@ -1485,20 +1796,20 @@ function collectAllElements() {
 
                 // Map the generic config to the appropriate typed config field
                 switch (elementType) {
-                    case ELEMENT_TYPE_TEXT:
-                        elementData.text_config = config;
-                        break;
-                    case ELEMENT_TYPE_STATIC_IMAGE:
-                        elementData.image_config = config;
-                        break;
-                    case ELEMENT_TYPE_GRAPH:
-                        elementData.graph_config = config;
-                        break;
-                    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-                        elementData.conditional_image_config = config;
-                        break;
-                    default:
-                        console.warn(`Unknown element type: ${elementType}`);
+                case ELEMENT_TYPE_TEXT:
+                    elementData.text_config = config;
+                    break;
+                case ELEMENT_TYPE_STATIC_IMAGE:
+                    elementData.image_config = config;
+                    break;
+                case ELEMENT_TYPE_GRAPH:
+                    elementData.graph_config = config;
+                    break;
+                case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                    elementData.conditional_image_config = config;
+                    break;
+                default:
+                    console.warn(`Unknown element type: ${elementType}`);
                 }
             } catch (error) {
                 console.warn('Failed to parse element config:', error);
@@ -1701,14 +2012,14 @@ function renderGraphElementPreview(graphConfig) {
             }
         ).catch((error) => {
         // Fallback preview if backend call fails
-        container.innerHTML = `
+            container.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
                     <div style="font-size: 14px; margin-bottom: 2px;">📊</div>
                     <div>Graph Preview</div>
                     <div style="font-size: 8px; opacity: 0.7;">${graphConfig.graph_type || 'line'}</div>
                 </div>
             `;
-    });
+        });
 
     return container;
 }
@@ -1737,15 +2048,15 @@ function renderConditionalImageElementPreview(config, elementId) {
                 container.appendChild(img);
             }
         ).catch((error) => {
-        console.log('Failed to render conditional image preview:', error);
-        container.innerHTML = `
+            console.log('Failed to render conditional image preview:', error);
+            container.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 10px; flex-direction: column;">
                     <div style="font-size: 14px; margin-bottom: 2px;">🖼️</div>
                     <div>Conditional Image Preview</div>
                     <div style="font-size: 8px; opacity: 0.7;">${config.sensor_id || 'No sensor selected'}</div>
                 </div>
             `;
-    });
+        });
 
     return container;
 }
@@ -1788,20 +2099,20 @@ export function applyFormToSelectedElement() {
     // Store detailed configuration based on element type
     let config;
     switch (newType) {
-        case ELEMENT_TYPE_TEXT:
-            config = getTextElementConfig();
-            break;
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            config = getStaticImageElementConfig();
-            break;
-        case ELEMENT_TYPE_GRAPH:
-            config = getGraphElementConfig();
-            break;
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            config = getConditionalImageElementConfig();
-            break;
-        default:
-            config = {};
+    case ELEMENT_TYPE_TEXT:
+        config = getTextElementConfig();
+        break;
+    case ELEMENT_TYPE_STATIC_IMAGE:
+        config = getStaticImageElementConfig();
+        break;
+    case ELEMENT_TYPE_GRAPH:
+        config = getGraphElementConfig();
+        break;
+    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+        config = getConditionalImageElementConfig();
+        break;
+    default:
+        config = {};
     }
 
     // Store configuration as a data attribute
@@ -1821,7 +2132,7 @@ export function applyFormToSelectedElement() {
  * Loads conditional image catalog entries from the backend and populates the dropdown
  */
 export async function loadConditionalImageCatalog() {
-    if (!cmbConditionalImageCatalogEntrySelection) return;
+    if (!cmbConditionalImageCatalogEntrySelection) {return;}
 
     try {
         const catalogResponse = await invoke('get_conditional_image_repo_entries');
@@ -1853,7 +2164,7 @@ export async function loadConditionalImageCatalog() {
  * Handles selection of a catalog entry and populates the images path field
  */
 export function onConditionalImageCatalogEntrySelected() {
-    if (!cmbConditionalImageCatalogEntrySelection || !txtConditionalImageImagesPath) return;
+    if (!cmbConditionalImageCatalogEntrySelection || !txtConditionalImageImagesPath) {return;}
 
     const selectedOption = cmbConditionalImageCatalogEntrySelection.selectedOptions[0];
     if (selectedOption && selectedOption.value) {
@@ -1863,4 +2174,16 @@ export function onConditionalImageCatalogEntrySelected() {
         // Update preview if element is selected
         updateElementPreview();
     }
+}
+
+/**
+ * Selects an element programmatically (exported for keyboard navigation)
+ * @param {HTMLElement} listElement - List element to select
+ * @param {HTMLElement} designerElement - Designer element to select 
+ * @param {boolean} skipValidation - Skip validation check
+ * @param {boolean} skipValidationDisplay - Skip validation display
+ * @returns {Promise<boolean>} True if selection successful
+ */
+export async function selectElementProgrammatically(listElement, designerElement, skipValidation = false, skipValidationDisplay = false) {
+    return await selectElement(listElement, designerElement, skipValidation, skipValidationDisplay);
 }
