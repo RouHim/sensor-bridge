@@ -8,6 +8,13 @@
   - `cd src-tauri && cargo test fonts_test` — Run a single test (see src-tauri/src/fonts_test.rs)
   - `cd src-tauri && cargo fmt --all -- --check` — Format check
   - `cd src-tauri && cargo clippy` — Linting
+- Frontend (JavaScript/HTML/CSS):
+  - `npm run lint` — ESLint checking for JavaScript syntax errors and code quality
+  - `npm run lint:fix` — Auto-fix ESLint issues where possible
+  - `npm run format` — Format JS/HTML/CSS with Prettier
+  - `npm run format:check` — Check formatting without modifying files
+  - `npm run check:syntax` — Basic syntax validation
+  - `npm run check:all` — Run all frontend checks (lint + format + syntax)
 - CI/CD: Automated via .github/workflows/pipeline.yaml
 
 **Agent Principles & Workflow**
@@ -19,15 +26,22 @@
 - Adapt and iterate: clarify requirements and adjust approach if needed.
 - Use context7 for extended docs and project context when available.
 - Follow project coding standards and best practices.
+- **IMPORTANT**: Always run `npm run lint` after modifying JavaScript files to catch syntax errors, duplicate functions, and code quality issues early.
 
 **Code Style Guidelines**
 - **Imports**: Group by standard, external, then local. Use explicit imports.
-- **Formatting**: Use `cargo fmt` for Rust, Prettier for JS. Indent: 4 spaces (Rust), 2 spaces (JS).
+- **Formatting**: Use `cargo fmt` for Rust, `npm run format` (Prettier) for JS/HTML/CSS. Indent: 4 spaces (both Rust & JS).
 - **Types**: Prefer explicit types in Rust (`Result<T, String>` for errors). Use ES6 modules and JSDoc for JS.
 - **Naming**: Use snake_case for Rust, camelCase for JS. Match frontend/backend param names (camelCase ↔ snake_case).
 - **Error Handling & Logging**: Rust: `Result<T, String>` with descriptive errors, assertions in tests. JS: try/catch with user-friendly messages.
 - **State**: Centralize state in `src/js/app-state.js` (frontend) and `AppState` (backend).
 - **Testing**: Write unit/integration tests in Rust (see src-tauri/src/fonts_test.rs). Use mocks for system calls.
+- **JavaScript Quality**: Always run `npm run lint` before committing. ESLint catches duplicate functions, syntax errors, and code quality issues. Use `npm run lint:fix` to auto-fix formatting and simple issues.
+
+**JavaScript Quality Assurance & Error Prevention**
+- **Linting Setup**: ESLint configured to catch duplicate functions, syntax errors, undefined variables, and code quality issues
+- **Commands**: `npm run lint` (check) | `npm run lint:fix` (auto-fix) | `npm run check:syntax` (quick validation)
+- **IDE Integration**: Most editors show ESLint errors inline when editing
 
 **Architecture & Patterns**
 - See architecture diagrams in readme/architecture.png and .psd.

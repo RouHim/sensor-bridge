@@ -132,6 +132,14 @@ td {
     height: 500px;
     background-color: var(--background);
     position: absolute;
+    border: 2px solid #333;
+    border-radius: 4px;
+    outline: none;
+}
+
+#lcd-designer-pane:focus {
+    border-color: var(--selection);
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.3);
 }
 
 #lcd-designer-placed-elements {
@@ -175,9 +183,58 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     color: var(--background);
 }
 
+/* Designer element states */
+.designer-element {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+/* Keep smooth animations during drag for nice UX */
+.designer-element.dragging {
+    cursor: grabbing !important;
+    opacity: 0.8;
+    z-index: 1000;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s ease, opacity 0.1s ease, box-shadow 0.1s ease !important;
+    /* Keep position transitions off for smooth dragging, but preserve visual effects */
+}
+
+.designer-element:hover,
+.designer-element.hovering {
+    border-color: #0066cc !important;
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.4);
+    transform: scale(1.02);
+}
+
+.designer-element.selected {
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 10px rgba(0, 102, 204, 0.6);
+    background-color: rgba(0, 102, 204, 0.1) !important;
+}
+
+.designer-element.selected::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid var(--selection);
+    border-radius: 4px;
+    pointer-events: none;
+}
+
 .designer-element.invalid {
     border-color: #ff4444 !important;
     box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+.designer-element.invalid.selected {
+    border-color: #ff4444 !important;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.7);
+    background-color: rgba(255, 68, 68, 0.1) !important;
 }
 
 /* Validation locked state - pulsing red effect */

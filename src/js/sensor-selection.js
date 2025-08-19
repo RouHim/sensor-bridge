@@ -18,16 +18,16 @@ export function buildSensorSelectionDialogTable(filterValue) {
     const onlyNumeric = cmbElementType.options[cmbElementType.selectedIndex].value === ELEMENT_TYPE_GRAPH;
 
     // Clear table entries
-    sensorSelectionTable.innerHTML = "";
+    sensorSelectionTable.innerHTML = '';
 
     // Add Name and value headers
-    const thead = document.createElement("thead");
-    const row = document.createElement("tr");
-    const thName = document.createElement("th");
-    const thValue = document.createElement("th");
+    const thead = document.createElement('thead');
+    const row = document.createElement('tr');
+    const thName = document.createElement('th');
+    const thValue = document.createElement('th');
 
-    thName.innerText = "Name";
-    thValue.innerText = "Value";
+    thName.innerText = 'Name';
+    thValue.innerText = 'Value';
 
     row.appendChild(thName);
     row.appendChild(thValue);
@@ -35,20 +35,20 @@ export function buildSensorSelectionDialogTable(filterValue) {
     sensorSelectionTable.appendChild(thead);
 
     // Create tbody
-    const tbody = document.createElement("tbody");
+    const tbody = document.createElement('tbody');
     sensorSelectionTable.appendChild(tbody);
 
     const sensorValues = getSensorValues();
 
     // Filter sensor values for graph
     let filteredSensorValues = onlyNumeric
-        ? sensorValues.filter((sensorValue) => sensorValue.sensor_type === "number")
+        ? sensorValues.filter((sensorValue) => sensorValue.sensor_type === 'number')
         : sensorValues;
 
     // Filter for keywords split by space
-    if (filterValue !== "" && filterValue !== undefined && filterValue !== null) {
+    if (filterValue !== '' && filterValue !== undefined && filterValue !== null) {
         filteredSensorValues = filteredSensorValues.filter((sensorValue) => {
-            const keywords = filterValue.split(" ");
+            const keywords = filterValue.split(' ');
             let matches = 0;
 
             keywords.forEach((keyword) => {
@@ -65,15 +65,15 @@ export function buildSensorSelectionDialogTable(filterValue) {
 
     // Fill sensor values into table
     filteredSensorValues.forEach((sensorValue) => {
-        const row = document.createElement("tr");
-        const name = document.createElement("td");
-        const value = document.createElement("td");
+        const row = document.createElement('tr');
+        const name = document.createElement('td');
+        const value = document.createElement('td');
 
         row.id = sensorValue.id;
-        row.classList.add("sensor-selection-table-row");
-        row.addEventListener("click", () => sensorSelectionDialog.close(sensorValue.id));
+        row.classList.add('sensor-selection-table-row');
+        row.addEventListener('click', () => sensorSelectionDialog.close(sensorValue.id));
         name.innerText = sensorValue.label;
-        value.innerText = sensorValue.value + " " + sensorValue.unit;
+        value.innerText = sensorValue.value + ' ' + sensorValue.unit;
 
         row.appendChild(name);
         row.appendChild(value);
@@ -91,20 +91,20 @@ export function showSensorSelectionDialog() {
         if (event.target === sensorSelectionDialog) {
             sensorSelectionDialog.close();
         }
-    }
+    };
 
     // Build table
-    buildSensorSelectionDialogTable("");
+    buildSensorSelectionDialogTable('');
 
     // Prepare filter input
-    txtSensorSelectionTableFilterInput.value = "";
+    txtSensorSelectionTableFilterInput.value = '';
     txtSensorSelectionTableFilterInput.select();
-    txtSensorSelectionTableFilterInput.addEventListener("input", () =>
+    txtSensorSelectionTableFilterInput.addEventListener('input', () =>
         buildSensorSelectionDialogTable(txtSensorSelectionTableFilterInput.value));
 }
 
 export function onCloseSensorSelectionDialog(selectedSensorId) {
-    if (selectedSensorId === "" || selectedSensorId === undefined || selectedSensorId === null) {
+    if (selectedSensorId === '' || selectedSensorId === undefined || selectedSensorId === null) {
         return;
     }
 
@@ -170,7 +170,7 @@ export function populateAllSensorDropdowns() {
     ];
 
     sensorDropdowns.forEach(dropdown => {
-        if (!dropdown) return;
+        if (!dropdown) {return;}
 
         // Store current selection to restore it
         const currentValue = dropdown.value;

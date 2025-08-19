@@ -112,9 +112,9 @@ function updateClientInfoDisplay(clientData) {
         clientInfoContent.style.display = 'block';
         
         // Update client info fields - using exact backend field names
-        if (clientInfoName) clientInfoName.textContent = clientData.name || 'Unnamed Client';
-        if (clientInfoIp) clientInfoIp.textContent = clientData.ip_address || 'Unknown';
-        if (clientInfoMac) clientInfoMac.textContent = clientData.mac_address;
+        if (clientInfoName) {clientInfoName.textContent = clientData.name || 'Unnamed Client';}
+        if (clientInfoIp) {clientInfoIp.textContent = clientData.ip_address || 'Unknown';}
+        if (clientInfoMac) {clientInfoMac.textContent = clientData.mac_address;}
         if (clientInfoResolution) {
             // Backend uses resolution_width/resolution_height, not display_width/display_height
             clientInfoResolution.textContent = `${clientData.resolution_width || 0}x${clientData.resolution_height || 0}`;
@@ -162,9 +162,9 @@ function loadClientConfiguration(clientData) {
         // No need to fetch it again from the backend
 
         // Update form fields
-        if (txtClientName) txtClientName.value = clientData.name || '';
-        if (txtDisplayResolutionWidth) txtDisplayResolutionWidth.value = clientData.resolution_width || 800;
-        if (txtDisplayResolutionHeight) txtDisplayResolutionHeight.value = clientData.resolution_height || 600;
+        if (txtClientName) {txtClientName.value = clientData.name || '';}
+        if (txtDisplayResolutionWidth) {txtDisplayResolutionWidth.value = clientData.resolution_width || 800;}
+        if (txtDisplayResolutionHeight) {txtDisplayResolutionHeight.value = clientData.resolution_height || 600;}
 
         // Update the designer pane dimensions to match the client's resolution
         updateDisplayDesignPaneDimensions();
@@ -182,7 +182,7 @@ function loadClientConfiguration(clientData) {
  */
 export async function handleClientActiveToggle() {
     const macAddress = getCurrentClientMacAddress();
-    if (!macAddress) return;
+    if (!macAddress) {return;}
     
     try {
         const isActive = clientActiveToggle.checked;

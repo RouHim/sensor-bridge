@@ -15,15 +15,15 @@ export function exportConfig() {
         directory: false,
         filters: [{
             name: 'JSON',
-            extensions: ['json'],
+            extensions: ['json']
         }]
     }).then(
         (selected) => {
             // If the user selected a file, save the config to the file
-            if (typeof selected === "string" && selected !== "") {
+            if (typeof selected === 'string' && selected !== '') {
                 invoke('export_config', {filePath: selected});
             } else {
-                console.log("No file selected");
+                console.log('No file selected');
             }
         }
     );
@@ -39,31 +39,31 @@ export function importConfig() {
         directory: false,
         filters: [{
             name: 'JSON',
-            extensions: ['json'],
+            extensions: ['json']
         }]
     }).then(
         (selected) => {
             // If the user selected a file, load the config from the file
-            if (typeof selected === "string" && selected !== "") {
+            if (typeof selected === 'string' && selected !== '') {
                 invoke('import_config', {filePath: selected}).then(
                     () => {
                         // Show yes no dialog, that a restart is required
-                        const shouldRestart = confirm("The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?");
+                        const shouldRestart = confirm('The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?');
                         if (shouldRestart) {
                             invoke('restart_app');
                         } else {
                             // Reload registered clients instead of device configs
                             loadRegisteredClients()
                                 .catch((error) => {
-                                    alert("Error while loading registered clients. " + error);
+                                    alert('Error while loading registered clients. ' + error);
                                 });
                         }
                     }
                 ).catch((error) => {
-                    alert("Error while importing config. " + error);
-                })
+                    alert('Error while importing config. ' + error);
+                });
             } else {
-                console.log("No file selected");
+                console.log('No file selected');
             }
         }
     );

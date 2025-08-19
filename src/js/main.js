@@ -26,12 +26,12 @@ import {
     duplicateElement,
     moveElementControlPad,
     changeMoveUnit,
-    dropOnDesignerPane,
     saveElementConfiguration,
     updateElementPreview,
     updateAllElementValidationStates,
     updateValidationIfElementTouched,
-    markCurrentElementAsTouched
+    markCurrentElementAsTouched,
+    initializeDragSafety
 } from './element-management.js';
 
 import {
@@ -111,6 +111,9 @@ export function initializeApplication() {
     initializeColorPicker();
     initializeFeatherIcons();
 
+    // Initialize drag safety mechanisms
+    initializeDragSafety();
+
     // Setup event listeners
     setupEventListeners();
 
@@ -125,105 +128,104 @@ export function initializeApplication() {
  */
 function setupEventListeners() {
     // Client management events
-    cmbRegisteredClients?.addEventListener("change", (event) => {
+    cmbRegisteredClients?.addEventListener('change', (event) => {
         const selectedIndex = event.target.selectedIndex;
         const selectedOption = selectedIndex >= 0 ? event.target.options[selectedIndex] : null;
         onClientSelected(selectedOption);
     });
 
-    clientActiveToggle?.addEventListener("change", handleClientActiveToggle);
+    clientActiveToggle?.addEventListener('change', handleClientActiveToggle);
 
     // Resolution inputs are read-only (determined by client hardware)
     // No event listeners needed since they cannot be manually changed
 
     // Element type change
-    cmbElementType?.addEventListener("change", onElementTypeChange);
+    cmbElementType?.addEventListener('change', onElementTypeChange);
 
     // Button click events
-    btnRefreshClients?.addEventListener("click", loadRegisteredClients);
-    btnRemoveClient?.addEventListener("click", (event) => {
+    btnRefreshClients?.addEventListener('click', loadRegisteredClients);
+    btnRemoveClient?.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         removeClient();
     });
-    btnExportConfig?.addEventListener("click", exportConfig);
-    btnImportConfig?.addEventListener("click", importConfig);
-    btnSaveClientConfig?.addEventListener("click", onSave);
-    btnSaveElement?.addEventListener("click", onSave);
-    btnActivateSync?.addEventListener("click", () => toggleHttpServer(btnActivateSync.checked));
+    btnExportConfig?.addEventListener('click', exportConfig);
+    btnImportConfig?.addEventListener('click', importConfig);
+    btnSaveClientConfig?.addEventListener('click', onSave);
+    btnSaveElement?.addEventListener('click', onSave);
+    btnActivateSync?.addEventListener('click', () => toggleHttpServer(btnActivateSync.checked));
 
     // HTTP port input events with auto-restart functionality
-    httpPortInput?.addEventListener("focus", onPortInputFocus);
-    httpPortInput?.addEventListener("change", onPortInputChange);
-    httpPortInput?.addEventListener("blur", onPortInputChange);
+    httpPortInput?.addEventListener('focus', onPortInputFocus);
+    httpPortInput?.addEventListener('change', onPortInputChange);
+    httpPortInput?.addEventListener('blur', onPortInputChange);
 
-    btnToggleLivePreview?.addEventListener("click", toggleLivePreview);
+    btnToggleLivePreview?.addEventListener('click', toggleLivePreview);
 
     // Element management events
-    btnAddElement?.addEventListener("click", async (event) => {
+    btnAddElement?.addEventListener('click', async (event) => {
         event.preventDefault();
         await addNewElement();
     });
-    btnRemoveElement?.addEventListener("click", (event) => {
+    btnRemoveElement?.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         removeElement();
     });
-    btnMoveElementUp?.addEventListener("click", moveElementUp);
-    btnMoveElementDown?.addEventListener("click", moveElementDown);
-    btnDuplicateElement?.addEventListener("click", async (event) => {
+    btnMoveElementUp?.addEventListener('click', moveElementUp);
+    btnMoveElementDown?.addEventListener('click', moveElementDown);
+    btnDuplicateElement?.addEventListener('click', async (event) => {
         event.preventDefault();
         await duplicateElement();
     });
 
     // File selection events
-    btnSelectStaticImage?.addEventListener("click", selectStaticImage);
-    btnConditionalImageInfo?.addEventListener("click", showConditionalImageInfo);
-    btnConditionalImagePathSelection?.addEventListener("click", selectConditionalImage);
+    btnSelectStaticImage?.addEventListener('click', selectStaticImage);
+    btnConditionalImageInfo?.addEventListener('click', showConditionalImageInfo);
+    btnConditionalImagePathSelection?.addEventListener('click', selectConditionalImage);
 
     // Control pad events
-    btnControlPadChangeMoveUnit?.addEventListener("click", changeMoveUnit);
-    btnControlPadUp?.addEventListener("click", () => moveElementControlPad("up"));
-    btnControlPadLeft?.addEventListener("click", () => moveElementControlPad("left"));
-    btnControlPadRight?.addEventListener("click", () => moveElementControlPad("right"));
-    btnControlPadDown?.addEventListener("click", () => moveElementControlPad("down"));
+    btnControlPadChangeMoveUnit?.addEventListener('click', changeMoveUnit);
+    btnControlPadUp?.addEventListener('click', () => moveElementControlPad('up'));
+    btnControlPadLeft?.addEventListener('click', () => moveElementControlPad('left'));
+    btnControlPadRight?.addEventListener('click', () => moveElementControlPad('right'));
+    btnControlPadDown?.addEventListener('click', () => moveElementControlPad('down'));
 
     // Sensor selection events
-    btnTextSensorIdSelectionDialog?.addEventListener("click", showSensorSelectionDialog);
-    btnGraphSensorIdSelectionDialog?.addEventListener("click", showSensorSelectionDialog);
-    btnConditionalImageSensorIdSelectionDialog?.addEventListener("click", showSensorSelectionDialog);
-    btnConditionalImageApplyCatalogEntry?.addEventListener("click", applyConditionalImageCatalogEntry);
+    btnTextSensorIdSelectionDialog?.addEventListener('click', showSensorSelectionDialog);
+    btnGraphSensorIdSelectionDialog?.addEventListener('click', showSensorSelectionDialog);
+    btnConditionalImageSensorIdSelectionDialog?.addEventListener('click', showSensorSelectionDialog);
+    btnConditionalImageApplyCatalogEntry?.addEventListener('click', applyConditionalImageCatalogEntry);
 
     // Direct sensor dropdown selection events
-    cmbTextSensorIdSelection?.addEventListener("change", (event) => onSensorDropdownChange(event.target));
-    cmbGraphSensorIdSelection?.addEventListener("change", (event) => onSensorDropdownChange(event.target));
-    cmbConditionalImageSensorIdSelection?.addEventListener("change", (event) => onSensorDropdownChange(event.target));
+    cmbTextSensorIdSelection?.addEventListener('change', (event) => onSensorDropdownChange(event.target));
+    cmbGraphSensorIdSelection?.addEventListener('change', (event) => onSensorDropdownChange(event.target));
+    cmbConditionalImageSensorIdSelection?.addEventListener('change', (event) => onSensorDropdownChange(event.target));
 
     // Text format placeholder events
-    btnTextFormatAddValue?.addEventListener("click", () => addTextFormatPlaceholder("{value}"));
-    btnTextFormatAddUnit?.addEventListener("click", () => addTextFormatPlaceholder("{unit}"));
-    btnTextFormatAddValueAvg?.addEventListener("click", () => addTextFormatPlaceholder("{value-avg}"));
-    btnTextFormatAddValueMin?.addEventListener("click", () => addTextFormatPlaceholder("{value-min}"));
-    btnTextFormatAddValueMax?.addEventListener("click", () => addTextFormatPlaceholder("{value-max}"));
+    btnTextFormatAddValue?.addEventListener('click', () => addTextFormatPlaceholder('{value}'));
+    btnTextFormatAddUnit?.addEventListener('click', () => addTextFormatPlaceholder('{unit}'));
+    btnTextFormatAddValueAvg?.addEventListener('click', () => addTextFormatPlaceholder('{value-avg}'));
+    btnTextFormatAddValueMin?.addEventListener('click', () => addTextFormatPlaceholder('{value-min}'));
+    btnTextFormatAddValueMax?.addEventListener('click', () => addTextFormatPlaceholder('{value-max}'));
 
     // Modal dialog events
-    sensorSelectionDialog?.addEventListener("close", () =>
+    sensorSelectionDialog?.addEventListener('close', () =>
         onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
 
     // Drag and drop events
     designerPane?.addEventListener('dragover', (event) => event.preventDefault());
-    designerPane?.addEventListener('drop', dropOnDesignerPane);
 
     // Keyboard events
-    document.addEventListener("keydown", handleKeydownEvent);
+    document.addEventListener('keydown', handleKeydownEvent);
 
     // Sensor selection dialog keyboard events
-    sensorSelectionDialog?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+    sensorSelectionDialog?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
             event.preventDefault();
-            const sensorSelectionTable = document.getElementById("sensor-selection-table");
-            if (sensorSelectionTable?.getElementsByTagName("tr").length > 1) {
-                sensorSelectionDialog.close(sensorSelectionTable.getElementsByTagName("tr")[1].id);
+            const sensorSelectionTable = document.getElementById('sensor-selection-table');
+            if (sensorSelectionTable?.getElementsByTagName('tr').length > 1) {
+                sensorSelectionDialog.close(sensorSelectionTable.getElementsByTagName('tr')[1].id);
             }
         }
     });
@@ -334,7 +336,7 @@ async function loadInitialData() {
 
     } catch (error) {
         console.error('Error loading initial data:', error);
-        alert("Error while loading initial application data: " + error);
+        alert('Error while loading initial application data: ' + error);
     }
 }
 
