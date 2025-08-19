@@ -1,6 +1,7 @@
 // Configuration import/export functionality
 
 import { open, save, invoke } from './dom-elements.js';
+import { loadRegisteredClients } from './client-management.js';
 
 // Store the original port value to detect changes
 let originalPortValue = null;
@@ -13,20 +14,20 @@ export function exportConfig() {
     save({
         multiple: false,
         directory: false,
-        filters: [{
-            name: 'JSON',
-            extensions: ['json']
-        }]
-    }).then(
-        (selected) => {
-            // If the user selected a file, save the config to the file
-            if (typeof selected === 'string' && selected !== '') {
-                invoke('export_config', {filePath: selected});
-            } else {
-                console.log('No file selected');
+        filters: [
+            {
+                name: 'JSON',
+                extensions: ['json']
             }
+        ]
+    }).then(selected => {
+        // If the user selected a file, save the config to the file
+        if (typeof selected === 'string' && selected !== '') {
+            invoke('export_config', { filePath: selected });
+        } else {
+            console.log('No file selected');
         }
-    );
+    });
 }
 
 /**
@@ -37,36 +38,37 @@ export function importConfig() {
     open({
         multiple: false,
         directory: false,
-        filters: [{
-            name: 'JSON',
-            extensions: ['json']
-        }]
-    }).then(
-        (selected) => {
-            // If the user selected a file, load the config from the file
-            if (typeof selected === 'string' && selected !== '') {
-                invoke('import_config', {filePath: selected}).then(
-                    () => {
-                        // Show yes no dialog, that a restart is required
-                        const shouldRestart = confirm('The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?');
-                        if (shouldRestart) {
-                            invoke('restart_app');
-                        } else {
-                            // Reload registered clients instead of device configs
-                            loadRegisteredClients()
-                                .catch((error) => {
-                                    alert('Error while loading registered clients. ' + error);
-                                });
-                        }
+        filters: [
+            {
+                name: 'JSON',
+                extensions: ['json']
+            }
+        ]
+    }).then(selected => {
+        // If the user selected a file, load the config from the file
+        if (typeof selected === 'string' && selected !== '') {
+            invoke('import_config', { filePath: selected })
+                .then(() => {
+                    // Show yes no dialog, that a restart is required
+                    const shouldRestart = confirm(
+                        'The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?'
+                    );
+                    if (shouldRestart) {
+                        invoke('restart_app');
+                    } else {
+                        // Reload registered clients instead of device configs
+                        loadRegisteredClients().catch(error => {
+                            alert('Error while loading registered clients. ' + error);
+                        });
                     }
-                ).catch((error) => {
+                })
+                .catch(error => {
                     alert('Error while importing config. ' + error);
                 });
-            } else {
-                console.log('No file selected');
-            }
+        } else {
+            console.log('No file selected');
         }
-    );
+    });
 }
 
 /**
@@ -114,7 +116,6 @@ export function onPortInputFocus() {
  */
 export async function onPortInputChange() {
     const httpPortInput = document.getElementById('http-port-input');
-    const btnActivateSync = document.getElementById('btn-activate-sync');
 
     if (!httpPortInput) {
         console.error('HTTP port input element not found');
@@ -146,7 +147,6 @@ export async function onPortInputChange() {
 
         // Update the stored original value
         originalPortValue = newPort;
-
     } catch (error) {
         console.error('Error handling port change:', error);
     }

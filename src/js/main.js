@@ -17,7 +17,6 @@ import {
 } from './config-management.js';
 
 import {
-    updateDisplayDesignPaneDimensions,
     onElementTypeChange,
     addNewElement,
     removeElement,
@@ -29,7 +28,6 @@ import {
     saveElementConfiguration,
     updateElementPreview,
     updateAllElementValidationStates,
-    updateValidationIfElementTouched,
     markCurrentElementAsTouched,
     initializeDragSafety
 } from './element-management.js';
@@ -56,11 +54,9 @@ import {
 } from './ui-utils.js';
 
 import { setSensorValues } from './app-state.js';
-import { invoke } from './dom-elements.js';
 import {
+    invoke,
     cmbRegisteredClients,
-    txtDisplayResolutionWidth,
-    txtDisplayResolutionHeight,
     cmbElementType,
     btnRefreshClients,
     btnRemoveClient,
@@ -128,7 +124,7 @@ export function initializeApplication() {
  */
 function setupEventListeners() {
     // Client management events
-    cmbRegisteredClients?.addEventListener('change', (event) => {
+    cmbRegisteredClients?.addEventListener('change', event => {
         const selectedIndex = event.target.selectedIndex;
         const selectedOption = selectedIndex >= 0 ? event.target.options[selectedIndex] : null;
         onClientSelected(selectedOption);
@@ -144,7 +140,7 @@ function setupEventListeners() {
 
     // Button click events
     btnRefreshClients?.addEventListener('click', loadRegisteredClients);
-    btnRemoveClient?.addEventListener('click', (event) => {
+    btnRemoveClient?.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
         removeClient();
@@ -163,18 +159,18 @@ function setupEventListeners() {
     btnToggleLivePreview?.addEventListener('click', toggleLivePreview);
 
     // Element management events
-    btnAddElement?.addEventListener('click', async (event) => {
+    btnAddElement?.addEventListener('click', async event => {
         event.preventDefault();
         await addNewElement();
     });
-    btnRemoveElement?.addEventListener('click', (event) => {
+    btnRemoveElement?.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
         removeElement();
     });
     btnMoveElementUp?.addEventListener('click', moveElementUp);
     btnMoveElementDown?.addEventListener('click', moveElementDown);
-    btnDuplicateElement?.addEventListener('click', async (event) => {
+    btnDuplicateElement?.addEventListener('click', async event => {
         event.preventDefault();
         await duplicateElement();
     });
@@ -198,9 +194,9 @@ function setupEventListeners() {
     btnConditionalImageApplyCatalogEntry?.addEventListener('click', applyConditionalImageCatalogEntry);
 
     // Direct sensor dropdown selection events
-    cmbTextSensorIdSelection?.addEventListener('change', (event) => onSensorDropdownChange(event.target));
-    cmbGraphSensorIdSelection?.addEventListener('change', (event) => onSensorDropdownChange(event.target));
-    cmbConditionalImageSensorIdSelection?.addEventListener('change', (event) => onSensorDropdownChange(event.target));
+    cmbTextSensorIdSelection?.addEventListener('change', event => onSensorDropdownChange(event.target));
+    cmbGraphSensorIdSelection?.addEventListener('change', event => onSensorDropdownChange(event.target));
+    cmbConditionalImageSensorIdSelection?.addEventListener('change', event => onSensorDropdownChange(event.target));
 
     // Text format placeholder events
     btnTextFormatAddValue?.addEventListener('click', () => addTextFormatPlaceholder('{value}'));
@@ -211,16 +207,17 @@ function setupEventListeners() {
 
     // Modal dialog events
     sensorSelectionDialog?.addEventListener('close', () =>
-        onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue));
+        onCloseSensorSelectionDialog(sensorSelectionDialog.returnValue)
+    );
 
     // Drag and drop events
-    designerPane?.addEventListener('dragover', (event) => event.preventDefault());
+    designerPane?.addEventListener('dragover', event => event.preventDefault());
 
     // Keyboard events
     document.addEventListener('keydown', handleKeydownEvent);
 
     // Sensor selection dialog keyboard events
-    sensorSelectionDialog?.addEventListener('keydown', (event) => {
+    sensorSelectionDialog?.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
             const sensorSelectionTable = document.getElementById('sensor-selection-table');
@@ -256,8 +253,12 @@ function setupPreviewUpdateListeners() {
 
     // Static image element configuration events
     document.getElementById('lcd-txt-element-static-image-file')?.addEventListener('input', updatePreviewAndValidation);
-    document.getElementById('lcd-txt-element-static-image-width')?.addEventListener('input', updatePreviewAndValidation);
-    document.getElementById('lcd-txt-element-static-image-height')?.addEventListener('input', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-txt-element-static-image-width')
+        ?.addEventListener('input', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-txt-element-static-image-height')
+        ?.addEventListener('input', updatePreviewAndValidation);
 
     // Graph element configuration events
     document.getElementById('lcd-graph-width')?.addEventListener('input', updatePreviewAndValidation);
@@ -269,9 +270,15 @@ function setupPreviewUpdateListeners() {
     document.getElementById('lcd-graph-border-color')?.addEventListener('input', updatePreviewAndValidation);
 
     // Conditional image element configuration events
-    document.getElementById('lcd-txt-element-conditional-image-images-path')?.addEventListener('input', updatePreviewAndValidation);
-    document.getElementById('lcd-txt-element-conditional-image-width')?.addEventListener('input', updatePreviewAndValidation);
-    document.getElementById('lcd-txt-element-conditional-image-height')?.addEventListener('input', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-txt-element-conditional-image-images-path')
+        ?.addEventListener('input', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-txt-element-conditional-image-width')
+        ?.addEventListener('input', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-txt-element-conditional-image-height')
+        ?.addEventListener('input', updatePreviewAndValidation);
 
     // Core element configuration events
     document.getElementById('lcd-txt-element-name')?.addEventListener('input', updatePreviewAndValidation);
@@ -280,8 +287,12 @@ function setupPreviewUpdateListeners() {
 
     // Sensor selection events that affect validation
     document.getElementById('lcd-cmb-sensor-id-selection')?.addEventListener('change', updatePreviewAndValidation);
-    document.getElementById('lcd-cmb-number-sensor-id-selection')?.addEventListener('change', updatePreviewAndValidation);
-    document.getElementById('lcd-cmb-conditional-image-sensor-id-selection')?.addEventListener('change', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-cmb-number-sensor-id-selection')
+        ?.addEventListener('change', updatePreviewAndValidation);
+    document
+        .getElementById('lcd-cmb-conditional-image-sensor-id-selection')
+        ?.addEventListener('change', updatePreviewAndValidation);
 
     // Also update preview when element type changes
     document.getElementById('lcd-cmb-element-type')?.addEventListener('change', () => {
@@ -333,7 +344,6 @@ async function loadInitialData() {
         } catch (error) {
             console.error('Failed to load sensor data:', error);
         }
-
     } catch (error) {
         console.error('Error loading initial data:', error);
         alert('Error while loading initial application data: ' + error);
@@ -358,7 +368,6 @@ async function loadSensorData() {
         populateAllSensorDropdowns();
 
         console.log('Loaded', sensorData.length, 'sensors');
-
     } catch (error) {
         console.error('Failed to load sensor data:', error);
         // Set empty array as fallback

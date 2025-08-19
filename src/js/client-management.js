@@ -1,7 +1,7 @@
 // Client management functionality
 
-import { invoke } from './dom-elements.js';
-import { 
+import {
+    invoke,
     cmbRegisteredClients,
     clientInfoContent,
     clientInfoPlaceholder,
@@ -43,7 +43,7 @@ export async function loadRegisteredClients() {
 
         // Clear existing options
         cmbRegisteredClients.innerHTML = '<option value="">Select a client...</option>';
-        
+
         // Add clients to dropdown
         clientList.forEach(client => {
             const option = document.createElement('option');
@@ -52,7 +52,7 @@ export async function loadRegisteredClients() {
             option.dataset.clientData = JSON.stringify(client);
             cmbRegisteredClients.appendChild(option);
         });
-        
+
         // If no clients, show placeholder
         if (clientList.length === 0) {
             showClientInfoPlaceholder();
@@ -62,7 +62,6 @@ export async function loadRegisteredClients() {
             const firstOption = cmbRegisteredClients.options[1];
             onClientSelected(firstOption);
         }
-        
     } catch (error) {
         console.error('Failed to load registered clients:', error);
         // Show placeholder on error
@@ -87,10 +86,10 @@ export function onClientSelected(selectedOption) {
 
     const clientData = JSON.parse(selectedOption.dataset.clientData);
     setCurrentClientMacAddress(clientData.mac_address);
-    
+
     // Update client info display
     updateClientInfoDisplay(clientData);
-    
+
     // Load client configuration
     loadClientConfiguration(clientData);
 
@@ -107,14 +106,20 @@ function updateClientInfoDisplay(clientData) {
     if (clientInfoPlaceholder) {
         clientInfoPlaceholder.style.display = 'none';
     }
-    
+
     if (clientInfoContent) {
         clientInfoContent.style.display = 'block';
-        
+
         // Update client info fields - using exact backend field names
-        if (clientInfoName) {clientInfoName.textContent = clientData.name || 'Unnamed Client';}
-        if (clientInfoIp) {clientInfoIp.textContent = clientData.ip_address || 'Unknown';}
-        if (clientInfoMac) {clientInfoMac.textContent = clientData.mac_address;}
+        if (clientInfoName) {
+            clientInfoName.textContent = clientData.name || 'Unnamed Client';
+        }
+        if (clientInfoIp) {
+            clientInfoIp.textContent = clientData.ip_address || 'Unknown';
+        }
+        if (clientInfoMac) {
+            clientInfoMac.textContent = clientData.mac_address;
+        }
         if (clientInfoResolution) {
             // Backend uses resolution_width/resolution_height, not display_width/display_height
             clientInfoResolution.textContent = `${clientData.resolution_width || 0}x${clientData.resolution_height || 0}`;
@@ -124,12 +129,12 @@ function updateClientInfoDisplay(clientData) {
             const lastSeen = clientData.last_seen ? new Date(clientData.last_seen * 1000).toLocaleString() : 'Never';
             clientInfoLastSeen.textContent = lastSeen;
         }
-        
+
         // Update active toggle
         if (clientActiveToggle) {
             clientActiveToggle.checked = clientData.active || false;
         }
-        
+
         // Update status text
         if (clientStatusText) {
             clientStatusText.textContent = clientData.active ? 'Active' : 'Inactive';
@@ -162,16 +167,21 @@ function loadClientConfiguration(clientData) {
         // No need to fetch it again from the backend
 
         // Update form fields
-        if (txtClientName) {txtClientName.value = clientData.name || '';}
-        if (txtDisplayResolutionWidth) {txtDisplayResolutionWidth.value = clientData.resolution_width || 800;}
-        if (txtDisplayResolutionHeight) {txtDisplayResolutionHeight.value = clientData.resolution_height || 600;}
+        if (txtClientName) {
+            txtClientName.value = clientData.name || '';
+        }
+        if (txtDisplayResolutionWidth) {
+            txtDisplayResolutionWidth.value = clientData.resolution_width || 800;
+        }
+        if (txtDisplayResolutionHeight) {
+            txtDisplayResolutionHeight.value = clientData.resolution_height || 600;
+        }
 
         // Update the designer pane dimensions to match the client's resolution
         updateDisplayDesignPaneDimensions();
 
         // Load display elements
         loadDisplayElements(clientData.display_config ? clientData.display_config.elements : []);
-
     } catch (error) {
         console.error('Failed to load client configuration:', error);
     }
@@ -182,18 +192,19 @@ function loadClientConfiguration(clientData) {
  */
 export async function handleClientActiveToggle() {
     const macAddress = getCurrentClientMacAddress();
-    if (!macAddress) {return;}
-    
+    if (!macAddress) {
+        return;
+    }
+
     try {
         const isActive = clientActiveToggle.checked;
         await invoke('set_client_active', { macAddress, active: isActive });
-        
+
         // Update status display
         if (clientStatusText) {
             clientStatusText.textContent = isActive ? 'Active' : 'Inactive';
             clientStatusText.className = isActive ? 'status-active' : 'status-inactive';
         }
-        
     } catch (error) {
         console.error('Failed to toggle client active state:', error);
         alert('Error updating client status: ' + error);
@@ -207,16 +218,16 @@ export async function handleClientActiveToggle() {
  */
 export async function removeClient() {
     console.log('removeClient function called');
-    
+
     const macAddress = getCurrentClientMacAddress();
     if (!macAddress) {
         console.log('No client selected for removal');
         alert('Please select a client to remove.');
         return;
     }
-    
+
     console.log('Showing confirmation dialog for client:', macAddress);
-    
+
     // Use Tauri's dialog plugin instead of browser confirm()
     const confirmRemoval = await window.__TAURI__.dialog.ask(
         `Are you sure you want to remove this client?\n\nThis action cannot be undone.\n\nMAC Address: ${macAddress}`,
@@ -225,29 +236,28 @@ export async function removeClient() {
             kind: 'warning'
         }
     );
-    
+
     console.log('Confirmation result:', confirmRemoval);
-    
+
     if (!confirmRemoval) {
         console.log('User cancelled removal');
         return;
     }
-    
+
     console.log('User confirmed removal, proceeding...');
-    
+
     try {
         await invoke('remove_registered_client', { macAddress });
-        
+
         console.log('Client removed successfully');
-        
+
         // Reload clients list
         await loadRegisteredClients();
-        
+
         // Clear selection
         cmbRegisteredClients.value = '';
         showClientInfoPlaceholder();
         setCurrentClientMacAddress(null);
-        
     } catch (error) {
         console.error('Failed to remove client:', error);
         alert('Error removing client: ' + error);

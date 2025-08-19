@@ -1,8 +1,8 @@
 // UI utilities and helper functions
 
-import { invoke } from './dom-elements.js';
 import { getCurrentClientMacAddress } from './app-state.js';
 import {
+    invoke,
     cmbTextFontFamily,
     cmbConditionalImageCatalogEntrySelection,
     txtTextFormat,
@@ -11,10 +11,7 @@ import {
     txtConditionalImageHeight,
     open
 } from './dom-elements.js';
-import {
-    ATTR_CONDITIONAL_IMAGE_REPO_URL,
-    ATTR_CONDITIONAL_IMAGE_RESOLUTION
-} from './constants.js';
+import { ATTR_CONDITIONAL_IMAGE_REPO_URL, ATTR_CONDITIONAL_IMAGE_RESOLUTION } from './constants.js';
 
 /**
  * Loads system fonts and populates the font family dropdown
@@ -22,7 +19,7 @@ import {
 export async function loadSystemFonts() {
     try {
         const fonts = await invoke('get_system_fonts');
-        JSON.parse(fonts).forEach((font) => {
+        JSON.parse(fonts).forEach(font => {
             const option = document.createElement('option');
             option.value = font;
             option.innerText = font;
@@ -38,30 +35,33 @@ export async function loadSystemFonts() {
  * Loads conditional image repository entries
  */
 export function loadConditionalImageRepoEntries() {
-    invoke('get_conditional_image_repo_entries').then((entries) => {
-        JSON.parse(entries).forEach((entry) => {
-            const entryName = entry.name;
-            const entryUrl = entry.url;
-            const entryResolution = entry.resolution;
+    invoke('get_conditional_image_repo_entries')
+        .then(entries => {
+            JSON.parse(entries).forEach(entry => {
+                const entryName = entry.name;
+                const entryUrl = entry.url;
+                const entryResolution = entry.resolution;
 
-            const option = document.createElement('option');
-            option.value = entryName;
-            option.innerText = entryName;
-            option.setAttribute(ATTR_CONDITIONAL_IMAGE_REPO_URL, entryUrl);
-            option.setAttribute(ATTR_CONDITIONAL_IMAGE_RESOLUTION, entryResolution);
+                const option = document.createElement('option');
+                option.value = entryName;
+                option.innerText = entryName;
+                option.setAttribute(ATTR_CONDITIONAL_IMAGE_REPO_URL, entryUrl);
+                option.setAttribute(ATTR_CONDITIONAL_IMAGE_RESOLUTION, entryResolution);
 
-            cmbConditionalImageCatalogEntrySelection.appendChild(option);
+                cmbConditionalImageCatalogEntrySelection.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Failed to load conditional image repo entries:', error);
         });
-    }).catch(error => {
-        console.error('Failed to load conditional image repo entries:', error);
-    });
 }
 
 /**
  * Applies the selected conditional image catalog entry to the current element
  */
 export function applyConditionalImageCatalogEntry() {
-    const selectedOption = cmbConditionalImageCatalogEntrySelection.options[cmbConditionalImageCatalogEntrySelection.selectedIndex];
+    const selectedOption =
+        cmbConditionalImageCatalogEntrySelection.options[cmbConditionalImageCatalogEntrySelection.selectedIndex];
     txtConditionalImageImagesPath.value = selectedOption.getAttribute(ATTR_CONDITIONAL_IMAGE_REPO_URL);
     const resolution = selectedOption.getAttribute(ATTR_CONDITIONAL_IMAGE_RESOLUTION).split('x');
     txtConditionalImageWidth.value = resolution[0];
@@ -90,10 +90,12 @@ export async function selectStaticImage() {
         const selected = await open({
             multiple: false,
             directory: false,
-            filters: [{
-                name: 'Images',
-                extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg']
-            }]
+            filters: [
+                {
+                    name: 'Images',
+                    extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg']
+                }
+            ]
         });
 
         if (typeof selected === 'string' && selected !== '') {
@@ -164,16 +166,15 @@ export async function toggleLivePreview() {
         // Use the backend Tauri command instead of frontend WebviewWindow API
         // This approach has better window lifecycle management
         console.log('Opening LCD preview via backend command...');
-        
+
         // Import the invoke function from Tauri API
         const { invoke } = window.__TAURI__.core;
-        
-        await invoke('show_lcd_live_preview', { 
-            macAddress: macAddress 
-        });
-        
-        console.log('LCD preview command sent successfully');
 
+        await invoke('show_lcd_live_preview', {
+            macAddress: macAddress
+        });
+
+        console.log('LCD preview command sent successfully');
     } catch (error) {
         console.error('Failed to toggle live preview:', error);
         console.error('Error details:', JSON.stringify(error, null, 2));
@@ -185,109 +186,125 @@ export async function toggleLivePreview() {
  */
 export function handleKeydownEvent(event) {
     // Import element management functions
-    import('./element-management.js').then(module => {
-        const selectedElement = document.querySelector('.designer-element.selected');
-        
-        // Handle element movement with arrow keys
-        if (selectedElement && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-            let moveUnit = 1;
-            if (event.shiftKey) {moveUnit = 10;}
-            if (event.ctrlKey) {moveUnit = 5;}
+    import('./element-management.js')
+        .then(module => {
+            const selectedElement = document.querySelector('.designer-element.selected');
 
-            let moved = false;
-            const currentX = parseInt(selectedElement.style.left) || 0;
-            const currentY = parseInt(selectedElement.style.top) || 0;
-
-            switch (event.key) {
-            case 'ArrowUp':
-                selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
-                moved = true;
-                break;
-            case 'ArrowDown':
-                selectedElement.style.top = (currentY + moveUnit) + 'px';
-                moved = true;
-                break;
-            case 'ArrowLeft':
-                selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
-                moved = true;
-                break;
-            case 'ArrowRight':
-                selectedElement.style.left = (currentX + moveUnit) + 'px';
-                moved = true;
-                break;
-            }
-
-            if (moved) {
-                event.preventDefault();
-
-                // Update element attributes using proper constants
-                selectedElement.setAttribute('data-element-position-x', selectedElement.style.left.replace('px', ''));
-                selectedElement.setAttribute('data-element-position-y', selectedElement.style.top.replace('px', ''));
-
-                // Update form inputs
-                const posXInput = document.getElementById('lcd-txt-element-position-x');
-                const posYInput = document.getElementById('lcd-txt-element-position-y');
-                if (posXInput) {posXInput.value = selectedElement.style.left.replace('px', '');}
-                if (posYInput) {posYInput.value = selectedElement.style.top.replace('px', '');}
-
-                // Apply the changes and mark as touched
-                if (module.applyFormToSelectedElement) {
-                    module.applyFormToSelectedElement();
-                }
-                if (module.markCurrentElementAsTouched) {
-                    module.markCurrentElementAsTouched();
-                }
-            }
-        }
-
-        // Handle Tab navigation between elements
-        if (event.key === 'Tab') {
-            const allElements = document.querySelectorAll('.designer-element');
-            const currentIndex = Array.from(allElements).findIndex(el => el.classList.contains('selected'));
-            
-            if (allElements.length > 0) {
-                event.preventDefault();
-                let nextIndex;
-                
+            // Handle element movement with arrow keys
+            if (selectedElement && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                let moveUnit = 1;
                 if (event.shiftKey) {
-                    // Previous element (Shift+Tab)
-                    nextIndex = currentIndex <= 0 ? allElements.length - 1 : currentIndex - 1;
-                } else {
-                    // Next element (Tab)
-                    nextIndex = currentIndex >= allElements.length - 1 ? 0 : currentIndex + 1;
+                    moveUnit = 10;
+                }
+                if (event.ctrlKey) {
+                    moveUnit = 5;
                 }
 
-                const nextElement = allElements[nextIndex];
-                const elementId = nextElement.getAttribute('data-element-id');
-                const listElement = document.getElementById('list-' + elementId);
-                
-                // Import selectElement function and call it
-                if (module.selectElementProgrammatically && listElement) {
-                    module.selectElementProgrammatically(listElement, nextElement);
+                let moved = false;
+                const currentX = parseInt(selectedElement.style.left) || 0;
+                const currentY = parseInt(selectedElement.style.top) || 0;
+
+                switch (event.key) {
+                case 'ArrowUp':
+                    selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
+                    moved = true;
+                    break;
+                case 'ArrowDown':
+                    selectedElement.style.top = currentY + moveUnit + 'px';
+                    moved = true;
+                    break;
+                case 'ArrowLeft':
+                    selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
+                    moved = true;
+                    break;
+                case 'ArrowRight':
+                    selectedElement.style.left = currentX + moveUnit + 'px';
+                    moved = true;
+                    break;
+                }
+
+                if (moved) {
+                    event.preventDefault();
+
+                    // Update element attributes using proper constants
+                    selectedElement.setAttribute(
+                        'data-element-position-x',
+                        selectedElement.style.left.replace('px', '')
+                    );
+                    selectedElement.setAttribute(
+                        'data-element-position-y',
+                        selectedElement.style.top.replace('px', '')
+                    );
+
+                    // Update form inputs
+                    const posXInput = document.getElementById('lcd-txt-element-position-x');
+                    const posYInput = document.getElementById('lcd-txt-element-position-y');
+                    if (posXInput) {
+                        posXInput.value = selectedElement.style.left.replace('px', '');
+                    }
+                    if (posYInput) {
+                        posYInput.value = selectedElement.style.top.replace('px', '');
+                    }
+
+                    // Apply the changes and mark as touched
+                    if (module.applyFormToSelectedElement) {
+                        module.applyFormToSelectedElement();
+                    }
+                    if (module.markCurrentElementAsTouched) {
+                        module.markCurrentElementAsTouched();
+                    }
                 }
             }
-        }
 
-        // Handle Delete key to remove element
-        if (event.key === 'Delete' && selectedElement) {
-            event.preventDefault();
-            if (module.removeElement) {
-                module.removeElement();
-            }
-        }
+            // Handle Tab navigation between elements
+            if (event.key === 'Tab') {
+                const allElements = document.querySelectorAll('.designer-element');
+                const currentIndex = Array.from(allElements).findIndex(el => el.classList.contains('selected'));
 
-        // Handle Escape to clear selection
-        if (event.key === 'Escape') {
-            if (selectedElement) {
-                selectedElement.classList.remove('selected');
-                // Clear list selection too
-                const listElements = document.querySelectorAll('#lcd-designer-placed-elements li.selected');
-                listElements.forEach(li => li.classList.remove('selected'));
+                if (allElements.length > 0) {
+                    event.preventDefault();
+                    let nextIndex;
+
+                    if (event.shiftKey) {
+                        // Previous element (Shift+Tab)
+                        nextIndex = currentIndex <= 0 ? allElements.length - 1 : currentIndex - 1;
+                    } else {
+                        // Next element (Tab)
+                        nextIndex = currentIndex >= allElements.length - 1 ? 0 : currentIndex + 1;
+                    }
+
+                    const nextElement = allElements[nextIndex];
+                    const elementId = nextElement.getAttribute('data-element-id');
+                    const listElement = document.getElementById('list-' + elementId);
+
+                    // Import selectElement function and call it
+                    if (module.selectElementProgrammatically && listElement) {
+                        module.selectElementProgrammatically(listElement, nextElement);
+                    }
+                }
             }
-        }
-    }).catch(error => {
-        console.warn('Could not import element management functions:', error);
-    });
+
+            // Handle Delete key to remove element
+            if (event.key === 'Delete' && selectedElement) {
+                event.preventDefault();
+                if (module.removeElement) {
+                    module.removeElement();
+                }
+            }
+
+            // Handle Escape to clear selection
+            if (event.key === 'Escape') {
+                if (selectedElement) {
+                    selectedElement.classList.remove('selected');
+                    // Clear list selection too
+                    const listElements = document.querySelectorAll('#lcd-designer-placed-elements li.selected');
+                    listElements.forEach(li => li.classList.remove('selected'));
+                }
+            }
+        })
+        .catch(error => {
+            console.warn('Could not import element management functions:', error);
+        });
 }
 
 /**
