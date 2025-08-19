@@ -20,8 +20,7 @@ import {
     ATTR_ELEMENT_NAME,
     ATTR_ELEMENT_TYPE,
     ATTR_ELEMENT_POSITION_X,
-    ATTR_ELEMENT_POSITION_Y,
-    ATTR_MOVE_UNIT
+    ATTR_ELEMENT_POSITION_Y
 } from './constants.js';
 import {
     designerPane,
@@ -36,7 +35,6 @@ import {
     layoutStaticImageConfig,
     layoutGraphConfig,
     layoutConditionalImageConfig,
-    btnControlPadChangeMoveUnit,
     invoke,
     cmbTextSensorIdSelection,
     cmbTextSensorValueModifier,
@@ -72,8 +70,7 @@ import {
     getSelectedListElement,
     getSelectedDesignerElement,
     setSelectedListElement,
-    setSelectedDesignerElement,
-    getCurrentClientMacAddress
+    setSelectedDesignerElement
 } from './app-state.js';
 
 /**
@@ -320,6 +317,7 @@ export function moveElementUp() {
     }
 
     selectedList.parentNode.insertBefore(selectedList, selectedList.previousElementSibling);
+    updateElementZOrder();
 }
 
 /**
@@ -332,6 +330,592 @@ export function moveElementDown() {
     }
 
     selectedList.parentNode.insertBefore(selectedList.nextElementSibling, selectedList);
+    updateElementZOrder();
+}
+
+/**
+ * Initializes drag and drop functionality for the list items
+ */
+export function initializeListDragAndDrop() {
+    if (!lstDesignerPlacedElements) {
+        return;
+    }
+
+    // Set up event listeners for the list container
+    lstDesignerPlacedElements.addEventListener('dragover', handleListDragOver);
+    lstDesignerPlacedElements.addEventListener('drop', handleListDrop);
+    lstDesignerPlacedElements.addEventListener('dragenter', handleListDragEnter);
+    lstDesignerPlacedElements.addEventListener('dragleave', handleListDragLeave);
+
+    console.log('List drag and drop functionality initialized');
+}
+
+/**
+ * Handles dragenter event for the list container
+ */
+function handleListDragEnter(event) {
+    event.preventDefault();
+    lstDesignerPlacedElements.classList.add('drag-over');
+}
+
+/**
+ * Handles dragleave event for the list container
+ */
+function handleListDragLeave(event) {
+    // Only remove drag-over class if we're actually leaving the container
+    if (!lstDesignerPlacedElements.contains(event.relatedTarget)) {
+        lstDesignerPlacedElements.classList.remove('drag-over');
+    }
+}
+
+/**
+ * Handles dragover event for the list container
+ */
+function handleListDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+
+    const draggingItem = document.querySelector('.list-item-dragging');
+    if (!draggingItem) {
+        return;
+    }
+
+    const afterElement = getDragAfterElement(lstDesignerPlacedElements, event.clientY);
+
+    if (afterElement === null) {
+        lstDesignerPlacedElements.appendChild(draggingItem);
+    } else {
+        lstDesignerPlacedElements.insertBefore(draggingItem, afterElement);
+    }
+}
+
+/**
+ * Handles drop event for the list container
+ */
+function handleListDrop(event) {
+    event.preventDefault();
+    lstDesignerPlacedElements.classList.remove('drag-over');
+
+    const draggingItem = document.querySelector('.list-item-dragging');
+    if (draggingItem) {
+        draggingItem.classList.remove('list-item-dragging');
+
+        // Update z-order based on new position
+        updateElementZOrder();
+
+        console.log('List item reordered');
+    }
+}
+
+/**
+ * Determines the element after which the dragged item should be inserted
+ */
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('li:not(.list-item-dragging)')];
+
+    return draggableElements.reduce(
+        (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        },
+        { offset: Number.NEGATIVE_INFINITY }
+    ).element;
+}
+
+/**
+ * Updates z-order for all elements based on their position in the list
+ */
+function updateElementZOrder() {
+    const listItems = lstDesignerPlacedElements.querySelectorAll('li');
+
+    listItems.forEach((item, index) => {
+        const elementId = item.getAttribute(ATTR_ELEMENT_ID);
+        const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+
+        if (designerElement) {
+            // Higher index = higher z-index (items lower in list appear in front)
+            designerElement.style.zIndex = index + 1;
+        }
+    });
+
+    console.log(`Updated z-order for ${listItems.length} elements`);
+}
+
+/**
+ * Updates validation states for all elements
+ */
+export function updateAllElementValidationStates() {
+    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
+
+    listElements.forEach(listElement => {
+        updateElementValidationState(listElement);
+    });
+
+    console.log(`Updated validation states for ${listElements.length} elements`);
+}
+
+/**
+ * Marks current element as touched and triggers validation
+ */
+export function markCurrentElementAsTouched() {
+    const currentElement = getSelectedListElement();
+    if (!currentElement) {
+        return;
+    }
+
+    // Mark as touched
+    currentElement.setAttribute('data-touched', 'true');
+
+    // Trigger validation update for this element
+    updateElementValidationState(currentElement);
+
+    console.log(`Marked element as touched: ${currentElement.getAttribute(ATTR_ELEMENT_NAME)}`);
+}
+
+/**
+ * Save element configuration for the currently selected client
+ */
+export async function saveElementConfiguration() {
+    try {
+        // First, apply current form values to selected element
+        applyFormToSelectedElement();
+
+        // Collect all elements
+        const elements = collectAllElements();
+
+        // Get display resolution
+        const displayWidth = parseInt(txtDisplayResolutionWidth.value) || 128;
+        const displayHeight = parseInt(txtDisplayResolutionHeight.value) || 64;
+
+        // Create display configuration
+        const displayConfig = {
+            resolution_width: displayWidth,
+            resolution_height: displayHeight,
+            elements: elements
+        };
+
+        // Get the currently selected client (we need to determine which client is active)
+        // For now, we'll try to get the first registered client or use a default
+        const clientsResponse = await invoke('get_registered_clients');
+        const clients = JSON.parse(clientsResponse);
+
+        if (clients.length === 0) {
+            throw new Error('No registered clients found. Please register a client first.');
+        }
+
+        // Use the first active client, or the first client if none are active
+        let selectedClient = clients.find(client => client.active);
+        if (!selectedClient) {
+            selectedClient = clients[0];
+        }
+
+        // Save configuration for the selected client
+        await invoke('update_client_display_config', {
+            macAddress: selectedClient.mac_address,
+            displayConfig: JSON.stringify(displayConfig)
+        });
+
+        console.log(`Configuration saved for client: ${selectedClient.name}`);
+
+        // Show success feedback
+        // Note: We could add a toast notification here
+    } catch (error) {
+        console.error('Error saving configuration:', error);
+        throw error; // Re-throw to let calling code handle it
+    }
+}
+
+/**
+ * Move element with control pad
+ */
+export function moveElementControlPad(direction) {
+    const selectedDesigner = getSelectedDesignerElement();
+    const selectedList = getSelectedListElement();
+
+    if (!selectedDesigner || !selectedList) {
+        return;
+    }
+
+    const currentX = parseInt(selectedDesigner.style.left) || 0;
+    const currentY = parseInt(selectedDesigner.style.top) || 0;
+    const moveUnit = getMoveUnit(); // Get current move unit
+
+    let newX = currentX;
+    let newY = currentY;
+
+    switch (direction) {
+    case 'up':
+        newY = Math.max(0, currentY - moveUnit);
+        break;
+    case 'down':
+        newY = currentY + moveUnit;
+        break;
+    case 'left':
+        newX = Math.max(0, currentX - moveUnit);
+        break;
+    case 'right':
+        newX = currentX + moveUnit;
+        break;
+    default:
+        console.warn(`Unknown direction: ${direction}`);
+        return;
+    }
+
+    // Update visual position
+    selectedDesigner.style.left = newX + 'px';
+    selectedDesigner.style.top = newY + 'px';
+
+    // Update attributes
+    selectedDesigner.setAttribute(ATTR_ELEMENT_POSITION_X, newX);
+    selectedDesigner.setAttribute(ATTR_ELEMENT_POSITION_Y, newY);
+    selectedList.setAttribute(ATTR_ELEMENT_POSITION_X, newX);
+    selectedList.setAttribute(ATTR_ELEMENT_POSITION_Y, newY);
+
+    // Update form inputs
+    txtElementPositionX.value = newX;
+    txtElementPositionY.value = newY;
+
+    // Apply changes and mark as touched
+    applyFormToSelectedElement();
+    markCurrentElementAsTouched();
+
+    console.log(`Moved element ${direction} by ${moveUnit} pixels to (${newX}, ${newY})`);
+}
+
+/**
+ * Change move unit
+ */
+export function changeMoveUnit() {
+    // This function would typically update the move unit based on a form control
+    // The actual move unit is retrieved by getMoveUnit() function
+    console.log('Move unit changed');
+}
+
+/**
+ * Gets the current move unit for control pad movement
+ * @returns {number} Current move unit in pixels
+ */
+function getMoveUnit() {
+    const moveUnitElement = document.getElementById('lcd-designer-control-pad-move-unit');
+    if (moveUnitElement) {
+        const unit = parseInt(moveUnitElement.value) || 1;
+        return Math.max(1, unit); // Ensure minimum of 1 pixel
+    }
+    return 1; // Default move unit
+}
+
+/**
+ * Cleanup stuck drag states
+ */
+function cleanupAnyStuckDragStates() {
+    console.log('Cleaning up stuck drag states');
+
+    // Clear global drag state
+    globalDragState.isDragging = false;
+    globalDragState.currentElement = null;
+    globalDragState.startPosition = { x: 0, y: 0 };
+    globalDragState.initialPosition = { x: 0, y: 0 };
+    globalDragState.deferredOperations = [];
+
+    // Remove drag-related CSS classes
+    document.querySelectorAll('.dragging').forEach(element => {
+        element.classList.remove('dragging');
+        element.style.cursor = '';
+    });
+
+    document.querySelectorAll('.list-item-dragging').forEach(element => {
+        element.classList.remove('list-item-dragging');
+    });
+
+    if (lstDesignerPlacedElements) {
+        lstDesignerPlacedElements.classList.remove('drag-over');
+    }
+
+    console.log('Drag state cleanup completed');
+}
+
+/**
+ * Execute deferred drag operations
+ */
+function executeDeferredDragOperations(element, x, y) {
+    console.log('Executing deferred drag operations for element at', x, y);
+
+    if (!element) {
+        return;
+    }
+
+    // Update designer element position and attributes
+    element.style.left = x + 'px';
+    element.style.top = y + 'px';
+    element.setAttribute(ATTR_ELEMENT_POSITION_X, x);
+    element.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
+
+    // Update corresponding list element attributes
+    const elementId = element.getAttribute(ATTR_ELEMENT_ID);
+    const listElement = document.getElementById(LIST_ID_PREFIX + elementId);
+    if (listElement) {
+        listElement.setAttribute(ATTR_ELEMENT_POSITION_X, x);
+        listElement.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
+    }
+
+    // Update form inputs
+    updateFormPositionInputsOnly(x, y);
+
+    // Apply form values to update configuration
+    applyFormToSelectedElement();
+
+    // Mark element as touched and validate
+    markCurrentElementAsTouched();
+
+    // Process any queued deferred operations
+    if (globalDragState.deferredOperations && globalDragState.deferredOperations.length > 0) {
+        globalDragState.deferredOperations.forEach(operation => {
+            try {
+                operation();
+            } catch (error) {
+                console.error('Error executing deferred operation:', error);
+            }
+        });
+        globalDragState.deferredOperations = [];
+    }
+
+    console.log(`Deferred drag operations completed for element at (${x}, ${y})`);
+}
+
+/**
+ * Update form position inputs only (fast operation for drag feedback)
+ */
+function updateFormPositionInputsOnly(x, y) {
+    // Use direct element references for performance
+    if (txtElementPositionX) {
+        txtElementPositionX.value = x;
+    }
+    if (txtElementPositionY) {
+        txtElementPositionY.value = y;
+    }
+}
+
+/**
+ * Update element validation state
+ */
+function updateElementValidationState(element) {
+    if (!element) {
+        return;
+    }
+
+    const validationResult = validateElementDirectly(element);
+    const elementId = element.getAttribute(ATTR_ELEMENT_ID);
+    const designerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+
+    // Apply or remove invalid class based on validation result
+    if (validationResult.isValid) {
+        element.classList.remove('invalid');
+        if (designerElement) {
+            designerElement.classList.remove('invalid');
+        }
+    } else {
+        element.classList.add('invalid');
+        if (designerElement) {
+            designerElement.classList.add('invalid');
+        }
+    }
+
+    // Store validation errors for potential display
+    if (validationResult.errors && validationResult.errors.length > 0) {
+        element.setAttribute('data-validation-errors', JSON.stringify(validationResult.errors));
+    } else {
+        element.removeAttribute('data-validation-errors');
+    }
+
+    console.log(
+        `Validation state updated for element ${element.getAttribute(ATTR_ELEMENT_NAME)}: ${validationResult.isValid ? 'valid' : 'invalid'}`
+    );
+}
+
+/**
+ * Validate element directly
+ * @param {HTMLElement} element - List element to validate
+ * @returns {Object} Validation result with isValid boolean and errors array
+ */
+function validateElementDirectly(element) {
+    if (!element) {
+        return { isValid: false, errors: ['Element not found'] };
+    }
+
+    const elementName = element.getAttribute(ATTR_ELEMENT_NAME) || 'Unnamed Element';
+    const elementType = element.getAttribute(ATTR_ELEMENT_TYPE);
+    const errors = [];
+
+    // Get element configuration
+    let config = null;
+    const configAttr = element.getAttribute('data-config');
+    if (configAttr) {
+        try {
+            config = JSON.parse(configAttr);
+        } catch (error) {
+            errors.push(`${elementName}: Invalid configuration data`);
+            return { isValid: false, errors };
+        }
+    }
+
+    // Basic position validation
+    const x = parseInt(element.getAttribute(ATTR_ELEMENT_POSITION_X));
+    const y = parseInt(element.getAttribute(ATTR_ELEMENT_POSITION_Y));
+    if (isNaN(x) || x < 0) {
+        errors.push(`${elementName}: Invalid X position`);
+    }
+    if (isNaN(y) || y < 0) {
+        errors.push(`${elementName}: Invalid Y position`);
+    }
+
+    // Type-specific validation
+    if (!config) {
+        errors.push(`${elementName}: No configuration found`);
+    } else {
+        switch (elementType) {
+        case ELEMENT_TYPE_TEXT:
+            validateTextElement(elementName, config, errors);
+            break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            validateStaticImageElement(elementName, config, errors);
+            break;
+        case ELEMENT_TYPE_GRAPH:
+            validateGraphElement(elementName, config, errors);
+            break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            validateConditionalImageElement(elementName, config, errors);
+            break;
+        default:
+            errors.push(`${elementName}: Unknown element type '${elementType}'`);
+        }
+    }
+
+    return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validates a text element configuration
+ */
+function validateTextElement(elementName, config, errors) {
+    if (!config.sensor_id || config.sensor_id.trim() === '') {
+        errors.push(`${elementName}: No sensor selected`);
+    }
+
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be greater than 0`);
+    }
+
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be greater than 0`);
+    }
+
+    if (!config.font_family || config.font_family.trim() === '') {
+        errors.push(`${elementName}: No font family selected`);
+    }
+
+    if (!config.font_size || config.font_size <= 0) {
+        errors.push(`${elementName}: Font size must be greater than 0`);
+    }
+
+    if (!config.format || config.format.trim() === '') {
+        errors.push(`${elementName}: No text format specified`);
+    }
+}
+
+/**
+ * Validates a static image element configuration
+ */
+function validateStaticImageElement(elementName, config, errors) {
+    if (!config.image_path || config.image_path.trim() === '') {
+        errors.push(`${elementName}: No image file selected`);
+    }
+
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be greater than 0`);
+    }
+
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be greater than 0`);
+    }
+}
+
+/**
+ * Validates a graph element configuration
+ */
+function validateGraphElement(elementName, config, errors) {
+    if (!config.sensor_id || config.sensor_id.trim() === '') {
+        errors.push(`${elementName}: No sensor selected`);
+    }
+
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be greater than 0`);
+    }
+
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be greater than 0`);
+    }
+
+    if (!config.graph_type || config.graph_type.trim() === '') {
+        errors.push(`${elementName}: No graph type selected`);
+    }
+
+    if (config.graph_stroke_width && config.graph_stroke_width <= 0) {
+        errors.push(`${elementName}: Stroke width must be greater than 0`);
+    }
+}
+
+/**
+ * Validates a conditional image element configuration
+ */
+function validateConditionalImageElement(elementName, config, errors) {
+    if (!config.sensor_id || config.sensor_id.trim() === '') {
+        errors.push(`${elementName}: No sensor selected`);
+    }
+
+    if (!config.images_path || config.images_path.trim() === '') {
+        errors.push(`${elementName}: No images path specified`);
+    }
+
+    if (!config.width || config.width <= 0) {
+        errors.push(`${elementName}: Width must be greater than 0`);
+    }
+
+    if (!config.height || config.height <= 0) {
+        errors.push(`${elementName}: Height must be greater than 0`);
+    }
+}
+
+/**
+ * Sets up drag and drop event handlers for a list element
+ */
+function setupListItemDragHandlers(listElement) {
+    listElement.addEventListener('dragstart', handleListItemDragStart);
+    listElement.addEventListener('dragend', handleListItemDragEnd);
+}
+
+/**
+ * Handles dragstart event for list items
+ */
+function handleListItemDragStart(event) {
+    event.target.classList.add('list-item-dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/html', event.target.outerHTML);
+    console.log('Started dragging list item:', event.target.getAttribute('data-element-name'));
+}
+
+/**
+ * Handles dragend event for list items
+ */
+function handleListItemDragEnd(event) {
+    event.target.classList.remove('list-item-dragging');
+    lstDesignerPlacedElements.classList.remove('drag-over');
+    console.log('Finished dragging list item');
 }
 
 /**
@@ -385,607 +969,9 @@ export async function duplicateElement() {
 
     // Select the new element
     selectElement(newListItem, newDesignerElement);
-}
 
-/**
- * Moves element using control pad
- */
-export function moveElementControlPad(direction) {
-    const moveUnit = parseInt(btnControlPadChangeMoveUnit.getAttribute(ATTR_MOVE_UNIT));
-    const selectedDesigner = getSelectedDesignerElement();
-    const selectedList = getSelectedListElement();
-
-    if (!selectedDesigner || !selectedList) {
-        return;
-    }
-
-    const currentX = parseInt(selectedDesigner.getAttribute(ATTR_ELEMENT_POSITION_X) || 0);
-    const currentY = parseInt(selectedDesigner.getAttribute(ATTR_ELEMENT_POSITION_Y) || 0);
-
-    let newX = currentX;
-    let newY = currentY;
-
-    switch (direction) {
-    case 'up':
-        newY = Math.max(0, currentY - moveUnit);
-        break;
-    case 'down':
-        newY = currentY + moveUnit;
-        break;
-    case 'left':
-        newX = Math.max(0, currentX - moveUnit);
-        break;
-    case 'right':
-        newX = currentX + moveUnit;
-        break;
-    }
-
-    // Update element position
-    updateElementPosition(selectedDesigner, newX, newY);
-    updateElementForm();
-}
-
-/**
- * Changes the move unit for control pad
- */
-export function changeMoveUnit() {
-    const currentUnit = parseInt(btnControlPadChangeMoveUnit.getAttribute(ATTR_MOVE_UNIT)) || 1;
-    const units = [1, 5, 10, 25];
-    const currentIndex = units.indexOf(currentUnit);
-    const nextIndex = (currentIndex + 1) % units.length;
-    const newUnit = units[nextIndex];
-
-    btnControlPadChangeMoveUnit.setAttribute(ATTR_MOVE_UNIT, newUnit);
-    btnControlPadChangeMoveUnit.textContent = `${newUnit}px`;
-}
-
-/**
- * Moves element to a new position
- */
-function updateElementPosition(element, x, y) {
-    element.style.left = x + 'px';
-    element.style.top = y + 'px';
-    element.setAttribute(ATTR_ELEMENT_POSITION_X, x);
-    element.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
-
-    // Update corresponding list element
-    const listElement = document.getElementById(LIST_ID_PREFIX + element.getAttribute(ATTR_ELEMENT_ID));
-    if (listElement) {
-        listElement.setAttribute(ATTR_ELEMENT_POSITION_X, x);
-        listElement.setAttribute(ATTR_ELEMENT_POSITION_Y, y);
-    }
-}
-
-/**
- * Fast position update for form inputs during drag (no attribute updates)
- */
-function updateFormPositionInputsOnly(x, y) {
-    if (txtElementPositionX) {
-        txtElementPositionX.value = x;
-    }
-    if (txtElementPositionY) {
-        txtElementPositionY.value = y;
-    }
-}
-
-/**
- * Executes deferred operations after drag completion
- */
-function executeDeferredDragOperations(element, x, y) {
-    console.log('Executing deferred drag operations');
-
-    // Small delay to ensure drag operations are fully complete
-    setTimeout(() => {
-        // Update element position with all attributes
-        updateElementPosition(element, x, y);
-
-        // Update form to reflect all changes
-        updateElementForm();
-
-        // Mark element as touched for validation
-        markCurrentElementAsTouched();
-
-        // Apply form values and trigger preview update
-        applyFormToSelectedElement();
-
-        console.log('Deferred drag operations completed');
-    }, 10); // 10ms delay for smooth completion
-}
-
-/**
- * Resets global drag state safely
- */
-function resetGlobalDragState() {
-    const wasInDragMode = globalDragState.isDragging;
-
-    globalDragState.isDragging = false;
-    globalDragState.currentElement = null;
-    globalDragState.startPosition = { x: 0, y: 0 };
-    globalDragState.initialPosition = { x: 0, y: 0 };
-    globalDragState.deferredOperations = [];
-
-    if (wasInDragMode) {
-        console.log('Global drag state reset');
-    }
-}
-
-/**
- * Emergency cleanup for stuck drag states
- */
-function cleanupAnyStuckDragStates() {
-    // Remove dragging class from any elements that might have it
-    const draggingElements = document.querySelectorAll('.designer-element.dragging');
-    draggingElements.forEach(el => {
-        el.classList.remove('dragging');
-        el.style.cursor = '';
-    });
-
-    // Reset global state
-    resetGlobalDragState();
-
-    if (draggingElements.length > 0) {
-        console.log(`Cleaned up ${draggingElements.length} stuck drag states`);
-    }
-}
-
-/**
- * Validates a text element configuration
- * @param {Object} config - Text element configuration
- * @param {string} elementName - Element name for error reporting
- * @returns {Array} Array of validation error messages
- */
-function validateTextElement(config, elementName) {
-    const errors = [];
-
-    if (!config.sensor_id || config.sensor_id.trim() === '') {
-        errors.push(`${elementName}: Please select a sensor`);
-    }
-
-    if (!config.format || config.format.trim() === '') {
-        errors.push(`${elementName}: Text format cannot be empty`);
-    }
-
-    if (!config.font_size || config.font_size <= 0) {
-        errors.push(`${elementName}: Font size must be a positive number`);
-    }
-
-    if (!config.width || config.width <= 0) {
-        errors.push(`${elementName}: Width must be a positive number`);
-    }
-
-    if (!config.height || config.height <= 0) {
-        errors.push(`${elementName}: Height must be a positive number`);
-    }
-
-    return errors;
-}
-
-/**
- * Validates a static image element configuration
- * @param {Object} config - Static image element configuration
- * @param {string} elementName - Element name for error reporting
- * @returns {Array} Array of validation error messages
- */
-function validateStaticImageElement(config, elementName) {
-    const errors = [];
-
-    if (!config.image_path || config.image_path.trim() === '') {
-        errors.push(`${elementName}: Please select an image file`);
-    }
-
-    if (!config.width || config.width <= 0) {
-        errors.push(`${elementName}: Width must be a positive number`);
-    }
-
-    if (!config.height || config.height <= 0) {
-        errors.push(`${elementName}: Height must be a positive number`);
-    }
-
-    return errors;
-}
-
-/**
- * Validates a graph element configuration
- * @param {Object} config - Graph element configuration
- * @param {string} elementName - Element name for error reporting
- * @returns {Array} Array of validation error messages
- */
-function validateGraphElement(config, elementName) {
-    const errors = [];
-
-    if (!config.sensor_id || config.sensor_id.trim() === '') {
-        errors.push(`${elementName}: Please select a sensor`);
-    }
-
-    if (!config.width || config.width <= 0) {
-        errors.push(`${elementName}: Width must be a positive number`);
-    }
-
-    if (!config.height || config.height <= 0) {
-        errors.push(`${elementName}: Height must be a positive number`);
-    }
-
-    if (config.min_sensor_value !== null && config.max_sensor_value !== null) {
-        if (config.min_sensor_value >= config.max_sensor_value) {
-            errors.push(`${elementName}: Minimum sensor value must be less than maximum sensor value`);
-        }
-    }
-
-    if (!config.graph_stroke_width || config.graph_stroke_width <= 0) {
-        errors.push(`${elementName}: Stroke width must be a positive number`);
-    }
-
-    return errors;
-}
-
-/**
- * Validates a conditional image element configuration
- * @param {Object} config - Conditional image element configuration
- * @param {string} elementName - Element name for error reporting
- * @returns {Array} Array of validation error messages
- */
-function validateConditionalImageElement(config, elementName) {
-    const errors = [];
-
-    if (!config.sensor_id || config.sensor_id.trim() === '') {
-        errors.push(`${elementName}: Please select a sensor`);
-    }
-
-    if (!config.images_path || config.images_path.trim() === '') {
-        errors.push(`${elementName}: Please select an images path or catalog entry`);
-    }
-
-    if (!config.width || config.width <= 0) {
-        errors.push(`${elementName}: Width must be a positive number`);
-    }
-
-    if (!config.height || config.height <= 0) {
-        errors.push(`${elementName}: Height must be a positive number`);
-    }
-
-    if (config.min_sensor_value >= config.max_sensor_value) {
-        errors.push(`${elementName}: Minimum sensor value must be less than maximum sensor value`);
-    }
-
-    return errors;
-}
-
-/**
- * Gets configuration for a specific element by generating it from the stored data or form
- * @param {Object} element - Element data
- * @param {HTMLElement} listElement - The list element DOM node
- * @returns {Object} Configuration object for the element
- */
-function getElementConfigForValidation(element, listElement) {
-    // Try to get config from stored data first
-    const configAttr = listElement.getAttribute('data-config');
-    if (configAttr) {
-        try {
-            return JSON.parse(configAttr);
-        } catch (error) {
-            console.warn('Failed to parse element config:', error);
-        }
-    }
-
-    // If no stored config, generate default config based on type
-    switch (element.element_type) {
-    case ELEMENT_TYPE_TEXT:
-        return {
-            sensor_id: '', // Empty for new elements
-            value_modifier: 'none',
-            format: '{value} {unit}',
-            font_family: 'Arial',
-            font_size: 12,
-            font_color: '#ffffffff',
-            width: 100,
-            height: 20,
-            alignment: 'left'
-        };
-
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        return {
-            image_path: '', // Empty for new elements
-            width: 100,
-            height: 100
-        };
-
-    case ELEMENT_TYPE_GRAPH:
-        return {
-            sensor_id: '', // Empty for new elements
-            sensor_values: [],
-            min_sensor_value: null,
-            max_sensor_value: null,
-            width: 200,
-            height: 50,
-            graph_type: 'line',
-            graph_color: '#0066ccff',
-            graph_stroke_width: 2,
-            background_color: '#00000000',
-            border_color: '#ffffff00'
-        };
-
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        return {
-            sensor_id: '', // Empty for new elements
-            sensor_value: '',
-            images_path: '', // Empty for new elements
-            min_sensor_value: 0.0,
-            max_sensor_value: 100.0,
-            width: 130,
-            height: 25
-        };
-
-    default:
-        return {};
-    }
-}
-
-/**
- * Validates all elements in the current configuration
- * @returns {Array} Array of validation error messages
- */
-function validateAllElements() {
-    const errors = [];
-    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
-
-    if (listElements.length === 0) {
-        errors.push('No elements to save. Please add at least one element.');
-        return errors;
-    }
-
-    listElements.forEach(li => {
-        const element = {
-            id: li.getAttribute(ATTR_ELEMENT_ID),
-            name: li.getAttribute(ATTR_ELEMENT_NAME),
-            element_type: li.getAttribute(ATTR_ELEMENT_TYPE)
-        };
-
-        const elementName = element.name || `Element ${element.id}`;
-        const configToValidate = getElementConfigForValidation(element, li);
-
-        switch (element.element_type) {
-        case ELEMENT_TYPE_TEXT:
-            errors.push(...validateTextElement(configToValidate, elementName));
-            break;
-
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            errors.push(...validateStaticImageElement(configToValidate, elementName));
-            break;
-
-        case ELEMENT_TYPE_GRAPH:
-            errors.push(...validateGraphElement(configToValidate, elementName));
-            break;
-
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            errors.push(...validateConditionalImageElement(configToValidate, elementName));
-            break;
-
-        default:
-            errors.push(`${elementName}: Unknown element type: ${element.element_type}`);
-        }
-    });
-
-    return errors;
-}
-
-/**
- * Validates the currently selected element
- * @returns {Object} Object with isValid boolean and errors array
- */
-// eslint-disable-next-line no-unused-vars
-function validateCurrentElement() {
-    const selectedList = getSelectedListElement();
-    if (!selectedList) {
-        return { isValid: true, errors: [] }; // No element selected is considered valid
-    }
-
-    const element = {
-        id: selectedList.getAttribute(ATTR_ELEMENT_ID),
-        name: selectedList.getAttribute(ATTR_ELEMENT_NAME),
-        element_type: selectedList.getAttribute(ATTR_ELEMENT_TYPE)
-    };
-
-    const elementName = element.name || `Element ${element.id}`;
-    const configToValidate = getElementConfigForValidation(element, selectedList);
-
-    let errors = [];
-
-    switch (element.element_type) {
-    case ELEMENT_TYPE_TEXT:
-        errors = validateTextElement(configToValidate, elementName);
-        break;
-
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        errors = validateStaticImageElement(configToValidate, elementName);
-        break;
-
-    case ELEMENT_TYPE_GRAPH:
-        errors = validateGraphElement(configToValidate, elementName);
-        break;
-
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        errors = validateConditionalImageElement(configToValidate, elementName);
-        break;
-
-    default:
-        errors = [`${elementName}: Unknown element type: ${element.element_type}`];
-    }
-
-    return {
-        isValid: errors.length === 0,
-        errors: errors
-    };
-}
-
-/**
- * Updates the validation state visual indicators for an element
- * @param {HTMLElement} listElement - The list element to update
- */
-function updateElementValidationState(listElement) {
-    if (!listElement) {
-        console.warn('updateElementValidationState called with null element');
-        return;
-    }
-
-    const elementName = listElement.getAttribute(ATTR_ELEMENT_NAME) || 'Unknown';
-    console.log('Validating element:', elementName);
-
-    // Validate the element directly without changing selection
-    const validationResult = validateElementDirectly(listElement);
-
-    // Update visual indicators for the SPECIFIC element passed in
-    // Only show indicators for INVALID elements - valid elements look normal
-    if (validationResult.isValid) {
-        listElement.classList.remove('invalid');
-        listElement.classList.remove('valid'); // Remove any existing valid class
-        listElement.title = ''; // Clear title
-    } else {
-        listElement.classList.remove('valid');
-        listElement.classList.add('invalid');
-        listElement.title = 'Invalid: ' + validationResult.errors.join('; ');
-    }
-}
-
-/**
- * Validates an element directly without changing selection state
- * @param {HTMLElement} listElement - The list element to validate
- * @returns {Object} Object with isValid boolean and errors array
- */
-function validateElementDirectly(listElement) {
-    if (!listElement) {
-        return { isValid: true, errors: [] };
-    }
-
-    const element = {
-        id: listElement.getAttribute(ATTR_ELEMENT_ID),
-        name: listElement.getAttribute(ATTR_ELEMENT_NAME),
-        element_type: listElement.getAttribute(ATTR_ELEMENT_TYPE)
-    };
-
-    const elementName = element.name || `Element ${element.id}`;
-    const configToValidate = getElementConfigForValidation(element, listElement);
-
-    let errors = [];
-
-    switch (element.element_type) {
-    case ELEMENT_TYPE_TEXT:
-        errors = validateTextElement(configToValidate, elementName);
-        break;
-
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        errors = validateStaticImageElement(configToValidate, elementName);
-        break;
-
-    case ELEMENT_TYPE_GRAPH:
-        errors = validateGraphElement(configToValidate, elementName);
-        break;
-
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        errors = validateConditionalImageElement(configToValidate, elementName);
-        break;
-
-    default:
-        errors = [`${elementName}: Unknown element type: ${element.element_type}`];
-    }
-
-    return {
-        isValid: errors.length === 0,
-        errors: errors
-    };
-}
-
-/**
- * Updates validation only if the current element has been "touched" (modified after creation)
- */
-export function updateValidationIfElementTouched() {
-    const currentElement = getSelectedListElement();
-    if (!currentElement) {
-        return;
-    }
-
-    // Check if element has been marked as "touched"
-    const isTouched = currentElement.getAttribute('data-touched') === 'true';
-
-    if (isTouched) {
-        updateElementValidationState(currentElement);
-    }
-}
-
-/**
- * Updates validation states for all elements in the list
- */
-export function updateAllElementValidationStates() {
-    const listElements = lstDesignerPlacedElements.querySelectorAll('li');
-    listElements.forEach(listElement => {
-        updateElementValidationState(listElement);
-    });
-}
-
-/**
- * Marks the current element as "touched" (user has made changes)
- */
-export function markCurrentElementAsTouched() {
-    // Skip validation operations during drag for performance
-    if (globalDragState.isDragging) {
-        console.log('Skipping markCurrentElementAsTouched during drag operation');
-        return;
-    }
-
-    const currentElement = getSelectedListElement();
-    if (currentElement) {
-        currentElement.setAttribute('data-touched', 'true');
-        // Now that it's touched, we can show validation - but only for this specific element
-        updateElementValidationState(currentElement);
-    }
-}
-
-/**
- * Saves the current element configuration to the backend
- */
-export async function saveElementConfiguration() {
-    const macAddress = getCurrentClientMacAddress();
-    if (!macAddress) {
-        alert('Please select a client first.');
-        return;
-    }
-
-    try {
-        // First, apply current form values to the selected element
-        applyFormToSelectedElement();
-
-        // Validate all elements before saving
-        const validationErrors = validateAllElements();
-        if (validationErrors.length > 0) {
-            const errorMessage = 'Configuration validation failed:\n\n' + validationErrors.join('\n');
-            alert(errorMessage);
-            console.warn('Validation errors:', validationErrors);
-            return;
-        }
-
-        const elements = collectAllElements();
-
-        // Get the current client's resolution from the backend
-        const clientsResponse = await invoke('get_registered_clients');
-        const parsedClients = JSON.parse(clientsResponse);
-        const currentClient = parsedClients[macAddress];
-
-        if (!currentClient) {
-            throw new Error('Current client not found');
-        }
-
-        // Create the complete DisplayConfig structure
-        const displayConfig = {
-            resolution_width: currentClient.resolution_width || 0,
-            resolution_height: currentClient.resolution_height || 0,
-            elements: elements
-        };
-
-        await invoke('update_client_display_config', { macAddress, displayConfig: JSON.stringify(displayConfig) });
-        console.log('Element configuration saved successfully');
-    } catch (error) {
-        console.error('Failed to save element configuration:', error);
-        alert('Error saving configuration: ' + error);
-    }
+    // Update z-order for all elements
+    updateElementZOrder();
 }
 
 /**
@@ -1052,6 +1038,9 @@ export function loadDisplayElements(elements = []) {
     });
 
     console.log(`Loaded ${elements.length} display elements`);
+
+    // Update z-order for all elements
+    updateElementZOrder();
 
     // Update validation states for all loaded elements
     updateAllElementValidationStates();
@@ -1755,6 +1744,9 @@ function setupElementEventHandlers(listElement, designerElement) {
         await selectElement(listElement, designerElement);
     });
 
+    // Add list drag and drop handlers
+    setupListItemDragHandlers(listElement);
+
     // Optimized drag and drop functionality
     const localDragState = {
         isDragging: false,
@@ -1884,7 +1876,7 @@ function setupElementEventHandlers(listElement, designerElement) {
     });
 }
 
-function collectAllElements() {
+export function collectAllElements() {
     const elements = [];
     const listElements = lstDesignerPlacedElements.querySelectorAll('li');
 

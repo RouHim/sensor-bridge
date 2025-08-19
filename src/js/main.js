@@ -29,7 +29,8 @@ import {
     updateElementPreview,
     updateAllElementValidationStates,
     markCurrentElementAsTouched,
-    initializeDragSafety
+    initializeDragSafety,
+    initializeListDragAndDrop
 } from './element-management.js';
 
 import {
@@ -109,6 +110,9 @@ export function initializeApplication() {
 
     // Initialize drag safety mechanisms
     initializeDragSafety();
+
+    // Initialize list drag and drop
+    initializeListDragAndDrop();
 
     // Setup event listeners
     setupEventListeners();

@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
     height: 100%;
     max-width: 100%;
     margin: 0;
@@ -15,8 +16,8 @@ html, body {
 }
 
 /* Firefox */
-#lcd-txt-resolution-width[type=number],
-#lcd-txt-resolution-height[type=number] {
+#lcd-txt-resolution-width[type='number'],
+#lcd-txt-resolution-height[type='number'] {
     -moz-appearance: textfield;
 }
 
@@ -162,7 +163,31 @@ td {
     border-bottom: none;
 }
 
-tbody tr:nth-child(odd), tbody tr:nth-child(even) {
+/* Drag and drop styles for list items */
+#lcd-designer-placed-elements > li.list-item-dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    transition: transform 0.2s ease;
+}
+
+#lcd-designer-placed-elements > li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+/* Visual indicator for drag-over state */
+#lcd-designer-placed-elements.drag-over {
+    border-color: var(--selection);
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.3);
+}
+
+/* Smooth transitions for reordering */
+#lcd-designer-placed-elements > li {
+    transition: all 0.2s ease;
+}
+
+tbody tr:nth-child(odd),
+tbody tr:nth-child(even) {
     background-color: transparent;
 }
 
@@ -197,7 +222,10 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     z-index: 1000;
     transform: scale(1.05);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    transition: transform 0.1s ease, opacity 0.1s ease, box-shadow 0.1s ease !important;
+    transition:
+        transform 0.1s ease,
+        opacity 0.1s ease,
+        box-shadow 0.1s ease !important;
     /* Keep position transitions off for smooth dragging, but preserve visual effects */
 }
 
@@ -245,11 +273,12 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
 }
 
 @keyframes validation-lock-pulse {
-    0%, 100% { 
+    0%,
+    100% {
         background-color: rgba(255, 68, 68, 0.3);
         border-left-color: #ff4444;
     }
-    50% { 
+    50% {
         background-color: rgba(255, 68, 68, 0.6);
         border-left-color: #ff8888;
     }
@@ -264,7 +293,9 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     background-color: rgba(255, 68, 68, 0.2) !important;
 }
 
-#lcd-designer-control-pad-left-right, #lcd-designer-control-pad-up, #lcd-designer-control-pad-down {
+#lcd-designer-control-pad-left-right,
+#lcd-designer-control-pad-up,
+#lcd-designer-control-pad-down {
     color: var(--form-text);
     display: flex;
     flex-direction: row;
@@ -308,7 +339,6 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
 #sensor-selection-table tbody tr:hover {
     background-color: var(--selection);
 }
-
 
 #sensor-selection-table-filter-input {
     width: 100%;
