@@ -8,9 +8,9 @@ async function waitForTauriReady() {
     if (document.readyState !== 'loading') {
         return Promise.resolve();
     }
-    
+
     return new Promise(resolve => {
-        window.addEventListener("DOMContentLoaded", resolve);
+        window.addEventListener('DOMContentLoaded', resolve);
     });
 }
 
@@ -18,17 +18,17 @@ async function waitForTauriReady() {
 async function waitForTauriAPI() {
     let attempts = 0;
     const maxAttempts = 50; // 5 seconds max wait
-    
+
     while (attempts < maxAttempts) {
         if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.dialog) {
             console.log('Tauri API ready after', attempts * 100, 'ms');
             return;
         }
-        
+
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    
+
     throw new Error('Tauri API not available after 5 seconds');
 }
 
@@ -39,7 +39,7 @@ async function initialize() {
         await waitForTauriReady();
         await waitForTauriAPI();
         console.log('DOM and Tauri ready, initializing application...');
-        initializeApplication();
+        await initializeApplication();
     } catch (error) {
         console.error('Failed to initialize application:', error);
         alert('Failed to initialize application: ' + error.message);

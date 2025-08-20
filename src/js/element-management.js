@@ -182,30 +182,30 @@ export function onElementTypeChange() {
 
     // Show relevant config panel and set defaults only when changing types
     switch (selectedType) {
-    case ELEMENT_TYPE_TEXT:
-        layoutTextConfig.style.display = 'block';
-        if (isChangingType || !selectedList) {
-            setDefaultTextConfig();
-        }
-        break;
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        layoutStaticImageConfig.style.display = 'block';
-        if (isChangingType || !selectedList) {
-            setDefaultStaticImageConfig();
-        }
-        break;
-    case ELEMENT_TYPE_GRAPH:
-        layoutGraphConfig.style.display = 'block';
-        if (isChangingType || !selectedList) {
-            setDefaultGraphConfig();
-        }
-        break;
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        layoutConditionalImageConfig.style.display = 'block';
-        if (isChangingType || !selectedList) {
-            setDefaultConditionalImageConfig();
-        }
-        break;
+        case ELEMENT_TYPE_TEXT:
+            layoutTextConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultTextConfig();
+            }
+            break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            layoutStaticImageConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultStaticImageConfig();
+            }
+            break;
+        case ELEMENT_TYPE_GRAPH:
+            layoutGraphConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultGraphConfig();
+            }
+            break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            layoutConditionalImageConfig.style.display = 'block';
+            if (isChangingType || !selectedList) {
+                setDefaultConditionalImageConfig();
+            }
+            break;
     }
 
     if (selectedList && selectedDesigner) {
@@ -584,21 +584,21 @@ export function moveElementControlPad(direction) {
     let newY = currentY;
 
     switch (direction) {
-    case 'up':
-        newY = Math.max(0, currentY - moveUnit);
-        break;
-    case 'down':
-        newY = currentY + moveUnit;
-        break;
-    case 'left':
-        newX = Math.max(0, currentX - moveUnit);
-        break;
-    case 'right':
-        newX = currentX + moveUnit;
-        break;
-    default:
-        console.warn(`Unknown direction: ${direction}`);
-        return;
+        case 'up':
+            newY = Math.max(0, currentY - moveUnit);
+            break;
+        case 'down':
+            newY = currentY + moveUnit;
+            break;
+        case 'left':
+            newX = Math.max(0, currentX - moveUnit);
+            break;
+        case 'right':
+            newX = currentX + moveUnit;
+            break;
+        default:
+            console.warn(`Unknown direction: ${direction}`);
+            return;
     }
 
     // Update visual position
@@ -813,20 +813,20 @@ function validateElementDirectly(element) {
         errors.push(`${elementName}: No configuration found`);
     } else {
         switch (elementType) {
-        case ELEMENT_TYPE_TEXT:
-            validateTextElement(elementName, config, errors);
-            break;
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            validateStaticImageElement(elementName, config, errors);
-            break;
-        case ELEMENT_TYPE_GRAPH:
-            validateGraphElement(elementName, config, errors);
-            break;
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            validateConditionalImageElement(elementName, config, errors);
-            break;
-        default:
-            errors.push(`${elementName}: Unknown element type '${elementType}'`);
+            case ELEMENT_TYPE_TEXT:
+                validateTextElement(elementName, config, errors);
+                break;
+            case ELEMENT_TYPE_STATIC_IMAGE:
+                validateStaticImageElement(elementName, config, errors);
+                break;
+            case ELEMENT_TYPE_GRAPH:
+                validateGraphElement(elementName, config, errors);
+                break;
+            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                validateConditionalImageElement(elementName, config, errors);
+                break;
+            default:
+                errors.push(`${elementName}: Unknown element type '${elementType}'`);
         }
     }
 
@@ -1036,18 +1036,18 @@ export function loadDisplayElements(elements = []) {
         // Determine which config to use based on element type
         let config = null;
         switch (elementType) {
-        case ELEMENT_TYPE_TEXT:
-            config = text_config;
-            break;
-        case ELEMENT_TYPE_STATIC_IMAGE:
-            config = image_config;
-            break;
-        case ELEMENT_TYPE_GRAPH:
-            config = graph_config;
-            break;
-        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-            config = conditional_image_config;
-            break;
+            case ELEMENT_TYPE_TEXT:
+                config = text_config;
+                break;
+            case ELEMENT_TYPE_STATIC_IMAGE:
+                config = image_config;
+                break;
+            case ELEMENT_TYPE_GRAPH:
+                config = graph_config;
+                break;
+            case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                config = conditional_image_config;
+                break;
         }
 
         // Store configuration if available
@@ -1161,20 +1161,20 @@ export function updateElementPreview() {
     let preview;
 
     switch (elementType) {
-    case ELEMENT_TYPE_TEXT:
-        preview = renderTextElementPreview(getTextElementConfig());
-        break;
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        preview = renderStaticImageElementPreview(getStaticImageElementConfig());
-        break;
-    case ELEMENT_TYPE_GRAPH:
-        preview = renderGraphElementPreview(getGraphElementConfig());
-        break;
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE: {
-        const elementId = selectedDesigner.getAttribute(ATTR_ELEMENT_ID);
-        preview = renderConditionalImageElementPreview(getConditionalImageElementConfig(), elementId);
-        break;
-    }
+        case ELEMENT_TYPE_TEXT:
+            preview = renderTextElementPreview(getTextElementConfig());
+            break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            preview = renderStaticImageElementPreview(getStaticImageElementConfig());
+            break;
+        case ELEMENT_TYPE_GRAPH:
+            preview = renderGraphElementPreview(getGraphElementConfig());
+            break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE: {
+            const elementId = selectedDesigner.getAttribute(ATTR_ELEMENT_ID);
+            preview = renderConditionalImageElementPreview(getConditionalImageElementConfig(), elementId);
+            break;
+        }
     }
 
     if (preview) {
@@ -1248,18 +1248,18 @@ function createDesignerElement(id, name, type, x, y, config = null) {
     // Use renderers to show previews
     let preview;
     switch (type) {
-    case ELEMENT_TYPE_TEXT:
-        preview = renderTextElementPreview(config || getTextElementConfig());
-        break;
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        preview = renderStaticImageElementPreview(config || getStaticImageElementConfig());
-        break;
-    case ELEMENT_TYPE_GRAPH:
-        preview = renderGraphElementPreview(config || getGraphElementConfig());
-        break;
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig(), id);
-        break;
+        case ELEMENT_TYPE_TEXT:
+            preview = renderTextElementPreview(config || getTextElementConfig());
+            break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            preview = renderStaticImageElementPreview(config || getStaticImageElementConfig());
+            break;
+        case ELEMENT_TYPE_GRAPH:
+            preview = renderGraphElementPreview(config || getGraphElementConfig());
+            break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            preview = renderConditionalImageElementPreview(config || getConditionalImageElementConfig(), id);
+            break;
     }
 
     if (preview) {
@@ -1659,95 +1659,95 @@ function updateElementForm() {
  */
 function loadConfigIntoForm(config, elementType) {
     switch (elementType) {
-    case ELEMENT_TYPE_TEXT:
-        if (cmbTextSensorIdSelection) {
-            cmbTextSensorIdSelection.value = config.sensor_id || '';
-        }
-        if (cmbTextSensorValueModifier) {
-            cmbTextSensorValueModifier.value = config.value_modifier || 'none';
-        }
-        if (txtTextFormat) {
-            txtTextFormat.value = config.format || '{value} {unit}';
-        }
-        if (cmbTextFontFamily) {
-            cmbTextFontFamily.value = config.font_family || 'Arial';
-        }
-        if (txtTextFontSize) {
-            txtTextFontSize.value = config.font_size || 12;
-        }
-        if (txtTextFontColor) {
-            txtTextFontColor.value = config.font_color || '#ffffffff';
-        }
-        if (txtTextWidth) {
-            txtTextWidth.value = config.width || 100;
-        }
-        if (txtTextHeight) {
-            txtTextHeight.value = config.height || 20;
-        }
-        if (cmbTextAlignment) {
-            cmbTextAlignment.value = config.alignment || 'left';
-        }
-        break;
+        case ELEMENT_TYPE_TEXT:
+            if (cmbTextSensorIdSelection) {
+                cmbTextSensorIdSelection.value = config.sensor_id || '';
+            }
+            if (cmbTextSensorValueModifier) {
+                cmbTextSensorValueModifier.value = config.value_modifier || 'none';
+            }
+            if (txtTextFormat) {
+                txtTextFormat.value = config.format || '{value} {unit}';
+            }
+            if (cmbTextFontFamily) {
+                cmbTextFontFamily.value = config.font_family || 'Arial';
+            }
+            if (txtTextFontSize) {
+                txtTextFontSize.value = config.font_size || 12;
+            }
+            if (txtTextFontColor) {
+                txtTextFontColor.value = config.font_color || '#ffffffff';
+            }
+            if (txtTextWidth) {
+                txtTextWidth.value = config.width || 100;
+            }
+            if (txtTextHeight) {
+                txtTextHeight.value = config.height || 20;
+            }
+            if (cmbTextAlignment) {
+                cmbTextAlignment.value = config.alignment || 'left';
+            }
+            break;
 
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        if (txtStaticImageFile) {
-            txtStaticImageFile.value = config.image_path || '';
-        }
-        if (txtStaticImageWidth) {
-            txtStaticImageWidth.value = config.width || 100;
-        }
-        if (txtStaticImageHeight) {
-            txtStaticImageHeight.value = config.height || 100;
-        }
-        break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            if (txtStaticImageFile) {
+                txtStaticImageFile.value = config.image_path || '';
+            }
+            if (txtStaticImageWidth) {
+                txtStaticImageWidth.value = config.width || 100;
+            }
+            if (txtStaticImageHeight) {
+                txtStaticImageHeight.value = config.height || 100;
+            }
+            break;
 
-    case ELEMENT_TYPE_GRAPH:
-        if (cmbGraphSensorIdSelection) {
-            cmbGraphSensorIdSelection.value = config.sensor_id || '';
-        }
-        if (txtGraphMinValue) {
-            txtGraphMinValue.value = config.min_sensor_value || '';
-        }
-        if (txtGraphMaxValue) {
-            txtGraphMaxValue.value = config.max_sensor_value || '';
-        }
-        if (txtGraphWidth) {
-            txtGraphWidth.value = config.width || 200;
-        }
-        if (txtGraphHeight) {
-            txtGraphHeight.value = config.height || 50;
-        }
-        if (cmbGraphType) {
-            cmbGraphType.value = config.graph_type || 'line';
-        }
-        if (txtGraphColor) {
-            txtGraphColor.value = config.graph_color || '#0066ccff';
-        }
-        if (txtGraphStrokeWidth) {
-            txtGraphStrokeWidth.value = config.graph_stroke_width || 2;
-        }
-        if (txtGraphBackgroundColor) {
-            txtGraphBackgroundColor.value = config.background_color || '#00000000';
-        }
-        if (txtGraphBorderColor) {
-            txtGraphBorderColor.value = config.border_color || '#ffffff00';
-        }
-        break;
+        case ELEMENT_TYPE_GRAPH:
+            if (cmbGraphSensorIdSelection) {
+                cmbGraphSensorIdSelection.value = config.sensor_id || '';
+            }
+            if (txtGraphMinValue) {
+                txtGraphMinValue.value = config.min_sensor_value || '';
+            }
+            if (txtGraphMaxValue) {
+                txtGraphMaxValue.value = config.max_sensor_value || '';
+            }
+            if (txtGraphWidth) {
+                txtGraphWidth.value = config.width || 200;
+            }
+            if (txtGraphHeight) {
+                txtGraphHeight.value = config.height || 50;
+            }
+            if (cmbGraphType) {
+                cmbGraphType.value = config.graph_type || 'line';
+            }
+            if (txtGraphColor) {
+                txtGraphColor.value = config.graph_color || '#0066ccff';
+            }
+            if (txtGraphStrokeWidth) {
+                txtGraphStrokeWidth.value = config.graph_stroke_width || 2;
+            }
+            if (txtGraphBackgroundColor) {
+                txtGraphBackgroundColor.value = config.background_color || '#00000000';
+            }
+            if (txtGraphBorderColor) {
+                txtGraphBorderColor.value = config.border_color || '#ffffff00';
+            }
+            break;
 
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        if (cmbConditionalImageSensorIdSelection) {
-            cmbConditionalImageSensorIdSelection.value = config.sensor_id || '';
-        }
-        if (txtConditionalImageImagesPath) {
-            txtConditionalImageImagesPath.value = config.images_path || '';
-        }
-        if (txtConditionalImageWidth) {
-            txtConditionalImageWidth.value = config.width || 130;
-        }
-        if (txtConditionalImageHeight) {
-            txtConditionalImageHeight.value = config.height || 25;
-        }
-        break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            if (cmbConditionalImageSensorIdSelection) {
+                cmbConditionalImageSensorIdSelection.value = config.sensor_id || '';
+            }
+            if (txtConditionalImageImagesPath) {
+                txtConditionalImageImagesPath.value = config.images_path || '';
+            }
+            if (txtConditionalImageWidth) {
+                txtConditionalImageWidth.value = config.width || 130;
+            }
+            if (txtConditionalImageHeight) {
+                txtConditionalImageHeight.value = config.height || 25;
+            }
+            break;
     }
 }
 
@@ -1950,20 +1950,20 @@ export function collectAllElements() {
 
                 // Map the generic config to the appropriate typed config field
                 switch (elementType) {
-                case ELEMENT_TYPE_TEXT:
-                    elementData.text_config = config;
-                    break;
-                case ELEMENT_TYPE_STATIC_IMAGE:
-                    elementData.image_config = config;
-                    break;
-                case ELEMENT_TYPE_GRAPH:
-                    elementData.graph_config = config;
-                    break;
-                case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-                    elementData.conditional_image_config = config;
-                    break;
-                default:
-                    console.warn(`Unknown element type: ${elementType}`);
+                    case ELEMENT_TYPE_TEXT:
+                        elementData.text_config = config;
+                        break;
+                    case ELEMENT_TYPE_STATIC_IMAGE:
+                        elementData.image_config = config;
+                        break;
+                    case ELEMENT_TYPE_GRAPH:
+                        elementData.graph_config = config;
+                        break;
+                    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+                        elementData.conditional_image_config = config;
+                        break;
+                    default:
+                        console.warn(`Unknown element type: ${elementType}`);
                 }
             } catch (error) {
                 console.warn('Failed to parse element config:', error);
@@ -2253,20 +2253,20 @@ export function applyFormToSelectedElement() {
     // Store detailed configuration based on element type
     let config;
     switch (newType) {
-    case ELEMENT_TYPE_TEXT:
-        config = getTextElementConfig();
-        break;
-    case ELEMENT_TYPE_STATIC_IMAGE:
-        config = getStaticImageElementConfig();
-        break;
-    case ELEMENT_TYPE_GRAPH:
-        config = getGraphElementConfig();
-        break;
-    case ELEMENT_TYPE_CONDITIONAL_IMAGE:
-        config = getConditionalImageElementConfig();
-        break;
-    default:
-        config = {};
+        case ELEMENT_TYPE_TEXT:
+            config = getTextElementConfig();
+            break;
+        case ELEMENT_TYPE_STATIC_IMAGE:
+            config = getStaticImageElementConfig();
+            break;
+        case ELEMENT_TYPE_GRAPH:
+            config = getGraphElementConfig();
+            break;
+        case ELEMENT_TYPE_CONDITIONAL_IMAGE:
+            config = getConditionalImageElementConfig();
+            break;
+        default:
+            config = {};
     }
 
     // Store configuration as a data attribute

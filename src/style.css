@@ -636,3 +636,563 @@ input:checked + .toggle-slider:before {
         gap: 14px;
     }
 }
+
+/* Modern Control Groups */
+.control-groups-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.control-group {
+    background: linear-gradient(135deg, #333, #404040);
+    border: 1px solid #444;
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 280px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.control-group:hover {
+    background: linear-gradient(135deg, #383838, #454545);
+    border-color: rgba(0, 102, 204, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.control-group-header {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-group-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.control-group-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.control-group-body {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.control-label {
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #ccc;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.control-input {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.control-input:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--selection);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    outline: none;
+}
+
+.port-input {
+    width: 80px;
+}
+
+.control-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    min-width: 200px;
+}
+
+.control-select:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--selection);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    outline: none;
+}
+
+.client-select {
+    flex: 1;
+    min-width: 250px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.action-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 102, 204, 0.4);
+    transform: translateY(-1px);
+}
+
+.action-button.compact {
+    padding: 8px 10px;
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.action-button.primary {
+    background: rgba(0, 102, 204, 0.2);
+    border-color: rgba(0, 102, 204, 0.4);
+    color: var(--selection);
+}
+
+.action-button.primary:hover {
+    background: rgba(0, 102, 204, 0.3);
+    border-color: var(--selection);
+}
+
+.action-button.danger {
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.4);
+    color: #ff6b6b;
+}
+
+.action-button.danger:hover {
+    background: rgba(255, 68, 68, 0.3);
+    border-color: #ff6b6b;
+}
+
+.action-button i {
+    width: 18px;
+    height: 18px;
+}
+
+/* Section Headers */
+.section-header {
+    background: linear-gradient(135deg, #333, #404040);
+    padding: 12px 16px;
+    margin: 20px 15px 0 15px;
+    border-radius: 12px 12px 0 0;
+    border: 1px solid #444;
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Element Configuration Layout */
+.element-config-container {
+    display: flex;
+    gap: 20px;
+    background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+    border: 1px solid #333;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    margin: 0 15px 15px 15px;
+    padding: 20px;
+}
+
+.element-list-panel {
+    flex: 0 0 280px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.element-config-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.panel-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.panel-body {
+    padding: 16px;
+}
+
+/* Element Actions Header */
+.element-actions-header {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.element-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Configuration Sections */
+.config-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+/* Add padding to config-grid when it's directly under config-section */
+.config-section > .config-grid {
+    padding: 16px;
+}
+
+.config-section:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 102, 204, 0.2);
+}
+
+.config-section-header {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.config-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.config-subsection {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.config-subsection:last-child {
+    border-bottom: none;
+}
+
+.config-subsection-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.subsection-icon {
+    width: 16px;
+    height: 16px;
+    color: rgba(0, 102, 204, 0.8);
+    stroke-width: 2;
+}
+
+.subsection-title {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.config-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.config-label {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #ccc;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.config-input,
+.config-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.config-input:focus,
+.config-select:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--selection);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    outline: none;
+}
+
+.input-with-button {
+    display: flex;
+    gap: 8px;
+}
+
+.input-with-button .config-select {
+    flex: 1;
+}
+
+.input-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 102, 204, 0.4);
+    color: var(--selection);
+}
+
+.input-button i {
+    width: 16px;
+    height: 16px;
+}
+
+.format-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.format-input {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.placeholder-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.placeholder-button {
+    background: rgba(0, 102, 204, 0.1);
+    border: 1px solid rgba(0, 102, 204, 0.3);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--selection);
+    font-size: 0.75em;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.placeholder-button:hover {
+    background: rgba(0, 102, 204, 0.2);
+    border-color: var(--selection);
+    transform: translateY(-1px);
+}
+
+.color-input {
+    position: relative;
+}
+
+.info-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(0, 102, 204, 0.1);
+    border: 1px solid rgba(0, 102, 204, 0.2);
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+.tip-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--selection);
+    stroke-width: 2;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.tip-text {
+    font-size: 0.8em;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tip-text strong {
+    color: var(--selection);
+}
+
+.image-package-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.catalog-selection {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.catalog-selection .config-select {
+    flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .control-groups-container {
+        gap: 15px;
+    }
+
+    .control-group {
+        min-width: 250px;
+    }
+
+    .element-config-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .element-list-panel {
+        flex: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .control-groups-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .control-group {
+        min-width: auto;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .element-actions-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .element-action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

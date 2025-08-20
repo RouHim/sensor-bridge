@@ -205,22 +205,22 @@ export function handleKeydownEvent(event) {
                 const currentY = parseInt(selectedElement.style.top) || 0;
 
                 switch (event.key) {
-                case 'ArrowUp':
-                    selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
-                    moved = true;
-                    break;
-                case 'ArrowDown':
-                    selectedElement.style.top = currentY + moveUnit + 'px';
-                    moved = true;
-                    break;
-                case 'ArrowLeft':
-                    selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
-                    moved = true;
-                    break;
-                case 'ArrowRight':
-                    selectedElement.style.left = currentX + moveUnit + 'px';
-                    moved = true;
-                    break;
+                    case 'ArrowUp':
+                        selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
+                        moved = true;
+                        break;
+                    case 'ArrowDown':
+                        selectedElement.style.top = currentY + moveUnit + 'px';
+                        moved = true;
+                        break;
+                    case 'ArrowLeft':
+                        selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
+                        moved = true;
+                        break;
+                    case 'ArrowRight':
+                        selectedElement.style.left = currentX + moveUnit + 'px';
+                        moved = true;
+                        break;
                 }
 
                 if (moved) {
@@ -322,10 +322,31 @@ export function initializeColorPicker() {
 }
 
 /**
- * Initializes Feather icons if available
+ * Initializes Feather Icons with retry mechanism
  */
 export function initializeFeatherIcons() {
-    if (window.feather) {
-        window.feather.replace();
-    }
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const tryInitialize = () => {
+        if (window.feather && typeof window.feather.replace === 'function') {
+            try {
+                window.feather.replace();
+                console.log('Feather Icons initialized successfully');
+                return;
+            } catch (error) {
+                console.error('Error initializing Feather Icons:', error);
+                return;
+            }
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+            setTimeout(tryInitialize, 100);
+        } else {
+            console.warn('Failed to initialize Feather Icons after', maxAttempts, 'attempts');
+        }
+    };
+
+    tryInitialize();
 }

@@ -101,12 +101,11 @@ import {
 /**
  * Main application initialization
  */
-export function initializeApplication() {
+export async function initializeApplication() {
     console.log('Initializing Sensor Bridge application...');
 
     // Initialize UI components
     initializeColorPicker();
-    initializeFeatherIcons();
 
     // Initialize drag safety mechanisms
     initializeDragSafety();
@@ -118,7 +117,10 @@ export function initializeApplication() {
     setupEventListeners();
 
     // Load initial data
-    loadInitialData();
+    await loadInitialData();
+
+    // Initialize Feather Icons after all DOM elements are set up
+    initializeFeatherIcons();
 
     console.log('Application initialization complete');
 }
