@@ -39,8 +39,6 @@ export const httpPortInput = document.getElementById('http-port-input');
 // Client configuration elements
 export const txtClientName = document.getElementById('lcd-txt-client-name');
 export const lblClientInfo = document.getElementById('lcd-lbl-client-info');
-export const txtDisplayResolutionWidth = document.getElementById('lcd-txt-resolution-width');
-export const txtDisplayResolutionHeight = document.getElementById('lcd-txt-resolution-height');
 export const resolutionDisplay = document.getElementById('resolution-display');
 
 // Client information display elements

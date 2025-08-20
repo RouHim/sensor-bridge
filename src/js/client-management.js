@@ -14,8 +14,6 @@ import {
     clientInfoMac,
     clientInfoLastSeen,
     txtClientName,
-    txtDisplayResolutionWidth,
-    txtDisplayResolutionHeight,
     resolutionDisplay,
     lcdBasePanel,
     clientConfigHeader,
@@ -64,7 +62,7 @@ export async function loadRegisteredClients() {
             // Auto-select the first client if there are any clients
             cmbRegisteredClients.selectedIndex = 1; // Skip the "Select a client..." option
             const firstOption = cmbRegisteredClients.options[1];
-            onClientSelected(firstOption);
+            await onClientSelected(firstOption);
         }
     } catch (error) {
         console.error('Failed to load registered clients:', error);
@@ -81,7 +79,7 @@ export async function loadRegisteredClients() {
 /**
  * Handles client selection from dropdown
  */
-export function onClientSelected(selectedOption) {
+export async function onClientSelected(selectedOption) {
     if (!selectedOption || !selectedOption.value) {
         showClientInfoPlaceholder();
         setCurrentClientMacAddress(null);
@@ -95,7 +93,7 @@ export function onClientSelected(selectedOption) {
     updateClientInfoDisplay(clientData);
 
     // Load client configuration
-    loadClientConfiguration(clientData);
+    await loadClientConfiguration(clientData);
 
     // Show LCD panel
     if (lcdBasePanel) {
@@ -227,7 +225,7 @@ function showClientInfoPlaceholder() {
 /**
  * Loads client configuration from backend
  */
-function loadClientConfiguration(clientData) {
+async function loadClientConfiguration(clientData) {
     try {
         // The clientData object now comes directly from the selection
         // No need to fetch it again from the backend
@@ -235,12 +233,6 @@ function loadClientConfiguration(clientData) {
         // Update form fields
         if (txtClientName) {
             txtClientName.value = clientData.name || '';
-        }
-        if (txtDisplayResolutionWidth) {
-            txtDisplayResolutionWidth.value = clientData.resolution_width || 800;
-        }
-        if (txtDisplayResolutionHeight) {
-            txtDisplayResolutionHeight.value = clientData.resolution_height || 600;
         }
 
         // Update resolution display text
@@ -251,7 +243,7 @@ function loadClientConfiguration(clientData) {
         }
 
         // Update the designer pane dimensions to match the client's resolution
-        updateDisplayDesignPaneDimensions();
+        await updateDisplayDesignPaneDimensions();
 
         // Load display elements
         loadDisplayElements(clientData.display_config ? clientData.display_config.elements : []);

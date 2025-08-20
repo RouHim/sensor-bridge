@@ -19,10 +19,10 @@ pub const WINDOW_LABEL: &str = "lcd-preview";
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
-pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig) {
+pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig, resolution_width: u32, resolution_height: u32) {
     let network_device_id = port_config.id.clone();
-    let width = port_config.display_config.resolution_width;
-    let height = port_config.display_config.resolution_height;
+    let width = resolution_width;
+    let height = resolution_height;
     let lcd_elements = port_config.display_config.elements.clone();
 
     info!("Showing display preview for '{}'", port_config.name);

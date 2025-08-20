@@ -21,7 +21,7 @@ use tauri::{
 use tauri::{AppHandle, Manager};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use chrono::{DateTime, Utc};
 
 mod conditional_image;
@@ -284,7 +284,7 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
     }
 
     // Open a new lcd preview window
-    lcd_preview::show(app_handle, network_device_config);
+    lcd_preview::show(app_handle, network_device_config, client.resolution_width, client.resolution_height);
 
     Ok(())
 }

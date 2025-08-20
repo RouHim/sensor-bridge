@@ -128,10 +128,10 @@ export function initializeApplication() {
  */
 function setupEventListeners() {
     // Client management events
-    cmbRegisteredClients?.addEventListener('change', event => {
+    cmbRegisteredClients?.addEventListener('change', async event => {
         const selectedIndex = event.target.selectedIndex;
         const selectedOption = selectedIndex >= 0 ? event.target.options[selectedIndex] : null;
-        onClientSelected(selectedOption);
+        await onClientSelected(selectedOption);
     });
 
     clientActiveToggle?.addEventListener('change', handleClientActiveToggle);

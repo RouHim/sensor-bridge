@@ -29,8 +29,6 @@ import {
     cmbElementType,
     txtElementPositionX,
     txtElementPositionY,
-    txtDisplayResolutionWidth,
-    txtDisplayResolutionHeight,
     layoutTextConfig,
     layoutStaticImageConfig,
     layoutGraphConfig,
@@ -70,19 +68,54 @@ import {
     getSelectedListElement,
     getSelectedDesignerElement,
     setSelectedListElement,
-    setSelectedDesignerElement
+    setSelectedDesignerElement,
+    getCurrentClientMacAddress
 } from './app-state.js';
+
+/**
+ * Gets the current client resolution
+ * @returns {Promise<{width: number, height: number}>} The current client resolution
+ * @throws {Error} If no client is selected or client data is missing
+ */
+async function getCurrentClientResolution() {
+    const macAddress = getCurrentClientMacAddress();
+    if (!macAddress) {
+        throw new Error('No client selected');
+    }
+
+    const clientsResponse = await invoke('get_registered_clients');
+    const parsedClients = typeof clientsResponse === 'string' ? JSON.parse(clientsResponse) : clientsResponse;
+
+    if (!parsedClients || typeof parsedClients !== 'object') {
+        throw new Error('Invalid clients response from server');
+    }
+
+    const client = parsedClients[macAddress];
+    if (!client) {
+        throw new Error(`Client with MAC address ${macAddress} not found`);
+    }
+
+    if (typeof client.resolution_width !== 'number' || typeof client.resolution_height !== 'number') {
+        throw new Error(`Client ${macAddress} has invalid resolution data`);
+    }
+
+    return {
+        width: client.resolution_width,
+        height: client.resolution_height
+    };
+}
 
 /**
  * Updates the display design pane dimensions based on current resolution settings
  */
-export function updateDisplayDesignPaneDimensions() {
+export async function updateDisplayDesignPaneDimensions() {
     if (!designerPane) {
-        return;
+        throw new Error('Designer pane element not found');
     }
 
-    const width = parseInt(txtDisplayResolutionWidth.value);
-    const height = parseInt(txtDisplayResolutionHeight.value);
+    const resolution = await getCurrentClientResolution();
+    const width = resolution.width;
+    const height = resolution.height;
 
     // Update the designer pane dimensions to match the display resolution
     designerPane.style.width = `${width}px`;
@@ -490,8 +523,9 @@ export async function saveElementConfiguration() {
         const elements = collectAllElements();
 
         // Get display resolution
-        const displayWidth = parseInt(txtDisplayResolutionWidth.value) || 128;
-        const displayHeight = parseInt(txtDisplayResolutionHeight.value) || 64;
+        const resolution = await getCurrentClientResolution();
+        const displayWidth = resolution.width;
+        const displayHeight = resolution.height;
 
         // Create display configuration
         const displayConfig = {

@@ -64,8 +64,8 @@ impl RegisteredClient {
             active: false,
             last_seen: Utc::now(),
             display_config: DisplayConfig {
-                resolution_width,
-                resolution_height,
+                resolution_width: 0, // Deprecated field, not used
+                resolution_height: 0, // Deprecated field, not used
                 elements: Vec::new(),
             },
         }
