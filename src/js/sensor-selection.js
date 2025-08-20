@@ -42,19 +42,21 @@ export function buildSensorSelectionDialogTable(filterValue) {
 
     // Filter sensor values for graph
     let filteredSensorValues = onlyNumeric
-        ? sensorValues.filter((sensorValue) => sensorValue.sensor_type === 'number')
+        ? sensorValues.filter(sensorValue => sensorValue.sensor_type === 'number')
         : sensorValues;
 
     // Filter for keywords split by space
     if (filterValue !== '' && filterValue !== undefined && filterValue !== null) {
-        filteredSensorValues = filteredSensorValues.filter((sensorValue) => {
+        filteredSensorValues = filteredSensorValues.filter(sensorValue => {
             const keywords = filterValue.split(' ');
             let matches = 0;
 
-            keywords.forEach((keyword) => {
+            keywords.forEach(keyword => {
                 // Check if label or value contains keyword
-                if (sensorValue.label.toLowerCase().includes(keyword.toLowerCase()) ||
-                    sensorValue.value.toLowerCase().includes(keyword.toLowerCase())) {
+                if (
+                    sensorValue.label.toLowerCase().includes(keyword.toLowerCase()) ||
+                    sensorValue.value.toLowerCase().includes(keyword.toLowerCase())
+                ) {
                     matches++;
                 }
             });
@@ -64,7 +66,7 @@ export function buildSensorSelectionDialogTable(filterValue) {
     }
 
     // Fill sensor values into table
-    filteredSensorValues.forEach((sensorValue) => {
+    filteredSensorValues.forEach(sensorValue => {
         const row = document.createElement('tr');
         const name = document.createElement('td');
         const value = document.createElement('td');
@@ -100,7 +102,8 @@ export function showSensorSelectionDialog() {
     txtSensorSelectionTableFilterInput.value = '';
     txtSensorSelectionTableFilterInput.select();
     txtSensorSelectionTableFilterInput.addEventListener('input', () =>
-        buildSensorSelectionDialogTable(txtSensorSelectionTableFilterInput.value));
+        buildSensorSelectionDialogTable(txtSensorSelectionTableFilterInput.value)
+    );
 }
 
 export function onCloseSensorSelectionDialog(selectedSensorId) {
@@ -163,14 +166,12 @@ export function populateAllSensorDropdowns() {
     }
 
     // List of all sensor dropdowns to populate
-    const sensorDropdowns = [
-        cmbTextSensorIdSelection,
-        cmbGraphSensorIdSelection,
-        cmbConditionalImageSensorIdSelection
-    ];
+    const sensorDropdowns = [cmbTextSensorIdSelection, cmbGraphSensorIdSelection, cmbConditionalImageSensorIdSelection];
 
     sensorDropdowns.forEach(dropdown => {
-        if (!dropdown) {return;}
+        if (!dropdown) {
+            return;
+        }
 
         // Store current selection to restore it
         const currentValue = dropdown.value;
@@ -191,9 +192,8 @@ export function populateAllSensorDropdowns() {
 
             // Create a shorter display text by truncating long sensor names
             const maxNameLength = 25;
-            const truncatedName = sensor.label.length > maxNameLength
-                ? sensor.label.substring(0, maxNameLength) + '...'
-                : sensor.label;
+            const truncatedName =
+                sensor.label.length > maxNameLength ? sensor.label.substring(0, maxNameLength) + '...' : sensor.label;
 
             // Show truncated name with current value
             option.textContent = `${truncatedName} (${sensor.value} ${sensor.unit})`;

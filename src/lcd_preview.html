@@ -1,114 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <link href="lcd_preview.css" rel="stylesheet"/>
-</head>
+    <head>
+        <meta charset="UTF-8" />
+        <link href="lcd_preview.css" rel="stylesheet" />
+    </head>
 
-<script>
-    // Tauri v2 API syntax
-    const {invoke} = window.__TAURI__.core;
+    <script>
+        // Tauri v2 API syntax
+        const { invoke } = window.__TAURI__.core;
 
-    // Store the interval ID so we can clear it later
-    let refreshInterval;
-    let isWindowClosing = false;
+        // Store the interval ID so we can clear it later
+        let refreshInterval;
+        let isWindowClosing = false;
 
-    // Set the preview image on page load
-    set_lcd_preview_image();
+        // Set the preview image on page load
+        set_lcd_preview_image();
 
-    // Set the preview image every 2.5 seconds
-    refreshInterval = setInterval(set_lcd_preview_image, 2500);
+        // Set the preview image every 2.5 seconds
+        refreshInterval = setInterval(set_lcd_preview_image, 2500);
 
-    // Function to clean up the interval
-    function cleanup() {
-        console.log("Cleanup called - clearing interval");
-        isWindowClosing = true;
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-            refreshInterval = null;
-            console.log("Interval cleared successfully");
+        // Function to clean up the interval
+        function cleanup() {
+            console.log('Cleanup called - clearing interval');
+            isWindowClosing = true;
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+                console.log('Interval cleared successfully');
+            }
         }
-    }
 
-    // Clean up the interval when the window is being closed
-    window.addEventListener('beforeunload', function(e) {
-        console.log("beforeunload event fired");
-        cleanup();
-    });
-
-    // Also clean up when the page is being unloaded
-    window.addEventListener('unload', function(e) {
-        console.log("unload event fired");
-        cleanup();
-    });
-
-    // Additional cleanup for Tauri-specific events
-    window.addEventListener('pagehide', function(e) {
-        console.log("pagehide event fired");
-        cleanup();
-    });
-
-    // Cleanup when the page becomes hidden
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            console.log("Page became hidden - cleaning up");
+        // Clean up the interval when the window is being closed
+        window.addEventListener('beforeunload', function (e) {
+            console.log('beforeunload event fired');
             cleanup();
-        }
-    });
+        });
 
-    // Tauri-specific window events if available
-    if (window.__TAURI__) {
-        try {
-            window.__TAURI__.window.onCloseRequested(function() {
-                console.log("Tauri close requested - cleaning up");
+        // Also clean up when the page is being unloaded
+        window.addEventListener('unload', function (e) {
+            console.log('unload event fired');
+            cleanup();
+        });
+
+        // Additional cleanup for Tauri-specific events
+        window.addEventListener('pagehide', function (e) {
+            console.log('pagehide event fired');
+            cleanup();
+        });
+
+        // Cleanup when the page becomes hidden
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                console.log('Page became hidden - cleaning up');
                 cleanup();
-            });
-        } catch (e) {
-            console.log("Tauri window API not available:", e);
-        }
-    }
-
-    /// Set the preview image
-    function set_lcd_preview_image() {
-        // If window is closing, don't make new requests
-        if (isWindowClosing) {
-            console.log("Window is closing - skipping request");
-            return;
-        }
-
-        // Load the current mac address from the url after the # symbol
-        const macAddress = window.location.hash.substr(1);
-
-        console.log("macAddress: " + macAddress);
-
-        // If no mac address is provided, we can't get the preview
-        if (!macAddress) {
-            console.error("No MAC address provided in URL hash");
-            return;
-        }
-
-        invoke('get_lcd_preview_image', {macAddress: macAddress}).then(
-            (preview_image) => {
-                // Only update if window is not closing
-                if (!isWindowClosing) {
-                    const img = document.getElementById("lcd-preview-image");
-                    img.src = "data:image/jpeg;base64," + preview_image;
-                }
             }
-        ).catch((error) => {
-                console.error("Error getting lcd preview image: ", error);
-                // Show error in the UI as well (only if not closing)
-                if (!isWindowClosing) {
-                    const img = document.getElementById("lcd-preview-image");
-                    img.alt = "Error loading preview: " + error;
-                }
+        });
+
+        // Tauri-specific window events if available
+        if (window.__TAURI__) {
+            try {
+                window.__TAURI__.window.onCloseRequested(function () {
+                    console.log('Tauri close requested - cleaning up');
+                    cleanup();
+                });
+            } catch (e) {
+                console.log('Tauri window API not available:', e);
             }
-        );
-    }
-</script>
+        }
 
+        /// Set the preview image
+        function set_lcd_preview_image() {
+            // If window is closing, don't make new requests
+            if (isWindowClosing) {
+                console.log('Window is closing - skipping request');
+                return;
+            }
 
-<body style="background-color: #000000">
-<img id="lcd-preview-image"/>
-</body>
+            // Load the current mac address from the url after the # symbol
+            const macAddress = window.location.hash.substr(1);
+
+            console.log('macAddress: ' + macAddress);
+
+            // If no mac address is provided, we can't get the preview
+            if (!macAddress) {
+                console.error('No MAC address provided in URL hash');
+                return;
+            }
+
+            invoke('get_lcd_preview_image', { macAddress: macAddress })
+                .then(preview_image => {
+                    // Only update if window is not closing
+                    if (!isWindowClosing) {
+                        const img = document.getElementById('lcd-preview-image');
+                        img.src = 'data:image/jpeg;base64,' + preview_image;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting lcd preview image: ', error);
+                    // Show error in the UI as well (only if not closing)
+                    if (!isWindowClosing) {
+                        const img = document.getElementById('lcd-preview-image');
+                        img.alt = 'Error loading preview: ' + error;
+                    }
+                });
+        }
+    </script>
+
+    <body style="background-color: #000000">
+        <img id="lcd-preview-image" />
+    </body>
 </html>
