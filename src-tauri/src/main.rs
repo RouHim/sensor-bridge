@@ -1,12 +1,13 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
-use crate::config::{AppConfig, NetworkDeviceConfig};
-use crate::utils::LockResultExt;
+use crate::config::{AppConfig, NetworkDeviceConfig, RegisteredClient};
+use crate::utils::{LockResultExt, format_datetime_with_system_locale};
 use log::{error, info};
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig, SensorType,
-    SensorValue, TextConfig,
+    SensorValue, TextConfig, DisplayConfig,
 };
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::ops::Deref;
@@ -20,6 +21,8 @@ use tauri::{
 use tauri::{AppHandle, Manager};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
+use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 
 mod conditional_image;
 pub(crate) mod config;
@@ -52,6 +55,37 @@ pub struct AppState {
 
 // Number of elements to be stored in the sensor value history
 pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
+
+/// API response version of RegisteredClient with formatted timestamp
+#[derive(Serialize, Debug, Clone)]
+pub struct RegisteredClientResponse {
+    pub mac_address: String,
+    pub name: String,
+    pub ip_address: String,
+    pub resolution_width: u32,
+    pub resolution_height: u32,
+    pub active: bool,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub last_seen: DateTime<Utc>,
+    pub formatted_last_seen: String,
+    pub display_config: DisplayConfig,
+}
+
+impl From<RegisteredClient> for RegisteredClientResponse {
+    fn from(client: RegisteredClient) -> Self {
+        RegisteredClientResponse {
+            mac_address: client.mac_address,
+            name: client.name,
+            ip_address: client.ip_address,
+            resolution_width: client.resolution_width,
+            resolution_height: client.resolution_height,
+            active: client.active,
+            last_seen: client.last_seen,
+            formatted_last_seen: format_datetime_with_system_locale(&client.last_seen),
+            display_config: client.display_config,
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -187,7 +221,15 @@ async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()>
 #[tauri::command]
 async fn get_registered_clients() -> Result<String, String> {
     let app_config: AppConfig = config::read_from_app_config();
-    serde_json::to_string(&app_config.registered_clients).map_err(|err| err.to_string())
+    
+    // Convert RegisteredClient to RegisteredClientResponse with formatted timestamps
+    let response_clients: HashMap<String, RegisteredClientResponse> = app_config
+        .registered_clients
+        .into_iter()
+        .map(|(key, client)| (key, RegisteredClientResponse::from(client)))
+        .collect();
+    
+    serde_json::to_string(&response_clients).map_err(|err| err.to_string())
 }
 
 /// Updates a client's name

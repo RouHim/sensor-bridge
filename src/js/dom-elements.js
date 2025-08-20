@@ -12,9 +12,9 @@ if (!window.__TAURI__.dialog) {
     throw new Error('Tauri dialog API not available');
 }
 
-export const {invoke} = window.__TAURI__.core;
-export const {convertFileSrc} = window.__TAURI__.core;
-export const {open, save} = window.__TAURI__.dialog;
+export const { invoke } = window.__TAURI__.core;
+export const { convertFileSrc } = window.__TAURI__.core;
+export const { open, save } = window.__TAURI__.dialog;
 
 // Modal dialog elements
 export const sensorSelectionDialog = document.getElementById('sensor-selection-dialog');
@@ -41,12 +41,17 @@ export const txtClientName = document.getElementById('lcd-txt-client-name');
 export const lblClientInfo = document.getElementById('lcd-lbl-client-info');
 export const txtDisplayResolutionWidth = document.getElementById('lcd-txt-resolution-width');
 export const txtDisplayResolutionHeight = document.getElementById('lcd-txt-resolution-height');
+export const resolutionDisplay = document.getElementById('resolution-display');
 
 // Client information display elements
 export const clientInfoContent = document.getElementById('client-info-content');
 export const clientInfoPlaceholder = document.getElementById('client-info-placeholder');
 export const clientActiveToggle = document.getElementById('client-active-toggle');
 export const clientStatusText = document.getElementById('client-status-text');
+export const clientStatusContainer = document.getElementById('client-status-container');
+export const clientStatusDot = document.getElementById('client-status-dot');
+export const clientConfigHeader = document.getElementById('client-config-header');
+export const collapseIcon = document.getElementById('collapse-icon');
 export const clientInfoName = document.getElementById('client-info-name');
 export const clientInfoIp = document.getElementById('client-info-ip');
 export const clientInfoMac = document.getElementById('client-info-mac');
@@ -119,8 +124,12 @@ export const txtGraphBackgroundColor = document.getElementById('lcd-graph-backgr
 export const txtGraphBorderColor = document.getElementById('lcd-graph-border-color');
 
 // Conditional image element controls
-export const cmbConditionalImageSensorIdSelection = document.getElementById('lcd-cmb-conditional-image-sensor-id-selection');
-export const btnConditionalImageSensorIdSelectionDialog = document.getElementById('lcd-conditional-image-config-btn-select-sensor-id');
+export const cmbConditionalImageSensorIdSelection = document.getElementById(
+    'lcd-cmb-conditional-image-sensor-id-selection'
+);
+export const btnConditionalImageSensorIdSelectionDialog = document.getElementById(
+    'lcd-conditional-image-config-btn-select-sensor-id'
+);
 export const btnConditionalImagePathSelection = document.getElementById('lcd-btn-conditional-image-select');
 export const txtConditionalImageImagesPath = document.getElementById('lcd-txt-element-conditional-image-images-path');
 export const txtConditionalImageMinValue = document.getElementById('lcd-txt-element-conditional-image-min-value');
@@ -128,5 +137,7 @@ export const txtConditionalImageMaxValue = document.getElementById('lcd-txt-elem
 export const txtConditionalImageWidth = document.getElementById('lcd-txt-element-conditional-image-width');
 export const txtConditionalImageHeight = document.getElementById('lcd-txt-element-conditional-image-height');
 export const btnConditionalImageInfo = document.getElementById('lcd-btn-conditional-image-info');
-export const cmbConditionalImageCatalogEntrySelection = document.getElementById('lcd-cmb-conditional-image-catalog-entry-selection');
+export const cmbConditionalImageCatalogEntrySelection = document.getElementById(
+    'lcd-cmb-conditional-image-catalog-entry-selection'
+);
 export const btnConditionalImageApplyCatalogEntry = document.getElementById('lcd-btn-conditional-apply-catalog-entry');

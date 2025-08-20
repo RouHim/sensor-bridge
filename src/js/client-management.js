@@ -7,15 +7,19 @@ import {
     clientInfoPlaceholder,
     clientActiveToggle,
     clientStatusText,
+    clientStatusContainer,
+    clientStatusDot,
     clientInfoName,
     clientInfoIp,
     clientInfoMac,
-    clientInfoResolution,
     clientInfoLastSeen,
     txtClientName,
     txtDisplayResolutionWidth,
     txtDisplayResolutionHeight,
-    lcdBasePanel
+    resolutionDisplay,
+    lcdBasePanel,
+    clientConfigHeader,
+    collapseIcon
 } from './dom-elements.js';
 import { setCurrentClientMacAddress, getCurrentClientMacAddress } from './app-state.js';
 import { loadDisplayElements, updateDisplayDesignPaneDimensions } from './element-management.js';
@@ -120,26 +124,85 @@ function updateClientInfoDisplay(clientData) {
         if (clientInfoMac) {
             clientInfoMac.textContent = clientData.mac_address;
         }
-        if (clientInfoResolution) {
-            // Backend uses resolution_width/resolution_height, not display_width/display_height
-            clientInfoResolution.textContent = `${clientData.resolution_width || 0}x${clientData.resolution_height || 0}`;
-        }
         if (clientInfoLastSeen) {
-            // last_seen is a Unix timestamp from the backend
-            const lastSeen = clientData.last_seen ? new Date(clientData.last_seen * 1000).toLocaleString() : 'Never';
+            // Use formatted_last_seen from backend if available, otherwise fallback
+            const lastSeen = clientData.formatted_last_seen || 'Never';
             clientInfoLastSeen.textContent = lastSeen;
         }
 
-        // Update active toggle
+        // Update active toggle and status indicator
+        const isActive = clientData.active || false;
         if (clientActiveToggle) {
-            clientActiveToggle.checked = clientData.active || false;
+            clientActiveToggle.checked = isActive;
         }
 
-        // Update status text
-        if (clientStatusText) {
-            clientStatusText.textContent = clientData.active ? 'Active' : 'Inactive';
-            clientStatusText.className = clientData.active ? 'status-active' : 'status-inactive';
+        // Show status container and update status elements
+        if (clientStatusContainer) {
+            clientStatusContainer.style.display = 'flex';
         }
+
+        if (clientStatusText) {
+            clientStatusText.textContent = isActive ? 'Active' : 'Inactive';
+            clientStatusText.className = isActive ? 'status-active' : 'status-inactive';
+        }
+
+        if (clientStatusDot) {
+            if (isActive) {
+                clientStatusDot.classList.add('active');
+            } else {
+                clientStatusDot.classList.remove('active');
+            }
+        }
+
+        // Keep the panel collapsed by default when new client is selected
+        if (!clientInfoContent.classList.contains('expanded')) {
+            clientInfoContent.classList.add('collapsed');
+            clientInfoContent.classList.remove('expanded');
+            if (collapseIcon) {
+                collapseIcon.classList.remove('expanded');
+            }
+        }
+    }
+}
+
+/**
+ * Updates visual status indicators
+ */
+function updateStatusIndicators(isActive) {
+    if (clientStatusDot) {
+        if (isActive) {
+            clientStatusDot.classList.add('active');
+        } else {
+            clientStatusDot.classList.remove('active');
+        }
+    }
+    if (clientStatusText) {
+        clientStatusText.textContent = isActive ? 'Active' : 'Inactive';
+    }
+}
+
+/**
+ * Initialize status toggle event handler
+ */
+function initializeStatusToggle() {
+    if (clientActiveToggle) {
+        clientActiveToggle.addEventListener('change', async e => {
+            const isActive = e.target.checked;
+            updateStatusIndicators(isActive);
+
+            // Save to backend
+            const currentMac = getCurrentClientMacAddress();
+            if (currentMac) {
+                try {
+                    await invoke('set_client_active', { macAddress: currentMac, active: isActive });
+                } catch (error) {
+                    console.error('Error setting client active status:', error);
+                    // Revert on error
+                    e.target.checked = !isActive;
+                    updateStatusIndicators(!isActive);
+                }
+            }
+        });
     }
 }
 
@@ -152,6 +215,9 @@ function showClientInfoPlaceholder() {
     }
     if (clientInfoPlaceholder) {
         clientInfoPlaceholder.style.display = 'block';
+    }
+    if (clientStatusContainer) {
+        clientStatusContainer.style.display = 'none';
     }
     if (lcdBasePanel) {
         lcdBasePanel.style.display = 'none';
@@ -175,6 +241,13 @@ function loadClientConfiguration(clientData) {
         }
         if (txtDisplayResolutionHeight) {
             txtDisplayResolutionHeight.value = clientData.resolution_height || 600;
+        }
+
+        // Update resolution display text
+        if (resolutionDisplay) {
+            const width = clientData.resolution_width || 800;
+            const height = clientData.resolution_height || 600;
+            resolutionDisplay.textContent = `${width} × ${height} px`;
         }
 
         // Update the designer pane dimensions to match the client's resolution
@@ -263,3 +336,47 @@ export async function removeClient() {
         alert('Error removing client: ' + error);
     }
 }
+
+/**
+ * Toggles the collapsed/expanded state of the client configuration panel
+ */
+function toggleClientConfigPanel() {
+    if (!clientInfoContent || !collapseIcon) {
+        return;
+    }
+
+    const isCurrentlyExpanded = clientInfoContent.classList.contains('expanded');
+
+    if (isCurrentlyExpanded) {
+        // Collapse
+        clientInfoContent.classList.remove('expanded');
+        clientInfoContent.classList.add('collapsed');
+        collapseIcon.classList.remove('expanded');
+    } else {
+        // Expand
+        clientInfoContent.classList.remove('collapsed');
+        clientInfoContent.classList.add('expanded');
+        collapseIcon.classList.add('expanded');
+    }
+}
+
+/**
+ * Initialize collapsible functionality
+ */
+function initializeCollapsibleHeader() {
+    if (clientConfigHeader) {
+        clientConfigHeader.addEventListener('click', e => {
+            // Prevent toggle when clicking on the status toggle switch
+            if (e.target.closest('.status-toggle') || e.target.closest('input[type="checkbox"]')) {
+                return;
+            }
+            toggleClientConfigPanel();
+        });
+    }
+}
+
+// Initialize collapsible functionality when the module loads
+document.addEventListener('DOMContentLoaded', () => {
+    initializeCollapsibleHeader();
+    initializeStatusToggle();
+});
