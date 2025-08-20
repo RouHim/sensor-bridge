@@ -503,7 +503,7 @@ export async function saveElementConfiguration() {
         // Get the currently selected client (we need to determine which client is active)
         // For now, we'll try to get the first registered client or use a default
         const clientsResponse = await invoke('get_registered_clients');
-        const clients = JSON.parse(clientsResponse);
+        const clients = Object.values(JSON.parse(clientsResponse));
 
         if (clients.length === 0) {
             throw new Error('No registered clients found. Please register a client first.');
@@ -1044,6 +1044,19 @@ export function loadDisplayElements(elements = []) {
 
     // Update validation states for all loaded elements
     updateAllElementValidationStates();
+
+    // Auto-select the first element if any elements were loaded
+    if (elements.length > 0) {
+        const firstListElement = lstDesignerPlacedElements.querySelector('li');
+        if (firstListElement) {
+            const elementId = firstListElement.getAttribute(ATTR_ELEMENT_ID);
+            const firstDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
+            if (firstDesignerElement) {
+                selectElement(firstListElement, firstDesignerElement, true, true);
+                console.log(`Auto-selected first design element: ${firstListElement.getAttribute(ATTR_ELEMENT_NAME)}`);
+            }
+        }
+    }
 }
 
 /**

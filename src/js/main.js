@@ -321,6 +321,13 @@ async function loadInitialData() {
             console.error('Failed to load HTTP port:', error);
         }
 
+        // Load sensor data from backend FIRST (required for element auto-selection)
+        try {
+            await loadSensorData();
+        } catch (error) {
+            console.error('Failed to load sensor data:', error);
+        }
+
         // Load registered clients
         try {
             await loadRegisteredClients();
@@ -340,13 +347,6 @@ async function loadInitialData() {
             loadConditionalImageRepoEntries();
         } catch (error) {
             console.error('Failed to load conditional image repo entries:', error);
-        }
-
-        // Load sensor data from backend
-        try {
-            await loadSensorData();
-        } catch (error) {
-            console.error('Failed to load sensor data:', error);
         }
     } catch (error) {
         console.error('Error loading initial data:', error);
