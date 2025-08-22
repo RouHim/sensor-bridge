@@ -232,6 +232,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic-write-file"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aeb1e2c1d58618bea806ccca5bbe65dc4e868be16f69ff118a39049389687548"
+dependencies = [
+ "nix 0.29.0",
+ "rand 0.8.5",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2808,6 +2818,18 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nix"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags 2.9.1",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
+name = "nix"
 version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
@@ -4261,6 +4283,7 @@ name = "sensor-bridge"
 version = "0.0.0"
 dependencies = [
  "assertor",
+ "atomic-write-file",
  "base64 0.21.7",
  "bincode",
  "chrono",
@@ -6670,7 +6693,7 @@ dependencies = [
  "futures-core",
  "futures-lite",
  "hex",
- "nix",
+ "nix 0.30.1",
  "ordered-stream",
  "serde",
  "serde_repr",

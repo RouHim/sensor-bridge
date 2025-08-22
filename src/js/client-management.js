@@ -1,25 +1,25 @@
 // Client management functionality
 
 import {
-    invoke,
-    cmbRegisteredClients,
-    clientInfoContent,
-    clientInfoPlaceholder,
     clientActiveToggle,
-    clientStatusText,
+    clientConfigHeader,
+    clientInfoContent,
+    clientInfoIp,
+    clientInfoLastSeen,
+    clientInfoMac,
+    clientInfoName,
+    clientInfoPlaceholder,
     clientStatusContainer,
     clientStatusDot,
-    clientInfoName,
-    clientInfoIp,
-    clientInfoMac,
-    clientInfoLastSeen,
-    txtClientName,
-    resolutionDisplay,
+    clientStatusText,
+    cmbRegisteredClients,
+    collapseIcon,
+    invoke,
     lcdBasePanel,
-    clientConfigHeader,
-    collapseIcon
+    resolutionDisplay,
+    txtClientName
 } from './dom-elements.js';
-import { setCurrentClientMacAddress, getCurrentClientMacAddress } from './app-state.js';
+import { getCurrentClientMacAddress, setCurrentClientMacAddress } from './app-state.js';
 import { loadDisplayElements, updateDisplayDesignPaneDimensions } from './element-management.js';
 
 /**
@@ -364,6 +364,51 @@ function initializeCollapsibleHeader() {
             }
             toggleClientConfigPanel();
         });
+    }
+}
+
+/**
+ * Saves client configuration (name, etc.)
+ */
+export async function saveClientConfiguration() {
+    try {
+        const macAddress = getCurrentClientMacAddress();
+        if (!macAddress) {
+            throw new Error('No client selected. Please select a client first.');
+        }
+
+        // Get current client name from the form
+        const clientName = txtClientName?.value?.trim() || '';
+
+        if (clientName === '') {
+            throw new Error('Client name cannot be empty.');
+        }
+
+        // Update client name via backend API
+        await invoke('update_client_name', {
+            macAddress: macAddress,
+            name: clientName
+        });
+
+        console.log(`Client name updated successfully for ${macAddress}: ${clientName}`);
+
+        // Refresh the clients list to show updated name
+        await loadRegisteredClients();
+
+        // Find and re-select the updated client to maintain selection
+        const clientsResponse = await invoke('get_registered_clients');
+        const clients = Object.values(JSON.parse(clientsResponse));
+        const updatedClient = clients.find(client => client.mac_address === macAddress);
+
+        if (updatedClient) {
+            // Update the dropdown selection
+            cmbRegisteredClients.value = macAddress;
+            // Update the client info display
+            await loadClientConfiguration(updatedClient);
+        }
+    } catch (error) {
+        console.error('Error saving client configuration:', error);
+        throw error; // Re-throw to let calling code handle it
     }
 }
 

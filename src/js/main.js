@@ -1,101 +1,102 @@
 // Main application initialization and coordination
 
 import {
+    handleClientActiveToggle,
     loadRegisteredClients,
     onClientSelected,
-    handleClientActiveToggle,
-    removeClient
+    removeClient,
+    saveClientConfiguration
 } from './client-management.js';
 
 import {
     exportConfig,
     importConfig,
     loadHttpPort,
-    onPortInputFocus,
     onPortInputChange,
+    onPortInputFocus,
     toggleHttpServer
 } from './config-management.js';
 
 import {
-    onElementTypeChange,
     addNewElement,
-    removeElement,
-    moveElementUp,
-    moveElementDown,
-    duplicateElement,
-    moveElementControlPad,
     changeMoveUnit,
-    saveElementConfiguration,
-    updateElementPreview,
-    updateAllElementValidationStates,
-    markCurrentElementAsTouched,
+    duplicateElement,
     initializeDragSafety,
-    initializeListDragAndDrop
+    initializeListDragAndDrop,
+    markCurrentElementAsTouched,
+    moveElementControlPad,
+    moveElementDown,
+    moveElementUp,
+    onElementTypeChange,
+    removeElement,
+    saveElementConfiguration,
+    updateAllElementValidationStates,
+    updateElementPreview
 } from './element-management.js';
 
 import {
-    showSensorSelectionDialog,
     onCloseSensorSelectionDialog,
+    onSensorDropdownChange,
     populateAllSensorDropdowns,
-    onSensorDropdownChange
+    showSensorSelectionDialog
 } from './sensor-selection.js';
 
 import {
-    loadSystemFonts,
-    loadConditionalImageRepoEntries,
-    applyConditionalImageCatalogEntry,
     addTextFormatPlaceholder,
-    selectStaticImage,
-    selectConditionalImage,
-    showConditionalImageInfo,
-    toggleLivePreview,
+    applyConditionalImageCatalogEntry,
     handleKeydownEvent,
     initializeColorPicker,
-    initializeFeatherIcons
+    initializeFeatherIcons,
+    loadConditionalImageRepoEntries,
+    loadSystemFonts,
+    selectConditionalImage,
+    selectStaticImage,
+    showConditionalImageInfo,
+    toggleLivePreview
 } from './ui-utils.js';
 
 import { setSensorValues } from './app-state.js';
 import {
-    invoke,
-    cmbRegisteredClients,
-    cmbElementType,
-    btnRefreshClients,
-    btnRemoveClient,
-    btnExportConfig,
-    btnImportConfig,
-    btnSaveClientConfig,
-    btnSaveElement,
     btnActivateSync,
-    httpPortInput,
-    btnToggleLivePreview,
     btnAddElement,
-    btnRemoveElement,
-    btnMoveElementUp,
-    btnMoveElementDown,
-    btnDuplicateElement,
-    btnSelectStaticImage,
+    btnConditionalImageApplyCatalogEntry,
     btnConditionalImageInfo,
     btnConditionalImagePathSelection,
+    btnConditionalImageSensorIdSelectionDialog,
     btnControlPadChangeMoveUnit,
-    btnControlPadUp,
+    btnControlPadDown,
     btnControlPadLeft,
     btnControlPadRight,
-    btnControlPadDown,
-    btnTextSensorIdSelectionDialog,
+    btnControlPadUp,
+    btnDuplicateElement,
+    btnExportConfig,
     btnGraphSensorIdSelectionDialog,
-    btnConditionalImageSensorIdSelectionDialog,
-    btnConditionalImageApplyCatalogEntry,
-    btnTextFormatAddValue,
+    btnImportConfig,
+    btnMoveElementDown,
+    btnMoveElementUp,
+    btnRefreshClients,
+    btnRemoveClient,
+    btnRemoveElement,
+    btnSaveClientConfig,
+    btnSaveElement,
+    btnSelectStaticImage,
     btnTextFormatAddUnit,
+    btnTextFormatAddValue,
     btnTextFormatAddValueAvg,
-    btnTextFormatAddValueMin,
     btnTextFormatAddValueMax,
+    btnTextFormatAddValueMin,
+    btnTextSensorIdSelectionDialog,
+    btnToggleLivePreview,
     clientActiveToggle,
-    sensorSelectionDialog,
-    designerPane,
-    cmbTextSensorIdSelection,
+    cmbConditionalImageSensorIdSelection,
+    cmbElementType,
     cmbGraphSensorIdSelection,
-    cmbConditionalImageSensorIdSelection
+    cmbRegisteredClients,
+    cmbTextSensorIdSelection,
+    designerPane,
+    httpPortInput,
+    invoke,
+    sensorSelectionDialog
 } from './dom-elements.js';
 
 /**
@@ -387,8 +388,28 @@ async function loadSensorData() {
  */
 async function onSave() {
     try {
-        await saveElementConfiguration();
-        console.log('Configuration saved successfully');
+        // Import state getters to check context
+        const { getSelectedListElement, getSelectedDesignerElement, getCurrentClientMacAddress } = await import(
+            './app-state.js'
+        );
+
+        const selectedList = getSelectedListElement();
+        const selectedDesigner = getSelectedDesignerElement();
+        const currentClient = getCurrentClientMacAddress();
+
+        // Determine save context: if we have selected elements, save element config
+        // Otherwise, if we have a selected client, save client config
+        if (selectedList && selectedDesigner) {
+            // We have selected elements - save element configuration
+            await saveElementConfiguration();
+            console.log('Element configuration saved successfully');
+        } else if (currentClient) {
+            // No elements selected but we have a client - save client configuration
+            await saveClientConfiguration();
+            console.log('Client configuration saved successfully');
+        } else {
+            throw new Error('Nothing to save. Please select a client or element first.');
+        }
     } catch (error) {
         console.error('Error saving configuration:', error);
         alert('Error saving configuration: ' + error);

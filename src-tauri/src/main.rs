@@ -1,12 +1,14 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
 use crate::config::{AppConfig, NetworkDeviceConfig, RegisteredClient};
-use crate::utils::{LockResultExt, format_datetime_with_system_locale};
+use crate::utils::{format_datetime_with_system_locale, LockResultExt};
+use chrono::{DateTime, Utc};
 use log::{error, info};
 use sensor_core::{
-    conditional_image_renderer, graph_renderer, ConditionalImageConfig, GraphConfig, SensorType,
-    SensorValue, TextConfig, DisplayConfig,
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, DisplayConfig, GraphConfig,
+    SensorType, SensorValue, TextConfig,
 };
+use serde::Serialize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -21,8 +23,6 @@ use tauri::{
 use tauri::{AppHandle, Manager};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use serde::Serialize;
-use chrono::{DateTime, Utc};
 
 mod conditional_image;
 pub(crate) mod config;
@@ -221,14 +221,14 @@ async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()>
 #[tauri::command]
 async fn get_registered_clients() -> Result<String, String> {
     let app_config: AppConfig = config::read_from_app_config();
-    
+
     // Convert RegisteredClient to RegisteredClientResponse with formatted timestamps
     let response_clients: HashMap<String, RegisteredClientResponse> = app_config
         .registered_clients
         .into_iter()
         .map(|(key, client)| (key, RegisteredClientResponse::from(client)))
         .collect();
-    
+
     serde_json::to_string(&response_clients).map_err(|err| err.to_string())
 }
 
@@ -247,7 +247,8 @@ async fn remove_registered_client(mac_address: String) -> Result<(), String> {
 /// Sets a client's active status
 #[tauri::command]
 async fn set_client_active(mac_address: String, active: bool) -> Result<(), String> {
-    config::set_client_active(&mac_address, active)
+    let normalized_mac_address = mac_address.trim().to_string().to_uppercase();
+    config::set_client_active(&normalized_mac_address, active)
 }
 
 /// Updates a client's display configuration
@@ -284,7 +285,12 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
     }
 
     // Open a new lcd preview window
-    lcd_preview::show(app_handle, network_device_config, client.resolution_width, client.resolution_height);
+    lcd_preview::show(
+        app_handle,
+        network_device_config,
+        client.resolution_width,
+        client.resolution_height,
+    );
 
     Ok(())
 }

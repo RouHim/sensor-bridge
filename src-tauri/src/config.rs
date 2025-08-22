@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 
+use atomic_write_file::AtomicWriteFile;
 use chrono::{DateTime, Utc};
 use sensor_core::DisplayConfig;
 use serde::{Deserialize, Serialize};
@@ -64,7 +65,7 @@ impl RegisteredClient {
             active: false,
             last_seen: Utc::now(),
             display_config: DisplayConfig {
-                resolution_width: 0, // Deprecated field, not used
+                resolution_width: 0,  // Deprecated field, not used
                 resolution_height: 0, // Deprecated field, not used
                 elements: Vec::new(),
             },
@@ -82,12 +83,6 @@ impl NetworkDeviceConfig {
             display_config: Default::default(),
         }
     }
-}
-
-pub fn create_network_device_config() -> NetworkDeviceConfig {
-    let new_config = NetworkDeviceConfig::default();
-    write(&new_config);
-    new_config
 }
 
 /// Registers a new client or updates existing client information
@@ -188,17 +183,18 @@ pub fn remove_client(mac_address: &str) -> Result<(), String> {
 
 /// Writes the specified config to disk.
 /// If the config file does not exist, it will be created.
-/// If the config file already exists, the specified config will be added to it.
-pub fn write(_net_port_config: &NetworkDeviceConfig) {
-    // Legacy function for backward compatibility
-}
-
-/// Writes the specified config to disk.
-/// If the config file does not exist, it will be created.
+/// Uses atomic writing to prevent corruption during writes.
 pub fn write_to_app_config(config: &AppConfig) {
     let config_path = get_config_path();
-    let config_file = File::create(config_path).expect("Failed to create config file");
-    serde_json::to_writer_pretty(config_file, &config).expect("Failed to write config file");
+    
+    let mut file = AtomicWriteFile::options()
+        .open(&config_path)
+        .expect("Failed to open atomic config file");
+    
+    serde_json::to_writer_pretty(&mut file, config)
+        .expect("Failed to write config data");
+    
+    file.commit().expect("Failed to commit config file");
 }
 
 /// Loads the config file from disk.
@@ -242,21 +238,6 @@ fn get_config_path() -> String {
         .to_str()
         .unwrap()
         .to_string()
-}
-
-/// Removes the specified network device from the config file.
-pub fn remove(_network_device_id: &str) {
-    // Legacy function for backward compatibility - now a no-op
-}
-
-/// Loads the config file from disk.
-/// If the file does not exist, it will be created.
-/// Returns the config for the specified network device.
-/// If no config for the specified network device exists, None is returned.
-pub fn read(_network_device_id: &str) -> Option<NetworkDeviceConfig> {
-    let _config: AppConfig = read_from_app_config();
-    // For backward compatibility during migration
-    None
 }
 
 /// Gets the HTTP server port from configuration
