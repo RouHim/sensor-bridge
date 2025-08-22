@@ -724,22 +724,81 @@ input:checked + .toggle-slider:before {
     width: 80px;
 }
 
-.control-select {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #fff;
-    font-size: 0.9em;
-    transition: all 0.2s ease;
-    min-width: 200px;
+/* Complete override using wrapper approach */
+.select-wrapper {
+    position: relative !important;
+    display: inline-block !important;
+    width: 100% !important;
 }
 
-.control-select:focus {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: var(--selection);
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-    outline: none;
+.input-with-button .select-wrapper {
+    flex: 1 !important;
+}
+
+.select-wrapper::after {
+    content: '▼' !important;
+    position: absolute !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+}
+
+.select-wrapper:hover::after {
+    color: #ffffff !important;
+}
+
+.select-wrapper:focus-within::after {
+    color: #66cc !important;
+}
+
+select.control-select,
+.control-group select.control-select,
+.select-wrapper select.control-select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    background-image: none !important; /* Remove Water CSS arrow completely */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 8px 35px 8px 12px !important;
+    color: #fff !important;
+    font-size: 0.9em !important;
+    transition: all 0.2s ease !important;
+    min-width: 200px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
+    width: 100% !important;
+}
+
+select.control-select:focus,
+.control-group select.control-select:focus,
+.select-wrapper select.control-select:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+    outline: none !important;
+}
+
+select.control-select:hover,
+.control-group select.control-select:hover,
+.select-wrapper select.control-select:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+select.control-select:active,
+.control-group select.control-select:active,
+.select-wrapper select.control-select:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
 }
 
 .client-select {
@@ -1023,12 +1082,71 @@ input:checked + .toggle-slider:before {
     transition: all 0.2s ease;
 }
 
-.config-input:focus,
-.config-select:focus {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: var(--selection);
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-    outline: none;
+.config-input,
+.config-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.config-input:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+    outline: none !important;
+}
+
+select.config-select,
+.config-section select.config-select,
+.config-field select.config-select,
+.select-wrapper select.config-select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    background-image: none !important; /* Remove Water CSS arrow completely */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 6px !important;
+    padding: 10px 35px 10px 12px !important;
+    color: #fff !important;
+    font-size: 0.9em !important;
+    transition: all 0.2s ease !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
+    width: 100% !important;
+}
+
+select.config-select:focus,
+.config-section select.config-select:focus,
+.config-field select.config-select:focus,
+.select-wrapper select.config-select:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+    outline: none !important;
+}
+
+select.config-select:hover,
+.config-section select.config-select:hover,
+.config-field select.config-select:hover,
+.select-wrapper select.config-select:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+select.config-select:active,
+.config-section select.config-select:active,
+.config-field select.config-select:active,
+.select-wrapper select.config-select:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
 }
 
 .input-with-button {

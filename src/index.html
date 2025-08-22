@@ -86,13 +86,15 @@
                             <span class="control-group-title">Client Management</span>
                         </div>
                         <div class="control-group-body">
-                            <select
-                                id="main-registered-clients-select"
-                                class="control-select client-select"
-                                title="Select a registered client"
-                            >
-                                <option value="">Select a client...</option>
-                            </select>
+                            <div class="select-wrapper">
+                                <select
+                                    id="main-registered-clients-select"
+                                    class="control-select client-select"
+                                    title="Select a registered client"
+                                >
+                                    <option value="">Select a client...</option>
+                                </select>
+                            </div>
                             <div class="action-buttons">
                                 <button
                                     class="action-button"
@@ -383,14 +385,16 @@
                                 </div>
                                 <div class="config-field">
                                     <label class="config-label">Type</label>
-                                    <select id="lcd-cmb-element-type" class="config-select">
-                                        <option selected value="text">Text</option>
-                                        <option value="static-image">Image</option>
-                                        <option value="graph">Graph</option>
-                                        <option value="conditional-image">
-                                            Gauge / Conditional image
-                                        </option>
-                                    </select>
+                                    <div class="select-wrapper">
+                                        <select id="lcd-cmb-element-type" class="config-select">
+                                            <option selected value="text">Text</option>
+                                            <option value="static-image">Image</option>
+                                            <option value="graph">Graph</option>
+                                            <option value="conditional-image">
+                                                Gauge / Conditional image
+                                            </option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="config-field">
                                     <label class="config-label">Position X</label>
@@ -434,11 +438,13 @@
                                     <div class="config-field">
                                         <label class="config-label">Sensor</label>
                                         <div class="input-with-button">
-                                            <select
-                                                id="lcd-cmb-sensor-id-selection"
-                                                class="config-select"
-                                                title="Select a sensor"
-                                            ></select>
+                                            <div class="select-wrapper">
+                                                <select
+                                                    id="lcd-cmb-sensor-id-selection"
+                                                    class="config-select"
+                                                    title="Select a sensor"
+                                                ></select>
+                                            </div>
                                             <button
                                                 class="input-button"
                                                 id="lcd-text-config-btn-select-sensor-id"
