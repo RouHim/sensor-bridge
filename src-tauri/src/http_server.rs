@@ -172,7 +172,7 @@ async fn load_existing_clients_into_registry(client_registry: &ClientRegistry) {
     let mut registry = client_registry.write().await;
 
     for (mac_address, legacy_client) in config.registered_clients {
-        let normalized_mac = mac_address.to_lowercase();
+        let normalized_mac = mac_address.to_uppercase();
         let client = RegisteredClient {
             mac_address: normalized_mac.clone(),
             name: legacy_client.name,
@@ -207,7 +207,7 @@ async fn handle_sensor_data_request(
         .to_string();
 
     // Normalize MAC address format
-    let normalized_mac = mac_address.to_lowercase();
+    let normalized_mac = mac_address.to_uppercase();
 
     let mut clients = client_registry.write().await;
 
@@ -297,12 +297,20 @@ async fn handle_client_registration(
         warp::reject::custom(ApiError::BadRequest("ip_address is required".to_string()))
     })?;
 
-    let width = registration["resolution_width"].as_u64().unwrap_or(1920) as u32;
+    let width = registration["resolution_width"].as_u64().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest(
+            "resolution_width is required".to_string(),
+        ))
+    })? as u32;
 
-    let height = registration["resolution_height"].as_u64().unwrap_or(1080) as u32;
+    let height = registration["resolution_height"].as_u64().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest(
+            "resolution_height is required".to_string(),
+        ))
+    })? as u32;
 
     // Normalize MAC address
-    let normalized_mac = mac_address.to_lowercase();
+    let normalized_mac = mac_address.to_uppercase();
 
     // Generate client name based on MAC address
     let client_name = format!("Display {}", &normalized_mac[..8]);
