@@ -47,38 +47,6 @@
 
             <div id="master-pane">
                 <div class="control-groups-container">
-                    <!-- HTTP Server Controls Group -->
-                    <div class="control-group">
-                        <div class="control-group-header">
-                            <i data-feather="globe" class="control-group-icon"></i>
-                            <span class="control-group-title">HTTP Server</span>
-                        </div>
-                        <div class="control-group-body">
-                            <label for="http-port-input" class="control-label">Port:</label>
-                            <input
-                                id="http-port-input"
-                                type="number"
-                                min="1024"
-                                max="65535"
-                                value="25555"
-                                class="control-input port-input"
-                                title="HTTP server port (1024-65535) - Auto-saves when changed"
-                            />
-                            <label
-                                class="kill-switch"
-                                id="kill-switch-input"
-                                title="Enable or disable the HTTP server"
-                            >
-                                <input
-                                    class="kill-switch-input"
-                                    id="main-chk-transfer-active"
-                                    type="checkbox"
-                                />
-                                <i class="kill-switch-icon" data-feather="power"></i>
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- Client Management Controls Group -->
                     <div class="control-group">
                         <div class="control-group-header">
@@ -116,28 +84,59 @@
                         </div>
                     </div>
 
-                    <!-- Configuration Management Controls Group -->
+                    <!-- Application Settings Controls Group -->
                     <div class="control-group">
                         <div class="control-group-header">
                             <i data-feather="settings" class="control-group-icon"></i>
-                            <span class="control-group-title">Configuration</span>
+                            <span class="control-group-title">Application Settings</span>
                         </div>
                         <div class="control-group-body">
-                            <div class="action-buttons">
-                                <button
-                                    class="action-button"
-                                    id="btn-export-config"
-                                    title="Export configuration"
-                                >
-                                    <i data-feather="external-link"></i>
-                                </button>
-                                <button
-                                    class="action-button"
-                                    id="btn-import-config"
-                                    title="Import configuration"
-                                >
-                                    <i data-feather="folder"></i>
-                                </button>
+                            <!-- HTTP Server Settings -->
+                            <div class="setting-row">
+                                <label for="http-port-input" class="control-label">Server Port:</label>
+                                <div class="input-with-toggle">
+                                    <input
+                                        id="http-port-input"
+                                        type="number"
+                                        min="1024"
+                                        max="65535"
+                                        value="25555"
+                                        class="control-input port-input"
+                                        title="HTTP server port (1024-65535) - Auto-saves when changed"
+                                    />
+                                    <label
+                                        class="kill-switch"
+                                        id="kill-switch-input"
+                                        title="Enable or disable the HTTP server"
+                                    >
+                                        <input
+                                            class="kill-switch-input"
+                                            id="main-chk-transfer-active"
+                                            type="checkbox"
+                                        />
+                                        <i class="kill-switch-icon" data-feather="power"></i>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Configuration Management -->
+                            <div class="setting-row">
+                                <div class="action-buttons">
+                                    <button
+                                        class="action-button"
+                                        id="btn-export-config"
+                                        title="Export configuration"
+                                    >
+                                        <i data-feather="external-link"></i>
+                                    </button>
+                                    <button
+                                        class="action-button"
+                                        id="btn-import-config"
+                                        title="Import configuration"
+                                    >
+                                        <i data-feather="folder"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
