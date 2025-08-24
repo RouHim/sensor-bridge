@@ -86,44 +86,32 @@
                             <span class="control-group-title">Client Management</span>
                         </div>
                         <div class="control-group-body">
-                            <div class="select-wrapper">
-                                <select
-                                    id="main-registered-clients-select"
-                                    class="control-select client-select"
-                                    title="Select a registered client"
-                                >
-                                    <option value="">Select a client...</option>
-                                </select>
-                            </div>
-                            <div class="action-buttons">
-                                <button
-                                    class="action-button"
-                                    id="btn-refresh-clients"
-                                    title="Refresh registered clients"
-                                >
-                                    <i data-feather="refresh-cw"></i>
-                                </button>
-                                <button
-                                    class="action-button"
-                                    id="lcd-btn-save-client-config"
-                                    title="Save client configuration"
-                                >
-                                    <i data-feather="save"></i>
-                                </button>
-                                <button
-                                    class="action-button"
-                                    id="lcd-btn-remove-client"
-                                    title="Remove registered client"
-                                >
-                                    <i data-feather="trash"></i>
-                                </button>
-                                <button
-                                    class="action-button"
-                                    id="btn-lcd-toggle-live-preview"
-                                    title="Open live preview"
-                                >
-                                    <i data-feather="monitor"></i>
-                                </button>
+                            <div class="input-with-buttons">
+                                <div class="select-wrapper">
+                                    <select
+                                        id="main-registered-clients-select"
+                                        class="control-select client-select"
+                                        title="Select a registered client"
+                                    >
+                                        <option value="">Select a client...</option>
+                                    </select>
+                                </div>
+                                <div class="action-buttons">
+                                    <button
+                                        class="action-button compact"
+                                        id="btn-refresh-clients"
+                                        title="Refresh registered clients"
+                                    >
+                                        <i data-feather="refresh-cw"></i>
+                                    </button>
+                                    <button
+                                        class="action-button compact"
+                                        id="lcd-btn-remove-client"
+                                        title="Remove registered client"
+                                    >
+                                        <i data-feather="trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -161,7 +149,6 @@
                     <!-- Client Configuration Header -->
                     <div class="client-config-header" id="client-config-header">
                         <div class="header-left">
-                            <h3>Client Configuration</h3>
                             <div
                                 class="client-status-indicator"
                                 id="client-status-container"
@@ -174,14 +161,50 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
-                        </div>
-                        <div class="header-right">
+                            <div class="header-action-buttons">
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-save-client-config"
+                                    title="Save client configuration"
+                                >
+                                    <i data-feather="save"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="btn-lcd-toggle-live-preview"
+                                    title="Open live preview"
+                                >
+                                    <i data-feather="monitor"></i>
+                                </button>
+                            </div>
                             <i
                                 data-feather="chevron-down"
                                 class="collapse-icon"
                                 id="collapse-icon"
                             ></i>
                         </div>
+                        <div class="header-right">
+                        </div>
+                    </div>
+                            <div
+                                class="client-status-indicator"
+                                id="client-status-container"
+                                style="display: none"
+                            >
+                                <div class="status-dot" id="client-status-dot"></div>
+                                <span id="client-status-text">Inactive</span>
+                                <label class="status-toggle">
+                                    <input type="checkbox" id="client-active-toggle" />
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <i
+                                data-feather="chevron-down"
+                                class="collapse-icon"
+                                id="collapse-icon"
+                            ></i>
+                        </div>
+                        <div class="header-right"></div>
                     </div>
 
                     <!-- Client Property Cards Grid -->

@@ -365,7 +365,14 @@ tbody tr:nth-child(even) {
 .header-right {
     display: flex;
     align-items: center;
+    gap: 12px;
     margin-left: 15px;
+}
+
+.header-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .collapse-icon {
@@ -733,6 +740,21 @@ input:checked + .toggle-slider:before {
 
 .input-with-button .select-wrapper {
     flex: 1 !important;
+}
+
+.input-with-buttons {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.input-with-buttons .select-wrapper {
+    flex: 1 !important;
+}
+
+.input-with-buttons .action-buttons {
+    flex-shrink: 0 !important;
 }
 
 .select-wrapper::after {
