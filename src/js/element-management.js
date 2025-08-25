@@ -1775,13 +1775,15 @@ function setupElementEventHandlers(listElement, designerElement) {
     // Add list drag and drop handlers
     setupListItemDragHandlers(listElement);
 
-    // Optimized drag and drop functionality
+    // Optimized drag and drop functionality with global mouse tracking
     const localDragState = {
         isDragging: false,
         startX: 0,
         startY: 0,
         initialX: 0,
-        initialY: 0
+        initialY: 0,
+        globalMouseMoveHandler: null,
+        globalMouseUpHandler: null
     };
 
     designerElement.addEventListener('mousedown', async event => {
@@ -1803,7 +1805,97 @@ function setupElementEventHandlers(listElement, designerElement) {
         // Add visual feedback for potential drag
         designerElement.style.cursor = 'grabbing';
 
-        event.preventDefault();
+        // Create global mouse handlers for drag tracking
+        localDragState.globalMouseMoveHandler = moveEvent => {
+            if (moveEvent.button !== undefined && moveEvent.button !== 0) {
+                return;
+            } // Only drag with left mouse button
+
+            const deltaX = moveEvent.clientX - localDragState.startX;
+            const deltaY = moveEvent.clientY - localDragState.startY;
+
+            // Start dragging if moved more than threshold
+            if (!localDragState.isDragging && (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)) {
+                localDragState.isDragging = true;
+
+                // Set global drag state to disable expensive operations
+                globalDragState.isDragging = true;
+                globalDragState.currentElement = designerElement;
+                globalDragState.startPosition = { x: localDragState.startX, y: localDragState.startY };
+                globalDragState.initialPosition = { x: localDragState.initialX, y: localDragState.initialY };
+
+                designerElement.classList.add('dragging');
+            }
+
+            if (localDragState.isDragging) {
+                // Get designer pane and element dimensions for boundary calculation
+                const designerRect = designerPane.getBoundingClientRect();
+                const elementRect = designerElement.getBoundingClientRect();
+
+                // Calculate new position with delta
+                let newX = localDragState.initialX + deltaX;
+                let newY = localDragState.initialY + deltaY;
+
+                // Apply boundary constraints
+                // Left boundary (minimum 0)
+                newX = Math.max(0, newX);
+                // Top boundary (minimum 0)
+                newY = Math.max(0, newY);
+                // Right boundary (element right edge cannot exceed designer pane width)
+                const maxX = designerRect.width - elementRect.width;
+                newX = Math.min(newX, maxX);
+                // Bottom boundary (element bottom edge cannot exceed designer pane height)
+                const maxY = designerRect.height - elementRect.height;
+                newY = Math.min(newY, maxY);
+
+                // FAST: Only update visual position and form inputs
+                designerElement.style.left = newX + 'px';
+                designerElement.style.top = newY + 'px';
+
+                // FAST: Update form inputs for live feedback
+                updateFormPositionInputsOnly(newX, newY);
+
+                // SKIP: All expensive operations are now skipped:
+                // - No updateElementPosition() (expensive attribute updates)
+                // - No updateElementForm() (expensive form sync)
+                // - No markCurrentElementAsTouched() (expensive validation)
+                // - No applyFormToSelectedElement() (expensive config + preview)
+            }
+        };
+
+        localDragState.globalMouseUpHandler = () => {
+            // Remove global event listeners
+            if (localDragState.globalMouseMoveHandler) {
+                document.removeEventListener('mousemove', localDragState.globalMouseMoveHandler);
+                localDragState.globalMouseMoveHandler = null;
+            }
+            if (localDragState.globalMouseUpHandler) {
+                document.removeEventListener('mouseup', localDragState.globalMouseUpHandler);
+                localDragState.globalMouseUpHandler = null;
+            }
+
+            if (localDragState.isDragging) {
+                localDragState.isDragging = false;
+
+                // Get final position
+                const finalX = parseInt(designerElement.style.left) || 0;
+                const finalY = parseInt(designerElement.style.top) || 0;
+
+                // Clear global drag state BEFORE executing deferred operations
+                globalDragState.isDragging = false;
+                globalDragState.currentElement = null;
+
+                designerElement.classList.remove('dragging');
+
+                // NOW: Execute all expensive operations once
+                executeDeferredDragOperations(designerElement, finalX, finalY);
+            }
+            designerElement.style.cursor = '';
+        };
+
+        // Add global event listeners when mouse is pressed
+        document.addEventListener('mousemove', localDragState.globalMouseMoveHandler);
+        document.addEventListener('mouseup', localDragState.globalMouseUpHandler);
     });
 
     designerElement.addEventListener('mousemove', event => {
