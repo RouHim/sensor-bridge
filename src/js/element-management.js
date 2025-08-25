@@ -9,6 +9,9 @@ const globalDragState = {
     deferredOperations: []
 };
 
+// Auto-save timeout for drag operations
+let dragAutoSaveTimeout = null;
+
 import {
     ELEMENT_TYPE_TEXT,
     ELEMENT_TYPE_STATIC_IMAGE,
@@ -157,6 +160,26 @@ export function initializeDragSafety() {
             cleanupAnyStuckDragStates();
         }
     });
+}
+
+/**
+ * Triggers auto-save for drag operations with debouncing
+ */
+function triggerDragAutoSave() {
+    // Clear existing timeout to reset the debounce
+    if (dragAutoSaveTimeout) {
+        clearTimeout(dragAutoSaveTimeout);
+    }
+
+    // Debounce save operation - wait 500ms after last drag
+    dragAutoSaveTimeout = setTimeout(async () => {
+        try {
+            await saveElementConfiguration();
+            console.log('Auto-saved drag position changes');
+        } catch (error) {
+            console.error('Auto-save failed after drag operation:', error);
+        }
+    }, 500);
 }
 
 /**
@@ -680,6 +703,9 @@ function executeDeferredDragOperations(element, x, y) {
         });
         globalDragState.deferredOperations = [];
     }
+
+    // Trigger auto-save after drag completion
+    triggerDragAutoSave();
 }
 
 /**
