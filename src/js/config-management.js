@@ -94,6 +94,7 @@ export async function loadHttpPort() {
         const httpPortInput = document.getElementById('http-port-input');
         if (httpPortInput) {
             httpPortInput.value = port;
+            originalPortValue = parseInt(port);
         }
     } catch (error) {
         console.error('Failed to load HTTP port:', error);
@@ -116,23 +117,14 @@ export async function saveHttpPort() {
 }
 
 /**
- * Handles port input focus - stores the original value
+ * Handles port input change - shows apply button if value changed
  */
-export function onPortInputFocus() {
+export function onPortInputChange() {
     const httpPortInput = document.getElementById('http-port-input');
-    if (httpPortInput) {
-        originalPortValue = parseInt(httpPortInput.value);
-    }
-}
+    const applyButton = document.getElementById('btn-apply-port-change');
 
-/**
- * Handles port input change - detects changes and restarts server if needed
- */
-export async function onPortInputChange() {
-    const httpPortInput = document.getElementById('http-port-input');
-
-    if (!httpPortInput) {
-        console.error('HTTP port input element not found');
+    if (!httpPortInput || !applyButton) {
+        console.error('HTTP port input or apply button element not found');
         return;
     }
 
@@ -142,38 +134,113 @@ export async function onPortInputChange() {
         // Validate port range
         if (newPort < 1024 || newPort > 65535) {
             console.warn('Port out of valid range (1024-65535)');
+            applyButton.classList.add('hidden');
+            applyButton.classList.remove('visible');
             return;
         }
 
-        // Check if port actually changed
+        // Check if port actually changed from original value
         if (originalPortValue !== null && originalPortValue !== newPort) {
-            // The backend set_http_port function now handles server restart automatically
-            // if the server is running, so we just need to save the port
-            await saveHttpPort();
+            applyButton.classList.add('visible');
+            applyButton.classList.remove('hidden');
         } else {
-            // Port didn't change, just save it
-            await saveHttpPort();
+            applyButton.classList.add('hidden');
+            applyButton.classList.remove('visible');
         }
-
-        // Update the stored original value
-        originalPortValue = newPort;
     } catch (error) {
         console.error('Error handling port change:', error);
+        applyButton.classList.add('hidden');
+        applyButton.classList.remove('visible');
     }
 }
 
 /**
- * Toggles the HTTP server on/off
- * @param {boolean} enable - Whether to enable or disable the server
+ * Applies the port change and restarts the server
  */
-export async function toggleHttpServer(enable) {
+export async function applyPortChange() {
+    const httpPortInput = document.getElementById('http-port-input');
+    const applyButton = document.getElementById('btn-apply-port-change');
+
+    if (!httpPortInput || !applyButton) {
+        console.error('HTTP port input or apply button element not found');
+        return;
+    }
+
     try {
-        if (enable) {
-            await invoke('start_http_server');
-        } else {
-            await invoke('stop_http_server');
+        const newPort = parseInt(httpPortInput.value);
+
+        // Validate port range
+        if (newPort < 1024 || newPort > 65535) {
+            alert('Port must be between 1024 and 65535');
+            return;
         }
+
+        // Disable button and show loading state
+        applyButton.disabled = true;
+        const originalIcon = applyButton.querySelector('i');
+        if (originalIcon) {
+            originalIcon.setAttribute('data-feather', 'loader');
+
+            // Re-render feather icons to show loader
+            if (typeof window.feather !== 'undefined') {
+                window.feather.replace();
+            }
+        } else {
+            console.warn('Could not find icon element in apply button for loading state');
+            applyButton.textContent = '...'; // Fallback loading indicator
+        }
+
+        console.log(`Applying HTTP server port change from ${originalPortValue} to ${newPort}...`);
+
+        // Apply the port change (this will restart the server automatically)
+        await invoke('set_http_port', { port: newPort });
+
+        // Update the stored original value
+        originalPortValue = newPort;
+
+        // Hide the apply button
+        applyButton.classList.add('hidden');
+        applyButton.classList.remove('visible');
+
+        // Restore button state
+        applyButton.disabled = false;
+        const restoreIcon = applyButton.querySelector('i');
+        if (restoreIcon) {
+            restoreIcon.setAttribute('data-feather', 'check');
+
+            // Re-render feather icons to show check icon
+            if (typeof window.feather !== 'undefined') {
+                window.feather.replace();
+            }
+        } else {
+            console.warn('Could not find icon element in apply button for restore state');
+            applyButton.innerHTML = '<i data-feather="check"></i>'; // Recreate icon
+            if (typeof window.feather !== 'undefined') {
+                window.feather.replace();
+            }
+        }
+
+        console.log(`HTTP server port successfully changed to ${newPort} and server restarted`);
     } catch (error) {
-        console.error('Error toggling HTTP server:', error);
+        console.error('Error applying port change:', error);
+        alert('Error changing port: ' + error);
+
+        // Restore button state on error
+        applyButton.disabled = false;
+        const errorIcon = applyButton.querySelector('i');
+        if (errorIcon) {
+            errorIcon.setAttribute('data-feather', 'check');
+
+            // Re-render feather icons
+            if (typeof window.feather !== 'undefined') {
+                window.feather.replace();
+            }
+        } else {
+            console.warn('Could not find icon element in apply button for error state');
+            applyButton.innerHTML = '<i data-feather="check"></i>'; // Recreate icon
+            if (typeof window.feather !== 'undefined') {
+                window.feather.replace();
+            }
+        }
     }
 }

@@ -8,14 +8,7 @@ import {
     saveClientConfiguration
 } from './client-management.js';
 
-import {
-    exportConfig,
-    importConfig,
-    loadHttpPort,
-    onPortInputChange,
-    onPortInputFocus,
-    toggleHttpServer
-} from './config-management.js';
+import { exportConfig, importConfig, loadHttpPort, onPortInputChange, applyPortChange } from './config-management.js';
 
 import {
     addNewElement,
@@ -57,8 +50,8 @@ import {
 
 import { setSensorValues } from './app-state.js';
 import {
-    btnActivateSync,
     btnAddElement,
+    btnApplyPortChange,
     btnConditionalImageApplyCatalogEntry,
     btnConditionalImageInfo,
     btnConditionalImagePathSelection,
@@ -152,14 +145,12 @@ function setupEventListeners() {
     });
     btnExportConfig?.addEventListener('click', exportConfig);
     btnImportConfig?.addEventListener('click', importConfig);
-    btnSaveClientConfig?.addEventListener('click', onSave);
-    btnSaveElement?.addEventListener('click', onSave);
-    btnActivateSync?.addEventListener('click', () => toggleHttpServer(btnActivateSync.checked));
+    btnSaveClientConfig?.addEventListener('click', onSaveClientConfig);
+    btnSaveElement?.addEventListener('click', onSaveElement);
 
-    // HTTP port input events with auto-restart functionality
-    httpPortInput?.addEventListener('focus', onPortInputFocus);
-    httpPortInput?.addEventListener('change', onPortInputChange);
-    httpPortInput?.addEventListener('blur', onPortInputChange);
+    // HTTP port input events for apply button workflow
+    httpPortInput?.addEventListener('input', onPortInputChange);
+    btnApplyPortChange?.addEventListener('click', applyPortChange);
 
     btnToggleLivePreview?.addEventListener('click', toggleLivePreview);
 
@@ -382,34 +373,42 @@ async function loadSensorData() {
 }
 
 /**
- * Generic save handler for both client config and elements
+ * Specific handler for saving client configuration
  */
-async function onSave() {
+async function onSaveClientConfig() {
     try {
-        // Import state getters to check context
-        const { getSelectedListElement, getSelectedDesignerElement, getCurrentClientMacAddress } = await import(
-            './app-state.js'
-        );
-
-        const selectedList = getSelectedListElement();
-        const selectedDesigner = getSelectedDesignerElement();
+        const { getCurrentClientMacAddress } = await import('./app-state.js');
         const selectedClient = getCurrentClientMacAddress();
 
-        // Determine save context: if we have selected elements, save element config
-        // Otherwise, if we have a selected client, save client config
-        if (selectedList && selectedDesigner) {
-            // We have selected elements - save element configuration
-            await saveElementConfiguration();
-            // Configuration saved
-        } else if (selectedClient) {
-            // We have a selected client - save client configuration
-            await saveClientConfiguration();
-            // Configuration saved
-        } else {
-            throw new Error('Nothing to save. Please select a client or element first.');
+        if (!selectedClient) {
+            throw new Error('No client selected. Please select a client first.');
         }
+
+        await saveClientConfiguration();
+        // Client configuration saved successfully
     } catch (error) {
-        console.error('Error saving configuration:', error);
-        alert('Error saving configuration: ' + error);
+        console.error('Error saving client configuration:', error);
+        alert('Error saving client configuration: ' + error);
+    }
+}
+
+/**
+ * Specific handler for saving element configuration
+ */
+async function onSaveElement() {
+    try {
+        const { getSelectedListElement, getSelectedDesignerElement } = await import('./app-state.js');
+        const selectedList = getSelectedListElement();
+        const selectedDesigner = getSelectedDesignerElement();
+
+        if (!selectedList || !selectedDesigner) {
+            throw new Error('No element selected. Please select an element first.');
+        }
+
+        await saveElementConfiguration();
+        // Element configuration saved successfully
+    } catch (error) {
+        console.error('Error saving element configuration:', error);
+        alert('Error saving element configuration: ' + error);
     }
 }

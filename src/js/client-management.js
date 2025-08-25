@@ -347,8 +347,13 @@ function toggleClientConfigPanel() {
 function initializeCollapsibleHeader() {
     if (clientConfigHeader) {
         clientConfigHeader.addEventListener('click', e => {
-            // Prevent toggle when clicking on the status toggle switch
-            if (e.target.closest('.status-toggle') || e.target.closest('input[type="checkbox"]')) {
+            // Prevent toggle when clicking on the status toggle switch or action buttons
+            if (
+                e.target.closest('.status-toggle') ||
+                e.target.closest('input[type="checkbox"]') ||
+                e.target.closest('.header-action-buttons') ||
+                e.target.closest('button')
+            ) {
                 return;
             }
             toggleClientConfigPanel();

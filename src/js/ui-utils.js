@@ -202,22 +202,22 @@ export function handleKeydownEvent(event) {
                 const currentY = parseInt(selectedElement.style.top) || 0;
 
                 switch (event.key) {
-                    case 'ArrowUp':
-                        selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
-                        moved = true;
-                        break;
-                    case 'ArrowDown':
-                        selectedElement.style.top = currentY + moveUnit + 'px';
-                        moved = true;
-                        break;
-                    case 'ArrowLeft':
-                        selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
-                        moved = true;
-                        break;
-                    case 'ArrowRight':
-                        selectedElement.style.left = currentX + moveUnit + 'px';
-                        moved = true;
-                        break;
+                case 'ArrowUp':
+                    selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
+                    moved = true;
+                    break;
+                case 'ArrowDown':
+                    selectedElement.style.top = currentY + moveUnit + 'px';
+                    moved = true;
+                    break;
+                case 'ArrowLeft':
+                    selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
+                    moved = true;
+                    break;
+                case 'ArrowRight':
+                    selectedElement.style.left = currentX + moveUnit + 'px';
+                    moved = true;
+                    break;
                 }
 
                 if (moved) {

@@ -95,6 +95,14 @@ async fn main() {
 
             build_tray_icon(app)?;
 
+            // Auto-start the HTTP server
+            let app_state = app.state::<AppState>();
+            let port = config::get_http_port();
+            info!("Auto-starting HTTP server on port {}", port);
+            if let Err(e) = start_http_server(app_state.clone()) {
+                error!("Failed to auto-start HTTP server: {}", e);
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -376,12 +384,13 @@ async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
 /// Starts the HTTP server
 #[tauri::command]
 fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
-    info!("Starting HTTP server...");
+    let port = config::get_http_port();
+    info!("Starting HTTP server on port {}", port);
     let mut server_running = app_state.http_server_running.lock().unwrap();
     let mut server_handle = app_state.http_server_handle.lock().unwrap();
 
     if *server_running {
-        return Err("HTTP server is already running".to_string());
+        return Err(format!("HTTP server is already running on port {}", port));
     }
 
     // Start the server in a background task
@@ -414,7 +423,8 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
 /// Stops the HTTP server
 #[tauri::command]
 async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
-    info!("Stopping HTTP server...");
+    let port = config::get_http_port();
+    info!("Stopping HTTP server on port {}", port);
 
     // First check if server is running and get the handle
     let handle = {
@@ -468,8 +478,8 @@ fn get_http_port() -> Result<u16, String> {
 #[tauri::command]
 async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), String> {
     let was_running = {
-        let server_running = app_state.http_server_running.lock().unwrap();
-        *server_running
+        let server_handle = app_state.http_server_running.lock().unwrap();
+        *server_handle
     };
 
     // If server is running, stop it first and wait for it to fully stop
@@ -488,7 +498,12 @@ async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), 
     }
 
     // Set the new port in configuration
+    let old_port = config::get_http_port();
     config::set_http_port(port)?;
+    
+    if !was_running {
+        info!("HTTP server port changed from {} to {} (server was not running)", old_port, port);
+    }
 
     // If server was running, restart it with the new port
     if was_running {

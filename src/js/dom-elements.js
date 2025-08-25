@@ -32,8 +32,7 @@ export const btnToggleLivePreview = document.getElementById('btn-lcd-toggle-live
 export const btnRemoveClient = document.getElementById('lcd-btn-remove-client');
 export const btnExportConfig = document.getElementById('btn-export-config');
 export const btnImportConfig = document.getElementById('btn-import-config');
-export const panelKillSwitch = document.getElementById('kill-switch-input');
-export const btnActivateSync = document.getElementById('main-chk-transfer-active');
+export const btnApplyPortChange = document.getElementById('btn-apply-port-change');
 export const httpPortInput = document.getElementById('http-port-input');
 
 // Client configuration elements
