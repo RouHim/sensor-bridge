@@ -5,10 +5,10 @@ use std::thread;
 
 use log::info;
 use rayon::prelude::*;
-use sensor_core::{DisplayConfig, ElementConfig, ElementType, SensorValue};
+use sensor_core::{ElementConfig, ElementType, SensorValue};
 use tauri::{AppHandle, Manager};
 
-use crate::config::NetworkDeviceConfig;
+use crate::http_server::RegisteredClient;
 use crate::utils::LockResultExt;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
@@ -19,13 +19,13 @@ pub const WINDOW_LABEL: &str = "lcd-preview";
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
-pub fn show(app_handle: AppHandle, port_config: NetworkDeviceConfig, resolution_width: u32, resolution_height: u32) {
-    let network_device_id = port_config.id.clone();
-    let width = resolution_width;
-    let height = resolution_height;
-    let lcd_elements = port_config.display_config.elements.clone();
+pub fn show(app_handle: AppHandle, client: RegisteredClient) {
+    let network_device_id = client.mac_address;
+    let width = client.resolution_width;
+    let height = client.resolution_height;
+    let lcd_elements = client.elements.clone();
 
-    info!("Showing display preview for '{}'", port_config.name);
+    info!("Showing display preview for '{}'", client.name);
 
     thread::spawn(move || {
         // Check if window already exists and handle it properly
@@ -106,24 +106,25 @@ fn prepare_assets(elements: Vec<ElementConfig>) {
 pub fn render(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
-    lcd_config: DisplayConfig,
+    client: RegisteredClient,
 ) -> std::thread::Result<String> {
     let static_sensor_values = static_sensor_values.clone();
     let sensor_value_history = sensor_value_history.clone();
-    let lcd_config = lcd_config.clone();
 
     thread::spawn(move || {
         // Read the sensor values
         sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
 
         // Build font data hashmap
-        let fonts_data: HashMap<String, Vec<u8>> = text::build_fonts_data(&lcd_config);
+        let fonts_data: HashMap<String, Vec<u8>> = text::build_fonts_data(&client.elements);
 
         // Render the image
         let image = sensor_core::render_lcd_image(
-            lcd_config,
+            &client.elements,
             sensor_value_history.lock().ignore_poison().deref(),
             &fonts_data,
+            client.resolution_width,
+            client.resolution_height,
         );
 
         let buf = utils::rgb_to_jpeg_bytes(image);

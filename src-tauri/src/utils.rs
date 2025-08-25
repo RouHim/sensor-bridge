@@ -1,8 +1,8 @@
 use std::io::Cursor;
 use std::sync::LockResult;
 
-use image::{DynamicImage, ImageBuffer, Rgba};
 use chrono::{DateTime, Utc};
+use image::{DynamicImage, ImageBuffer, Rgba};
 
 /// Pretty print bytes, e.g. 534 MB
 /// Returns a tuple of (value, unit)
@@ -30,14 +30,14 @@ pub fn get_system_locale() -> String {
             return locale;
         }
     }
-    
+
     // Fall back to LANG
     if let Ok(lang) = std::env::var("LANG") {
         if let Some(locale) = parse_locale_string(&lang) {
             return locale;
         }
     }
-    
+
     // Default fallback
     "en".to_string()
 }
@@ -48,14 +48,10 @@ fn parse_locale_string(locale_str: &str) -> Option<String> {
     if locale_str.is_empty() || locale_str == "C" || locale_str == "POSIX" {
         return None;
     }
-    
+
     // Extract language part before underscore or dot
-    let language = locale_str
-        .split('_')
-        .next()?
-        .split('.')
-        .next()?;
-    
+    let language = locale_str.split('_').next()?.split('.').next()?;
+
     if language.len() >= 2 {
         Some(language.to_lowercase())
     } else {
@@ -67,11 +63,11 @@ fn parse_locale_string(locale_str: &str) -> Option<String> {
 /// Uses different format patterns based on detected locale
 pub fn format_datetime_with_system_locale(datetime: &DateTime<Utc>) -> String {
     let locale = get_system_locale();
-    
+
     // Use locale-appropriate format patterns
     let format_str = match locale.as_str() {
         "de" => "%d.%m.%Y %H:%M:%S",     // German: DD.MM.YYYY HH:MM:SS
-        "fr" => "%d/%m/%Y %H:%M:%S",     // French: DD/MM/YYYY HH:MM:SS  
+        "fr" => "%d/%m/%Y %H:%M:%S",     // French: DD/MM/YYYY HH:MM:SS
         "en" => "%m/%d/%Y %I:%M:%S %p",  // English: MM/DD/YYYY HH:MM:SS AM/PM
         "es" => "%d/%m/%Y %H:%M:%S",     // Spanish: DD/MM/YYYY HH:MM:SS
         "it" => "%d/%m/%Y %H:%M:%S",     // Italian: DD/MM/YYYY HH:MM:SS
@@ -79,7 +75,7 @@ pub fn format_datetime_with_system_locale(datetime: &DateTime<Utc>) -> String {
         "zh" => "%Y年%m月%d日 %H:%M:%S", // Chinese: YYYY年MM月DD日 HH:MM:SS
         _ => "%Y-%m-%d %H:%M:%S",        // Default: ISO-like format
     };
-    
+
     // Convert to local time and format
     datetime.format(format_str).to_string()
 }
@@ -92,7 +88,10 @@ mod tests {
     fn test_locale_parsing() {
         assert_eq!(parse_locale_string("en_US.UTF-8"), Some("en".to_string()));
         assert_eq!(parse_locale_string("de_DE"), Some("de".to_string()));
-        assert_eq!(parse_locale_string("fr_FR.ISO-8859-1"), Some("fr".to_string()));
+        assert_eq!(
+            parse_locale_string("fr_FR.ISO-8859-1"),
+            Some("fr".to_string())
+        );
         assert_eq!(parse_locale_string("C"), None);
         assert_eq!(parse_locale_string("POSIX"), None);
         assert_eq!(parse_locale_string(""), None);
@@ -103,7 +102,7 @@ mod tests {
         let dt = DateTime::parse_from_rfc3339("2024-12-20T14:30:45Z")
             .unwrap()
             .with_timezone(&Utc);
-        
+
         let formatted = format_datetime_with_system_locale(&dt);
         // Should return some formatted string (either localized or fallback)
         assert!(!formatted.is_empty());

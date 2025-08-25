@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 
+use crate::http_server::RegisteredClient;
+use crate::utils::format_datetime_with_system_locale;
 use atomic_write_file::AtomicWriteFile;
 use chrono::{DateTime, Utc};
-use sensor_core::DisplayConfig;
+use sensor_core::ElementConfig;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// The app config
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -21,66 +22,6 @@ impl Default for AppConfig {
         AppConfig {
             registered_clients: HashMap::new(),
             http_port: default_http_port(),
-        }
-    }
-}
-
-/// A registered client identified by MAC address
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RegisteredClient {
-    pub mac_address: String,
-    pub name: String,
-    pub ip_address: String,
-    pub resolution_width: u32,
-    pub resolution_height: u32,
-    pub active: bool,
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub last_seen: DateTime<Utc>,
-    pub display_config: DisplayConfig,
-}
-
-/// Legacy NetworkDeviceConfig for backward compatibility during migration
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct NetworkDeviceConfig {
-    pub id: String,
-    pub name: String,
-    pub address: String,
-    pub active: bool,
-    pub display_config: DisplayConfig,
-}
-
-impl RegisteredClient {
-    pub fn new(
-        mac_address: String,
-        ip_address: String,
-        resolution_width: u32,
-        resolution_height: u32,
-    ) -> Self {
-        RegisteredClient {
-            mac_address: mac_address.clone(),
-            name: format!("Display {}", &mac_address[..8]), // Default name using MAC prefix
-            ip_address,
-            resolution_width,
-            resolution_height,
-            active: false,
-            last_seen: Utc::now(),
-            display_config: DisplayConfig {
-                resolution_width: 0,  // Deprecated field, not used
-                resolution_height: 0, // Deprecated field, not used
-                elements: Vec::new(),
-            },
-        }
-    }
-}
-
-impl NetworkDeviceConfig {
-    fn default() -> NetworkDeviceConfig {
-        NetworkDeviceConfig {
-            id: Uuid::new_v4().to_string(),
-            name: "A new device".to_string(),
-            address: "".to_string(),
-            active: false,
-            display_config: Default::default(),
         }
     }
 }
@@ -100,6 +41,7 @@ pub fn register_client(
         .or_insert_with(|| {
             RegisteredClient::new(
                 mac_address.clone(),
+                format!("Display {}", mac_address),
                 ip_address.clone(),
                 resolution_width,
                 resolution_height,
@@ -110,7 +52,7 @@ pub fn register_client(
     client.ip_address = ip_address;
     client.resolution_width = resolution_width;
     client.resolution_height = resolution_height;
-    client.last_seen = Utc::now();
+    client.last_seen = Utc::now().timestamp() as u64;
 
     let client_clone = client.clone();
     write_to_app_config(&config);
@@ -148,13 +90,13 @@ pub fn set_client_active(mac_address: &str, active: bool) -> Result<(), String> 
 /// Updates a client's display configuration
 pub fn update_client_display_config(
     mac_address: &str,
-    display_config: DisplayConfig,
+    elements: Vec<ElementConfig>,
 ) -> Result<(), String> {
     let mut config: AppConfig = read_from_app_config();
 
     match config.registered_clients.get_mut(mac_address) {
         Some(client) => {
-            client.display_config = display_config;
+            client.elements = elements;
             write_to_app_config(&config);
             Ok(())
         }
@@ -186,14 +128,13 @@ pub fn remove_client(mac_address: &str) -> Result<(), String> {
 /// Uses atomic writing to prevent corruption during writes.
 pub fn write_to_app_config(config: &AppConfig) {
     let config_path = get_config_path();
-    
+
     let mut file = AtomicWriteFile::options()
         .open(&config_path)
         .expect("Failed to open atomic config file");
-    
-    serde_json::to_writer_pretty(&mut file, config)
-        .expect("Failed to write config data");
-    
+
+    serde_json::to_writer_pretty(&mut file, config).expect("Failed to write config data");
+
     file.commit().expect("Failed to commit config file");
 }
 
@@ -261,4 +202,38 @@ pub fn set_http_port(port: u16) -> Result<(), String> {
 /// Default HTTP port
 fn default_http_port() -> u16 {
     25555
+}
+
+/// API response version of RegisteredClient with formatted timestamp
+#[derive(Serialize, Debug, Clone)]
+pub struct RegisteredClientResponse {
+    pub mac_address: String,
+    pub name: String,
+    pub ip_address: String,
+    pub resolution_width: u32,
+    pub resolution_height: u32,
+    pub active: bool,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub last_seen: DateTime<Utc>,
+    pub formatted_last_seen: String,
+    pub elements: Vec<ElementConfig>,
+}
+
+impl From<RegisteredClient> for RegisteredClientResponse {
+    fn from(client: RegisteredClient) -> Self {
+        let last_seen_datetime =
+            DateTime::from_timestamp(client.last_seen as i64, 0).unwrap_or_else(Utc::now);
+
+        RegisteredClientResponse {
+            mac_address: client.mac_address,
+            name: client.name,
+            ip_address: client.ip_address,
+            resolution_width: client.resolution_width,
+            resolution_height: client.resolution_height,
+            active: client.active,
+            last_seen: last_seen_datetime,
+            formatted_last_seen: format_datetime_with_system_locale(&last_seen_datetime),
+            elements: client.elements,
+        }
+    }
 }

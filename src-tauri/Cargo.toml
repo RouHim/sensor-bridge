@@ -12,7 +12,6 @@ rust-version = "1.57"
 tauri-build = { version = "2.3.0", features = [] }
 
 [dependencies]
-#sensor-core = "1.12.5"                                                                                      # Sensor core library
 sensor-core = { path = "../../sensor-core" }                                                                                      # Sensor core library
 lazy_static = "1.4.0"
 serde = { version = "1.0.197", features = ["derive"] }                                                                  # Serialization

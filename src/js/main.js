@@ -1,10 +1,10 @@
 // Main application initialization and coordination
 
 import {
-    handleClientActiveToggle,
     loadRegisteredClients,
     onClientSelected,
     removeClient,
+    handleClientActiveToggle,
     saveClientConfiguration
 } from './client-management.js';
 
@@ -103,8 +103,6 @@ import {
  * Main application initialization
  */
 export async function initializeApplication() {
-    console.log('Initializing Sensor Bridge application...');
-
     // Initialize UI components
     initializeColorPicker();
 
@@ -123,7 +121,7 @@ export async function initializeApplication() {
     // Initialize Feather Icons after all DOM elements are set up
     initializeFeatherIcons();
 
-    console.log('Application initialization complete');
+    // Application ready
 }
 
 /**
@@ -362,7 +360,7 @@ async function loadInitialData() {
  */
 async function loadSensorData() {
     try {
-        console.log('Loading sensor data...');
+        // Load sensor data
         const sensorDataResponse = await invoke('get_sensor_values');
 
         // Parse the JSON response
@@ -374,7 +372,7 @@ async function loadSensorData() {
         // Populate all sensor dropdowns with the loaded sensors
         populateAllSensorDropdowns();
 
-        console.log('Loaded', sensorData.length, 'sensors');
+        // Sensor data loaded
     } catch (error) {
         console.error('Failed to load sensor data:', error);
         // Set empty array as fallback
@@ -395,18 +393,18 @@ async function onSave() {
 
         const selectedList = getSelectedListElement();
         const selectedDesigner = getSelectedDesignerElement();
-        const currentClient = getCurrentClientMacAddress();
+        const selectedClient = getCurrentClientMacAddress();
 
         // Determine save context: if we have selected elements, save element config
         // Otherwise, if we have a selected client, save client config
         if (selectedList && selectedDesigner) {
             // We have selected elements - save element configuration
             await saveElementConfiguration();
-            console.log('Element configuration saved successfully');
-        } else if (currentClient) {
-            // No elements selected but we have a client - save client configuration
+            // Configuration saved
+        } else if (selectedClient) {
+            // We have a selected client - save client configuration
             await saveClientConfiguration();
-            console.log('Client configuration saved successfully');
+            // Configuration saved
         } else {
             throw new Error('Nothing to save. Please select a client or element first.');
         }

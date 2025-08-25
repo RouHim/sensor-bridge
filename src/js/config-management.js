@@ -25,7 +25,7 @@ export function exportConfig() {
         if (typeof selected === 'string' && selected !== '') {
             invoke('export_config', { filePath: selected });
         } else {
-            console.log('No file selected');
+            // No file selected
         }
     });
 }
@@ -33,46 +33,60 @@ export function exportConfig() {
 /**
  * Imports a config from a file the user can select
  */
-export function importConfig() {
-    // Open a tauri dialog to let the user select a file to import from
-    open({
-        multiple: false,
-        directory: false,
-        filters: [
-            {
-                name: 'JSON',
-                extensions: ['json']
-            }
-        ]
-    }).then(selected => {
+export async function importConfig() {
+    try {
+        // Open a tauri dialog to let the user select a file to import from
+        const selected = await open({
+            multiple: false,
+            directory: false,
+            filters: [
+                {
+                    name: 'Config files',
+                    extensions: ['json']
+                }
+            ]
+        });
+
         // If the user selected a file, load the config from the file
         if (typeof selected === 'string' && selected !== '') {
-            invoke('import_config', { filePath: selected })
-                .then(() => {
-                    // Show yes no dialog, that a restart is required
-                    const shouldRestart = confirm(
-                        'The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?'
-                    );
-                    if (shouldRestart) {
-                        invoke('restart_app');
-                    } else {
-                        // Reload registered clients instead of device configs
-                        loadRegisteredClients().catch(error => {
-                            alert('Error while loading registered clients. ' + error);
-                        });
-                    }
-                })
-                .catch(error => {
-                    alert('Error while importing config. ' + error);
-                });
-        } else {
-            console.log('No file selected');
+            await invoke('import_config', { filePath: selected });
+
+            // Show yes no dialog, that a restart is required
+            try {
+                const shouldRestart = await window.__TAURI__.dialog.ask(
+                    'The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?',
+                    { title: 'Restart Required' }
+                );
+                if (shouldRestart) {
+                    invoke('restart_app');
+                } else {
+                    // Reload registered clients instead of device configs
+                    loadRegisteredClients().catch(error => {
+                        alert('Error while loading registered clients. ' + error);
+                    });
+                }
+            } catch (error) {
+                // Fallback to browser confirm if Tauri dialog fails
+                const shouldRestart = confirm(
+                    'The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?'
+                );
+                if (shouldRestart) {
+                    invoke('restart_app');
+                } else {
+                    // Reload registered clients instead of device configs
+                    loadRegisteredClients().catch(error => {
+                        alert('Error while loading registered clients. ' + error);
+                    });
+                }
+            }
         }
-    });
+    } catch (error) {
+        alert('Error while importing config. ' + error);
+    }
 }
 
 /**
- * Loads the current HTTP port value from backend
+ * Loads the currently saved HTTP port from the backend
  */
 export async function loadHttpPort() {
     try {
@@ -133,13 +147,9 @@ export async function onPortInputChange() {
 
         // Check if port actually changed
         if (originalPortValue !== null && originalPortValue !== newPort) {
-            console.log(`Port changed from ${originalPortValue} to ${newPort}`);
-
             // The backend set_http_port function now handles server restart automatically
             // if the server is running, so we just need to save the port
             await saveHttpPort();
-
-            console.log('Port saved successfully - backend handled server restart if needed');
         } else {
             // Port didn't change, just save it
             await saveHttpPort();
@@ -160,10 +170,8 @@ export async function toggleHttpServer(enable) {
     try {
         if (enable) {
             await invoke('start_http_server');
-            console.log('HTTP server started');
         } else {
             await invoke('stop_http_server');
-            console.log('HTTP server stopped');
         }
     } catch (error) {
         console.error('Error toggling HTTP server:', error);

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use crate::utils;
 use image::ImageFormat;
 use rayon::prelude::*;
-use sensor_core::{is_image, ConditionalImageConfig, DisplayConfig, ElementConfig, ElementType};
+use sensor_core::{is_image, ConditionalImageConfig, ElementConfig, ElementType};
 use serde::{Deserialize, Serialize};
 
 const REPO_METADATA_URL: &str =
@@ -54,7 +54,7 @@ pub fn prepare_element(
 
     // Make sure that the cache folder path only contains supported images
     // First index all supported image paths
-    let sensor_value_images: Vec<String> = find_recursive_in(&cache_folder_path); // TODO: propagate errors from find_recursive_in if needed
+    let sensor_value_images: Vec<String> = find_recursive_in(&cache_folder_path);
 
     // Ensure that these images are in the root folder of cache_folder_path
     let sensor_value_images: Vec<String> = sensor_value_images
@@ -166,10 +166,9 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
 
 /// Pre-renders conditional images and returns the data to send.
 pub fn get_preparation_data(
-    lcd_config: &DisplayConfig,
+    elements: &[ElementConfig],
 ) -> HashMap<String, HashMap<String, Vec<u8>>> {
-    let conditional_image_elements: Vec<&ElementConfig> = lcd_config
-        .elements
+    let conditional_image_elements: Vec<&ElementConfig> = elements
         .iter()
         .filter(|element| element.element_type == ElementType::ConditionalImage)
         .collect();

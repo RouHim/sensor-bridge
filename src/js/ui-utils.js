@@ -2,14 +2,14 @@
 
 import { getCurrentClientMacAddress } from './app-state.js';
 import {
-    invoke,
-    cmbTextFontFamily,
     cmbConditionalImageCatalogEntrySelection,
-    txtTextFormat,
+    cmbTextFontFamily,
+    invoke,
+    open,
+    txtConditionalImageHeight,
     txtConditionalImageImagesPath,
     txtConditionalImageWidth,
-    txtConditionalImageHeight,
-    open
+    txtTextFormat
 } from './dom-elements.js';
 import { ATTR_CONDITIONAL_IMAGE_REPO_URL, ATTR_CONDITIONAL_IMAGE_RESOLUTION } from './constants.js';
 
@@ -165,7 +165,6 @@ export async function toggleLivePreview() {
 
         // Use the backend Tauri command instead of frontend WebviewWindow API
         // This approach has better window lifecycle management
-        console.log('Opening LCD preview via backend command...');
 
         // Import the invoke function from Tauri API
         const { invoke } = window.__TAURI__.core;
@@ -173,8 +172,6 @@ export async function toggleLivePreview() {
         await invoke('show_lcd_live_preview', {
             macAddress: macAddress
         });
-
-        console.log('LCD preview command sent successfully');
     } catch (error) {
         console.error('Failed to toggle live preview:', error);
         console.error('Error details:', JSON.stringify(error, null, 2));
@@ -205,22 +202,22 @@ export function handleKeydownEvent(event) {
                 const currentY = parseInt(selectedElement.style.top) || 0;
 
                 switch (event.key) {
-                case 'ArrowUp':
-                    selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
-                    moved = true;
-                    break;
-                case 'ArrowDown':
-                    selectedElement.style.top = currentY + moveUnit + 'px';
-                    moved = true;
-                    break;
-                case 'ArrowLeft':
-                    selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
-                    moved = true;
-                    break;
-                case 'ArrowRight':
-                    selectedElement.style.left = currentX + moveUnit + 'px';
-                    moved = true;
-                    break;
+                    case 'ArrowUp':
+                        selectedElement.style.top = Math.max(0, currentY - moveUnit) + 'px';
+                        moved = true;
+                        break;
+                    case 'ArrowDown':
+                        selectedElement.style.top = currentY + moveUnit + 'px';
+                        moved = true;
+                        break;
+                    case 'ArrowLeft':
+                        selectedElement.style.left = Math.max(0, currentX - moveUnit) + 'px';
+                        moved = true;
+                        break;
+                    case 'ArrowRight':
+                        selectedElement.style.left = currentX + moveUnit + 'px';
+                        moved = true;
+                        break;
                 }
 
                 if (moved) {
@@ -332,7 +329,6 @@ export function initializeFeatherIcons() {
         if (window.feather && typeof window.feather.replace === 'function') {
             try {
                 window.feather.replace();
-                console.log('Feather Icons initialized successfully');
                 return;
             } catch (error) {
                 console.error('Error initializing Feather Icons:', error);

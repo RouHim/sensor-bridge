@@ -246,7 +246,8 @@ async function loadClientConfiguration(clientData) {
         await updateDisplayDesignPaneDimensions();
 
         // Load display elements
-        loadDisplayElements(clientData.display_config ? clientData.display_config.elements : []);
+        const elements = clientData.elements || [];
+        loadDisplayElements(elements);
     } catch (error) {
         console.error('Failed to load client configuration:', error);
     }
@@ -282,16 +283,11 @@ export async function handleClientActiveToggle() {
  * Removes the currently selected client
  */
 export async function removeClient() {
-    console.log('removeClient function called');
-
     const macAddress = getCurrentClientMacAddress();
     if (!macAddress) {
-        console.log('No client selected for removal');
         alert('Please select a client to remove.');
         return;
     }
-
-    console.log('Showing confirmation dialog for client:', macAddress);
 
     // Use Tauri's dialog plugin instead of browser confirm()
     const confirmRemoval = await window.__TAURI__.dialog.ask(
@@ -302,19 +298,12 @@ export async function removeClient() {
         }
     );
 
-    console.log('Confirmation result:', confirmRemoval);
-
     if (!confirmRemoval) {
-        console.log('User cancelled removal');
         return;
     }
 
-    console.log('User confirmed removal, proceeding...');
-
     try {
         await invoke('remove_registered_client', { macAddress });
-
-        console.log('Client removed successfully');
 
         // Reload clients list
         await loadRegisteredClients();
@@ -389,8 +378,6 @@ export async function saveClientConfiguration() {
             macAddress: macAddress,
             name: clientName
         });
-
-        console.log(`Client name updated successfully for ${macAddress}: ${clientName}`);
 
         // Refresh the clients list to show updated name
         await loadRegisteredClients();

@@ -1,6 +1,6 @@
 use chrono::Utc;
 use log::info;
-use sensor_core::StaticClientData;
+use sensor_core::{ElementConfig, StaticClientData};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -22,7 +22,7 @@ pub struct RegisteredClient {
     pub active: bool,
     pub last_seen: u64,
     pub registered_at: u64,
-    pub display_config: sensor_core::DisplayConfig,
+    pub elements: Vec<ElementConfig>,
 }
 
 impl RegisteredClient {
@@ -43,11 +43,7 @@ impl RegisteredClient {
             active: false, // Clients start inactive, must be activated via UI
             last_seen: now,
             registered_at: now,
-            display_config: sensor_core::DisplayConfig {
-                resolution_width,
-                resolution_height,
-                elements: Vec::new(),
-            },
+            elements: Vec::new(),
         }
     }
 
@@ -97,9 +93,6 @@ pub async fn start_server(
 
     // Initialize client registry
     let client_registry: ClientRegistry = Arc::new(RwLock::new(HashMap::new()));
-
-    // Load existing clients from config system into registry
-    load_existing_clients_into_registry(&client_registry).await;
 
     // Create filter helpers
     let client_registry_filter = warp::any().map({
@@ -166,30 +159,6 @@ pub async fn start_server(
     Ok(handle)
 }
 
-async fn load_existing_clients_into_registry(client_registry: &ClientRegistry) {
-    info!("Loading existing clients into registry");
-    let config = crate::config::read_from_app_config();
-    let mut registry = client_registry.write().await;
-
-    for (mac_address, legacy_client) in config.registered_clients {
-        let normalized_mac = mac_address.to_uppercase();
-        let client = RegisteredClient {
-            mac_address: normalized_mac.clone(),
-            name: legacy_client.name,
-            ip_address: legacy_client.ip_address,
-            resolution_width: legacy_client.resolution_width,
-            resolution_height: legacy_client.resolution_height,
-            active: legacy_client.active,
-            last_seen: legacy_client.last_seen.timestamp() as u64,
-            registered_at: legacy_client.last_seen.timestamp() as u64, // Fallback
-            display_config: legacy_client.display_config,
-        };
-        registry.insert(normalized_mac, client);
-    }
-
-    info!("Loaded {} existing clients into registry", registry.len());
-}
-
 async fn handle_sensor_data_request(
     params: HashMap<String, String>,
     client_registry: ClientRegistry,
@@ -244,17 +213,17 @@ async fn handle_sensor_data_request(
 
 /// Prepares all static data for the client (text, static images, conditional images)
 /// Returns the data serialized as binary using bincode
-fn prepare_static_data_for_client(display_config: &sensor_core::DisplayConfig) -> Vec<u8> {
+fn prepare_static_data_for_client(elements: &[ElementConfig]) -> Vec<u8> {
     info!("Preparing static data for client");
 
     // Prepare text data (fonts)
-    let text_data = text::build_fonts_data(display_config);
+    let text_data = text::build_fonts_data(elements);
 
     // Prepare static image data
-    let static_image_data = static_image::get_preparation_data(display_config);
+    let static_image_data = static_image::get_preparation_data(elements);
 
     // Prepare conditional image data
-    let conditional_image_data = conditional_image::get_preparation_data(display_config);
+    let conditional_image_data = conditional_image::get_preparation_data(elements);
 
     // Bundle all data together
     let static_data = StaticClientData {
@@ -346,7 +315,7 @@ async fn handle_client_registration(
     let _ = crate::config::register_client(normalized_mac, ip_address.to_string(), width, height);
 
     // Prepare and send static data as binary response
-    let static_data = prepare_static_data_for_client(&client.display_config);
+    let static_data = prepare_static_data_for_client(&client.elements);
 
     // Return binary data with appropriate content-type
     Ok(warp::reply::with_header(
@@ -366,7 +335,7 @@ fn create_render_data_for_client(
         crate::sensor::read_all_sensor_values(sensor_history, sensor_values);
 
     serde_json::json!({
-        "display_config": client.display_config,
+        "display_config": client.elements,
         "sensor_values": current_sensor_values
     })
 }

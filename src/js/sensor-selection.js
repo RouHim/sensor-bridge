@@ -2,13 +2,13 @@
 
 import { ELEMENT_TYPE_GRAPH } from './constants.js';
 import {
+    cmbConditionalImageSensorIdSelection,
+    cmbElementType,
+    cmbGraphSensorIdSelection,
+    cmbTextSensorIdSelection,
     sensorSelectionDialog,
     sensorSelectionTable,
-    txtSensorSelectionTableFilterInput,
-    cmbElementType,
-    cmbTextSensorIdSelection,
-    cmbGraphSensorIdSelection,
-    cmbConditionalImageSensorIdSelection
+    txtSensorSelectionTableFilterInput
 } from './dom-elements.js';
 import { getSensorValues } from './app-state.js';
 import { applyFormToSelectedElement, updateElementPreview } from './element-management.js';
@@ -161,7 +161,6 @@ export function populateAllSensorDropdowns() {
     const sensorValues = getSensorValues();
 
     if (!sensorValues || sensorValues.length === 0) {
-        console.log('No sensors available to populate dropdowns');
         return;
     }
 
@@ -209,8 +208,6 @@ export function populateAllSensorDropdowns() {
             dropdown.value = currentValue;
         }
     });
-
-    console.log(`Populated sensor dropdowns with ${sensorValues.length} sensors`);
 }
 
 /**
@@ -220,7 +217,6 @@ export function onSensorDropdownChange(dropdown) {
     const selectedSensorId = dropdown.value;
 
     if (!selectedSensorId) {
-        console.log('No sensor selected from dropdown');
         return;
     }
 
@@ -235,6 +231,4 @@ export function onSensorDropdownChange(dropdown) {
 
     // Update the preview to reflect the new sensor selection
     updateElementPreview();
-
-    console.log(`Sensor selected from dropdown: ${selectedSensorId}`);
 }

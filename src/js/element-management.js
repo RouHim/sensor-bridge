@@ -120,8 +120,6 @@ export async function updateDisplayDesignPaneDimensions() {
     // Update the designer pane dimensions to match the display resolution
     designerPane.style.width = `${width}px`;
     designerPane.style.height = `${height}px`;
-
-    console.log(`Updated display design pane dimensions to ${width}x${height}`);
 }
 
 /**
@@ -159,8 +157,6 @@ export function initializeDragSafety() {
             cleanupAnyStuckDragStates();
         }
     });
-
-    console.log('Drag safety mechanisms initialized');
 }
 
 /**
@@ -224,8 +220,6 @@ export function onElementTypeChange() {
 
         // Update the preview to show the new element type
         updateElementPreview();
-
-        console.log(`Changed element type to: ${selectedType}`);
     }
 }
 
@@ -233,12 +227,6 @@ export function onElementTypeChange() {
  * Adds a new element to the designer
  */
 export async function addNewElement() {
-    // Store the current element info before validation check
-    const previousElement = getSelectedListElement();
-    const previousElementName = previousElement ? previousElement.getAttribute(ATTR_ELEMENT_NAME) : 'None';
-
-    console.log(`Adding new element, current selection: ${previousElementName}`);
-
     // Check if we can leave the current element (modal validation)
     const canLeave = await canLeaveCurrentElement();
     if (!canLeave) {
@@ -248,8 +236,6 @@ export async function addNewElement() {
 
     const elementId = generateElementId();
     const elementName = `Element ${elementId}`;
-
-    console.log(`Creating new element: ${elementName}`);
 
     // Create list item with reasonable default position
     const listItem = createListElement(elementId, elementName, ELEMENT_TYPE_TEXT);
@@ -269,8 +255,6 @@ export async function addNewElement() {
     // IMPORTANT: Clear form BEFORE selection to avoid contamination
     clearElementForm();
 
-    console.log(`Selecting new element: ${elementName}`);
-
     // Select the new element (skip validation check and display for clean start)
     await selectElement(listItem, designerElement, true, true);
 
@@ -279,8 +263,6 @@ export async function addNewElement() {
 
     // Setup event handlers for the new element (if not already set up in createListElement/createDesignerElement)
     setupElementEventHandlers(listItem, designerElement);
-
-    console.log(`New element created and selected: ${elementName}`);
 
     // Don't validate immediately - let user work with the new element
     // Validation will only occur when they try to navigate away or make changes
@@ -379,8 +361,6 @@ export function initializeListDragAndDrop() {
     lstDesignerPlacedElements.addEventListener('drop', handleListDrop);
     lstDesignerPlacedElements.addEventListener('dragenter', handleListDragEnter);
     lstDesignerPlacedElements.addEventListener('dragleave', handleListDragLeave);
-
-    console.log('List drag and drop functionality initialized');
 }
 
 /**
@@ -435,8 +415,6 @@ function handleListDrop(event) {
 
         // Update z-order based on new position
         updateElementZOrder();
-
-        console.log('List item reordered');
     }
 }
 
@@ -476,8 +454,6 @@ function updateElementZOrder() {
             designerElement.style.zIndex = index + 1;
         }
     });
-
-    console.log(`Updated z-order for ${listItems.length} elements`);
 }
 
 /**
@@ -489,8 +465,6 @@ export function updateAllElementValidationStates() {
     listElements.forEach(listElement => {
         updateElementValidationState(listElement);
     });
-
-    console.log(`Updated validation states for ${listElements.length} elements`);
 }
 
 /**
@@ -507,8 +481,6 @@ export function markCurrentElementAsTouched() {
 
     // Trigger validation update for this element
     updateElementValidationState(currentElement);
-
-    console.log(`Marked element as touched: ${currentElement.getAttribute(ATTR_ELEMENT_NAME)}`);
 }
 
 /**
@@ -521,18 +493,6 @@ export async function saveElementConfiguration() {
 
         // Collect all elements
         const elements = collectAllElements();
-
-        // Get display resolution
-        const resolution = await getCurrentClientResolution();
-        const displayWidth = resolution.width;
-        const displayHeight = resolution.height;
-
-        // Create display configuration
-        const displayConfig = {
-            resolution_width: displayWidth,
-            resolution_height: displayHeight,
-            elements: elements
-        };
 
         // Get the currently selected client (we need to determine which client is active)
         // For now, we'll try to get the first registered client or use a default
@@ -552,10 +512,8 @@ export async function saveElementConfiguration() {
         // Save configuration for the selected client
         await invoke('update_client_display_config', {
             macAddress: selectedClient.mac_address,
-            displayConfig: JSON.stringify(displayConfig)
+            elements: JSON.stringify(elements)
         });
-
-        console.log(`Configuration saved for client: ${selectedClient.name}`);
 
         // Show success feedback
         // Note: We could add a toast notification here
@@ -618,8 +576,6 @@ export function moveElementControlPad(direction) {
     // Apply changes and mark as touched
     applyFormToSelectedElement();
     markCurrentElementAsTouched();
-
-    console.log(`Moved element ${direction} by ${moveUnit} pixels to (${newX}, ${newY})`);
 }
 
 /**
@@ -660,8 +616,6 @@ function getMoveUnit() {
  * Cleanup stuck drag states
  */
 function cleanupAnyStuckDragStates() {
-    console.log('Cleaning up stuck drag states');
-
     // Clear global drag state
     globalDragState.isDragging = false;
     globalDragState.currentElement = null;
@@ -682,16 +636,12 @@ function cleanupAnyStuckDragStates() {
     if (lstDesignerPlacedElements) {
         lstDesignerPlacedElements.classList.remove('drag-over');
     }
-
-    console.log('Drag state cleanup completed');
 }
 
 /**
  * Execute deferred drag operations
  */
 function executeDeferredDragOperations(element, x, y) {
-    console.log('Executing deferred drag operations for element at', x, y);
-
     if (!element) {
         return;
     }
@@ -730,8 +680,6 @@ function executeDeferredDragOperations(element, x, y) {
         });
         globalDragState.deferredOperations = [];
     }
-
-    console.log(`Deferred drag operations completed for element at (${x}, ${y})`);
 }
 
 /**
@@ -952,7 +900,6 @@ function handleListItemDragStart(event) {
     event.target.classList.add('list-item-dragging');
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/html', event.target.outerHTML);
-    console.log('Started dragging list item:', event.target.getAttribute('data-element-name'));
 }
 
 /**
@@ -961,7 +908,6 @@ function handleListItemDragStart(event) {
 function handleListItemDragEnd(event) {
     event.target.classList.remove('list-item-dragging');
     lstDesignerPlacedElements.classList.remove('drag-over');
-    console.log('Finished dragging list item');
 }
 
 /**
@@ -1076,14 +1022,19 @@ export function loadDisplayElements(elements = []) {
         }
 
         // Add to DOM
+        if (!lstDesignerPlacedElements) {
+            console.error('lstDesignerPlacedElements is null/undefined!');
+        }
+        if (!designerPane) {
+            console.error('designerPane is null/undefined!');
+        }
+
         lstDesignerPlacedElements.appendChild(listElement);
         designerPane.appendChild(designerElement);
 
         // Setup event handlers
         setupElementEventHandlers(listElement, designerElement);
     });
-
-    console.log(`Loaded ${elements.length} display elements`);
 
     // Update z-order for all elements
     updateElementZOrder();
@@ -1099,7 +1050,6 @@ export function loadDisplayElements(elements = []) {
             const firstDesignerElement = document.getElementById(DESIGNER_ID_PREFIX + elementId);
             if (firstDesignerElement) {
                 selectElement(firstListElement, firstDesignerElement, true, true);
-                console.log(`Auto-selected first design element: ${firstListElement.getAttribute(ATTR_ELEMENT_NAME)}`);
             }
         }
     }
@@ -1139,11 +1089,6 @@ let isDragModeActive = false;
 // eslint-disable-next-line no-unused-vars
 function setDragMode(active) {
     isDragModeActive = active;
-    if (active) {
-        console.log('🎯 Drag mode activated - preview updates disabled');
-    } else {
-        console.log('✅ Drag mode deactivated - preview updates enabled');
-    }
 }
 
 /**
@@ -1160,7 +1105,6 @@ function isDragMode() {
 export function updateElementPreview() {
     // Skip expensive preview rendering during drag operations
     if (isDragMode()) {
-        console.log('⏭️ Skipping preview update - drag mode active');
         return;
     }
 
@@ -1231,12 +1175,11 @@ function generateElementId() {
 
 function createListElement(id, name, type) {
     const li = document.createElement('li');
-    li.id = LIST_ID_PREFIX + id;
     li.textContent = name;
     li.setAttribute(ATTR_ELEMENT_ID, id);
     li.setAttribute(ATTR_ELEMENT_NAME, name);
     li.setAttribute(ATTR_ELEMENT_TYPE, type);
-    li.draggable = true;
+
     return li;
 }
 
@@ -1856,7 +1799,6 @@ function setupElementEventHandlers(listElement, designerElement) {
             globalDragState.initialPosition = { x: localDragState.initialX, y: localDragState.initialY };
 
             designerElement.classList.add('dragging');
-            console.log('Started drag operation - expensive operations disabled');
         }
 
         if (localDragState.isDragging) {
@@ -1892,8 +1834,6 @@ function setupElementEventHandlers(listElement, designerElement) {
 
             designerElement.classList.remove('dragging');
 
-            console.log('Drag operation completed - executing deferred operations');
-
             // NOW: Execute all expensive operations once
             executeDeferredDragOperations(designerElement, finalX, finalY);
         }
@@ -1915,8 +1855,6 @@ function setupElementEventHandlers(listElement, designerElement) {
 
             designerElement.classList.remove('dragging');
             designerElement.style.cursor = '';
-
-            console.log('Drag operation cancelled (mouse leave) - executing deferred operations');
 
             // Execute deferred operations with current position
             executeDeferredDragOperations(designerElement, currentX, currentY);
@@ -2082,9 +2020,9 @@ function renderTextElementPreview(config) {
                     let realText = previewText;
                     realText = realText.replace(/{value}/g, selectedSensor.value);
                     realText = realText.replace(/{unit}/g, selectedSensor.unit);
-                    realText = realText.replace(/{value-avg}/g, selectedSensor.value); // TODO: implement actual avg
-                    realText = realText.replace(/{value-min}/g, selectedSensor.value); // TODO: implement actual min
-                    realText = realText.replace(/{value-max}/g, selectedSensor.value); // TODO: implement actual max
+                    realText = realText.replace(/{value-avg}/g, selectedSensor.value);
+                    realText = realText.replace(/{value-min}/g, selectedSensor.value);
+                    realText = realText.replace(/{value-max}/g, selectedSensor.value);
 
                     div.textContent = realText;
                 } else {
@@ -2097,7 +2035,7 @@ function renderTextElementPreview(config) {
                     div.textContent = previewText;
                 }
             })
-            .catch(() => {
+            .catch(_error => {
                 // Fallback to sample data if import fails
                 previewText = previewText.replace(/{value}/g, '42.5');
                 previewText = previewText.replace(/{unit}/g, '°C');
@@ -2278,7 +2216,7 @@ export function applyFormToSelectedElement() {
             config = getConditionalImageElementConfig();
             break;
         default:
-            config = {};
+            config = null;
     }
 
     // Store configuration as a data attribute
@@ -2290,8 +2228,6 @@ export function applyFormToSelectedElement() {
 
     // Update validation state
     updateElementValidationState(selectedList);
-
-    console.log(`Applied form values to element ${newName}:`, config);
 }
 
 /**
@@ -2317,8 +2253,6 @@ export async function loadConditionalImageCatalog() {
             option.dataset.entryData = JSON.stringify(entry);
             cmbConditionalImageCatalogEntrySelection.appendChild(option);
         });
-
-        console.log(`Loaded ${catalogEntries.length} conditional image catalog entries`);
     } catch (error) {
         console.error('Failed to load conditional image catalog:', error);
         // Add error option
@@ -2339,7 +2273,6 @@ export function onConditionalImageCatalogEntrySelected() {
     const selectedOption = cmbConditionalImageCatalogEntrySelection.selectedOptions[0];
     if (selectedOption && selectedOption.value) {
         txtConditionalImageImagesPath.value = selectedOption.value;
-        console.log('Applied catalog entry:', selectedOption.textContent);
 
         // Update preview if element is selected
         updateElementPreview();

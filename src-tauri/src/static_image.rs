@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use sensor_core::{DisplayConfig, ElementConfig, ElementType, ImageConfig};
+use sensor_core::{ElementConfig, ElementType, ImageConfig};
 
 use crate::utils;
 
@@ -36,9 +36,8 @@ pub fn prepare(element: &ElementConfig) -> Result<(), String> {
 }
 
 /// Pre-renders static images and serializes the render data to bytes using messagepack
-pub fn get_preparation_data(lcd_config: &DisplayConfig) -> HashMap<String, Vec<u8>> {
-    lcd_config
-        .elements
+pub fn get_preparation_data(elements: &[ElementConfig]) -> HashMap<String, Vec<u8>> {
+    elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
         .filter_map(|element| {

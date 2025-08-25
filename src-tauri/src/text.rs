@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::{BufWriter, Cursor};
 
-use sensor_core::{DisplayConfig, ElementType, SensorValue, TextConfig};
+use sensor_core::{ElementConfig, ElementType, SensorValue, TextConfig};
 
 use crate::fonts;
 
@@ -41,9 +41,8 @@ pub fn render_preview(
     writer.into_inner().unwrap().into_inner()
 }
 /// Builds the font data hashmap for all text elements.
-pub fn build_fonts_data(display_config: &DisplayConfig) -> HashMap<String, Vec<u8>> {
-    display_config
-        .elements
+pub fn build_fonts_data(elements: &[ElementConfig]) -> HashMap<String, Vec<u8>> {
+    elements
         .iter()
         .filter(|element| element.element_type == ElementType::Text)
         .map(|text_element| {

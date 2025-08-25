@@ -1,14 +1,13 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
-use crate::config::{AppConfig, NetworkDeviceConfig, RegisteredClient};
-use crate::utils::{format_datetime_with_system_locale, LockResultExt};
-use chrono::{DateTime, Utc};
+use crate::config::AppConfig;
+use crate::config::RegisteredClientResponse;
+use crate::utils::LockResultExt;
 use log::{error, info};
 use sensor_core::{
-    conditional_image_renderer, graph_renderer, ConditionalImageConfig, DisplayConfig, GraphConfig,
+    conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementConfig, GraphConfig,
     SensorType, SensorValue, TextConfig,
 };
-use serde::Serialize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -56,44 +55,10 @@ pub struct AppState {
 // Number of elements to be stored in the sensor value history
 pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
 
-/// API response version of RegisteredClient with formatted timestamp
-#[derive(Serialize, Debug, Clone)]
-pub struct RegisteredClientResponse {
-    pub mac_address: String,
-    pub name: String,
-    pub ip_address: String,
-    pub resolution_width: u32,
-    pub resolution_height: u32,
-    pub active: bool,
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub last_seen: DateTime<Utc>,
-    pub formatted_last_seen: String,
-    pub display_config: DisplayConfig,
-}
-
-impl From<RegisteredClient> for RegisteredClientResponse {
-    fn from(client: RegisteredClient) -> Self {
-        RegisteredClientResponse {
-            mac_address: client.mac_address,
-            name: client.name,
-            ip_address: client.ip_address,
-            resolution_width: client.resolution_width,
-            resolution_height: client.resolution_height,
-            active: client.active,
-            last_seen: client.last_seen,
-            formatted_last_seen: format_datetime_with_system_locale(&client.last_seen),
-            display_config: client.display_config,
-        }
-    }
-}
-
 #[tokio::main]
 async fn main() {
     // Set the app name for the dynamic cache folder detection
-    // TODO: fixme
-    unsafe {
-        std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge");
-    }
+    std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge");
 
     // Initialize the logger
     env_logger::init();
@@ -253,14 +218,11 @@ async fn set_client_active(mac_address: String, active: bool) -> Result<(), Stri
 
 /// Updates a client's display configuration
 #[tauri::command]
-async fn update_client_display_config(
-    mac_address: String,
-    display_config: String,
-) -> Result<(), String> {
-    let display_config: sensor_core::DisplayConfig = serde_json::from_str(&display_config)
-        .map_err(|e| format!("Invalid display config JSON: {}", e))?;
+async fn update_client_display_config(mac_address: String, elements: String) -> Result<(), String> {
+    let elements: Vec<ElementConfig> = serde_json::from_str(&elements)
+        .map_err(|e| format!("Invalid JSON format for elements: {}", e))?;
 
-    config::update_client_display_config(&mac_address, display_config)
+    config::update_client_display_config(&mac_address, elements)
 }
 
 /// Shows LCD live preview for a registered client
@@ -269,15 +231,6 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
     let client = config::get_client(&mac_address)
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
-    // Convert RegisteredClient to NetworkDeviceConfig for compatibility with existing preview system
-    let network_device_config = NetworkDeviceConfig {
-        id: mac_address.clone(),
-        name: client.name,
-        address: client.ip_address,
-        active: client.active,
-        display_config: client.display_config,
-    };
-
     // If the window is still present, close it
     let existing_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
     if let Some(window) = existing_window {
@@ -285,12 +238,7 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
     }
 
     // Open a new lcd preview window
-    lcd_preview::show(
-        app_handle,
-        network_device_config,
-        client.resolution_width,
-        client.resolution_height,
-    );
+    lcd_preview::show(app_handle, client);
 
     Ok(())
 }
@@ -305,12 +253,10 @@ async fn get_lcd_preview_image(
     let client = config::get_client(&mac_address)
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
-    let display_config = client.display_config;
-
     lcd_preview::render(
         &app_state.sensor_value_history,
         &app_state.static_sensor_values,
-        display_config,
+        client,
     )
     .map_err(|e| format!("Error rendering preview image: {:?}", e))
 }
@@ -339,11 +285,11 @@ async fn get_text_preview_image(
 #[tauri::command]
 async fn get_graph_preview_image(
     app_state: State<'_, AppState>,
-    mut graph_config: GraphConfig,
+    graph_config: GraphConfig,
 ) -> Result<String, ()> {
     let sensor_id = &graph_config.sensor_id;
 
-    graph_config.sensor_values = sensor_core::extract_value_sequence(
+    let sensor_values = sensor_core::extract_value_sequence(
         app_state
             .sensor_value_history
             .lock()
@@ -352,7 +298,7 @@ async fn get_graph_preview_image(
         sensor_id,
     );
 
-    let graph_data = graph_renderer::render(&graph_config);
+    let graph_data = graph_renderer::render(&graph_config, sensor_values);
     let engine = base64::engine::general_purpose::STANDARD;
     Ok(base64::Engine::encode(&engine, graph_data))
 }
@@ -376,12 +322,13 @@ async fn get_conditional_image_preview_image(
         _ => ("N/A", &SensorType::Text),
     };
 
-    conditional_image_config.sensor_value = value.to_string();
+    let sensor_value = value.to_string();
     conditional_image_config.images_path =
         conditional_image::prepare_element(&element_id, &conditional_image_config).unwrap();
 
     let graph_data: Vec<u8> = match conditional_image_renderer::render(
         &element_id,
+        &sensor_value,
         sensor_type,
         &conditional_image_config,
     ) {
@@ -491,7 +438,7 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
         }
     }; // Mutex guards are dropped here
 
-    // Now await the handle outside of the mutex scope
+    // Now await the handle outside the mutex scope
     if let Some(handle) = handle {
         match handle.await {
             Ok(_) => {
