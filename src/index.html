@@ -93,8 +93,10 @@
                         <div class="control-group-body">
                             <!-- HTTP Server Settings -->
                             <div class="setting-row">
-                                <label for="http-port-input" class="control-label">Server Port:</label>
-                                <div class="input-with-toggle">
+                                <label for="http-port-input" class="control-label"
+                                    >Server Port:</label
+                                >
+                                <div class="input-with-button">
                                     <input
                                         id="http-port-input"
                                         type="number"
@@ -102,23 +104,18 @@
                                         max="65535"
                                         value="25555"
                                         class="control-input port-input"
-                                        title="HTTP server port (1024-65535) - Auto-saves when changed"
+                                        title="HTTP server port (1024-65535)"
                                     />
-                                    <label
-                                        class="kill-switch"
-                                        id="kill-switch-input"
-                                        title="Enable or disable the HTTP server"
+                                    <button
+                                        id="btn-apply-port-change"
+                                        class="input-button hidden"
+                                        title="Apply port change and restart server"
                                     >
-                                        <input
-                                            class="kill-switch-input"
-                                            id="main-chk-transfer-active"
-                                            type="checkbox"
-                                        />
-                                        <i class="kill-switch-icon" data-feather="power"></i>
-                                    </label>
+                                        <i data-feather="check"></i>
+                                    </button>
                                 </div>
                             </div>
-                            
+
                             <!-- Configuration Management -->
                             <div class="setting-row">
                                 <div class="action-buttons">
@@ -176,34 +173,14 @@
                                     <i data-feather="eye"></i>
                                 </button>
                             </div>
-                            <i
-                                data-feather="chevron-down"
-                                class="collapse-icon"
-                                id="collapse-icon"
-                            ></i>
                         </div>
                         <div class="header-right">
-                        </div>
-                    </div>
-                            <div
-                                class="client-status-indicator"
-                                id="client-status-container"
-                                style="display: none"
-                            >
-                                <div class="status-dot" id="client-status-dot"></div>
-                                <span id="client-status-text">Inactive</span>
-                                <label class="status-toggle">
-                                    <input type="checkbox" id="client-active-toggle" />
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
                             <i
                                 data-feather="chevron-down"
                                 class="collapse-icon"
                                 id="collapse-icon"
                             ></i>
                         </div>
-                        <div class="header-right"></div>
                     </div>
 
                     <!-- Client Property Cards Grid -->
@@ -345,6 +322,27 @@
                         <div class="element-actions-header">
                             <div class="element-action-buttons">
                                 <button
+                                    class="action-button compact primary"
+                                    id="lcd-btn-add-element"
+                                    title="Add element (CTRL+N)"
+                                >
+                                    <i data-feather="plus"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-duplicate-element"
+                                    title="Duplicate element (CTRL+D)"
+                                >
+                                    <i data-feather="copy"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-save-element"
+                                    title="Save element (CTRL+S)"
+                                >
+                                    <i data-feather="save"></i>
+                                </button>
+                                <button
                                     class="action-button compact"
                                     id="lcd-btn-move-element-up"
                                     title="Move element up (CTRL+UP)"
@@ -359,32 +357,11 @@
                                     <i data-feather="arrow-down"></i>
                                 </button>
                                 <button
-                                    class="action-button compact primary"
-                                    id="lcd-btn-add-element"
-                                    title="Add element (CTRL+N)"
-                                >
-                                    <i data-feather="plus"></i>
-                                </button>
-                                <button
                                     class="action-button compact danger"
                                     id="lcd-btn-remove-element"
                                     title="Remove element (CTRL+DEL)"
                                 >
                                     <i data-feather="trash"></i>
-                                </button>
-                                <button
-                                    class="action-button compact"
-                                    id="lcd-btn-save-element"
-                                    title="Save element (CTRL+S)"
-                                >
-                                    <i data-feather="save"></i>
-                                </button>
-                                <button
-                                    class="action-button compact"
-                                    id="lcd-btn-duplicate-element"
-                                    title="Duplicate element (CTRL+D)"
-                                >
-                                    <i data-feather="copy"></i>
                                 </button>
                             </div>
                         </div>
