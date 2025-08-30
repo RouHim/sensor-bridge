@@ -4311,7 +4311,6 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "ureq",
- "uuid",
  "warp",
  "zip-extract",
 ]

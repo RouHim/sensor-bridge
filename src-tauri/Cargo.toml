@@ -23,7 +23,6 @@ rayon = "1.9.0"                                                                 
 base64 = "0.21.7"                                                                                                     # Base64 encoding
 warp = "0.3"                                                                                                          # HTTP server framework
 tokio = { version = "1.0", features = ["full"] }                                                                     # Async runtime
-uuid = { version = "1.7.0", features = ["v4"] }                                                                       # Generate UUID v4
 image = "0.24.9"                                                                                                      # Image processing
 chrono = { version = "0.4.34", features = ["serde"] }                                                                      # Time handling with serde support
 log = "0.4.21"                                                                                                         # Logging
