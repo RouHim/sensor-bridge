@@ -5,7 +5,6 @@ import {
     clientConfigHeader,
     clientInfoContent,
     clientInfoIp,
-    clientInfoLastSeen,
     clientInfoMac,
     clientInfoName,
     clientInfoPlaceholder,
@@ -121,11 +120,6 @@ function updateClientInfoDisplay(clientData) {
         }
         if (clientInfoMac) {
             clientInfoMac.textContent = clientData.mac_address;
-        }
-        if (clientInfoLastSeen) {
-            // Use formatted_last_seen from backend if available, otherwise fallback
-            const lastSeen = clientData.formatted_last_seen || 'Never';
-            clientInfoLastSeen.textContent = lastSeen;
         }
 
         // Update active toggle and status indicator
@@ -381,7 +375,7 @@ export async function saveClientConfiguration() {
         // Update client name via backend API
         await invoke('update_client_name', {
             macAddress: macAddress,
-            name: clientName
+            newName: clientName
         });
 
         // Refresh the clients list to show updated name

@@ -53,7 +53,6 @@ export const clientInfoName = document.getElementById('client-info-name');
 export const clientInfoIp = document.getElementById('client-info-ip');
 export const clientInfoMac = document.getElementById('client-info-mac');
 export const clientInfoResolution = document.getElementById('client-info-resolution');
-export const clientInfoLastSeen = document.getElementById('client-info-last-seen');
 
 // Designer elements
 export const designerPane = document.getElementById('lcd-designer-pane');

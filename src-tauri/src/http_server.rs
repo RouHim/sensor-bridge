@@ -5,27 +5,37 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
-use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use warp::Filter;
 
 // Add imports for static data preparation
-use crate::{conditional_image, static_image, text};
+use crate::in_memory_config::InMemoryConfig;
+use crate::{conditional_image, in_memory_config, static_image, text};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RegisteredClient {
+pub struct DisplayClient {
     pub mac_address: String,
     pub name: String,
     pub ip_address: String,
     pub resolution_width: u32,
     pub resolution_height: u32,
     pub active: bool,
-    pub last_seen: u64,
-    pub registered_at: u64,
     pub elements: Vec<ElementConfig>,
 }
 
-impl RegisteredClient {
+/// API response version of RegisteredClient with formatted timestamp
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RegisteredClientResponse {
+    pub mac_address: String,
+    pub name: String,
+    pub ip_address: String,
+    pub resolution_width: u32,
+    pub resolution_height: u32,
+    pub active: bool,
+    pub elements: Vec<ElementConfig>,
+}
+
+impl DisplayClient {
     pub fn new(
         mac_address: String,
         name: String,
@@ -33,7 +43,6 @@ impl RegisteredClient {
         resolution_width: u32,
         resolution_height: u32,
     ) -> Self {
-        let now = Utc::now().timestamp() as u64;
         Self {
             mac_address,
             name,
@@ -41,63 +50,47 @@ impl RegisteredClient {
             resolution_width,
             resolution_height,
             active: false, // Clients start inactive, must be activated via UI
-            last_seen: now,
-            registered_at: now,
             elements: Vec::new(),
         }
     }
-
-    pub fn update_last_seen(&mut self) {
-        self.last_seen = Utc::now().timestamp() as u64;
-    }
-
-    pub fn is_recently_active(&self, timeout_seconds: u64) -> bool {
-        let now = Utc::now().timestamp() as u64;
-        (now - self.last_seen) < timeout_seconds
-    }
 }
 
-pub type ClientRegistry = Arc<RwLock<HashMap<String, RegisteredClient>>>;
+impl From<DisplayClient> for RegisteredClientResponse {
+    fn from(client: DisplayClient) -> Self {
+        RegisteredClientResponse {
+            mac_address: client.mac_address,
+            name: client.name,
+            ip_address: client.ip_address,
+            resolution_width: client.resolution_width,
+            resolution_height: client.resolution_height,
+            active: client.active,
+            elements: client.elements,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum ApiError {
     NotRegistered,
     NotActive,
     BadRequest(String),
-    InternalError(String),
 }
 
 impl warp::reject::Reject for ApiError {}
-
-pub struct HttpServerState {
-    pub handle: Option<JoinHandle<()>>,
-    pub is_running: bool,
-}
-
-impl HttpServerState {
-    pub fn new() -> Self {
-        Self {
-            handle: None,
-            is_running: false,
-        }
-    }
-}
 
 pub async fn start_server(
     port: u16,
     sensor_values: Arc<Vec<sensor_core::SensorValue>>,
     sensor_value_history: Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
     shutdown_rx: oneshot::Receiver<()>,
+    in_memory_config: InMemoryConfig,
 ) -> Result<JoinHandle<()>, Box<dyn std::error::Error + Send + Sync>> {
     info!("Starting HTTP server on port {}", port);
 
-    // Initialize client registry
-    let client_registry: ClientRegistry = Arc::new(RwLock::new(HashMap::new()));
-
     // Create filter helpers
-    let client_registry_filter = warp::any().map({
-        let registry = client_registry.clone();
-        move || registry.clone()
+    let in_memory_config_filter = warp::any().map({
+        let config = in_memory_config.clone();
+        move || config.clone()
     });
     let sensor_values_filter = warp::any().map({
         let values = sensor_values.clone();
@@ -117,23 +110,23 @@ pub async fn start_server(
         }))
     });
 
-    // sensor data endpoint with client verification
-    let api_sensor_data = warp::path("api")
-        .and(warp::path("sensor-data"))
-        .and(warp::get())
-        .and(warp::query::<HashMap<String, String>>())
-        .and(client_registry_filter.clone())
-        .and(sensor_values_filter)
-        .and(sensor_history_filter)
-        .and_then(handle_sensor_data_request);
-
     // Registration endpoint
     let register = warp::path("api")
         .and(warp::path("register"))
         .and(warp::post())
         .and(warp::body::json())
-        .and(client_registry_filter)
+        .and(in_memory_config_filter.clone())
         .and_then(handle_client_registration);
+
+    // sensor data endpoint with client verification
+    let api_sensor_data = warp::path("api")
+        .and(warp::path("sensor-data"))
+        .and(warp::get())
+        .and(warp::query::<HashMap<String, String>>())
+        .and(in_memory_config_filter.clone())
+        .and(sensor_values_filter)
+        .and(sensor_history_filter)
+        .and_then(handle_sensor_data_request);
 
     // Combine routes with proper error handling
     let routes = health
@@ -161,7 +154,7 @@ pub async fn start_server(
 
 async fn handle_sensor_data_request(
     params: HashMap<String, String>,
-    client_registry: ClientRegistry,
+    in_memory_config: InMemoryConfig,
     sensor_values: Arc<Vec<sensor_core::SensorValue>>,
     sensor_history: Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
@@ -178,9 +171,9 @@ async fn handle_sensor_data_request(
     // Normalize MAC address format
     let normalized_mac = mac_address.to_uppercase();
 
-    let mut clients = client_registry.write().await;
-
-    match clients.get_mut(&normalized_mac) {
+    let guard = in_memory_config.read().await;
+    let display_clients = &guard.display_clients;
+    match display_clients.get(&normalized_mac) {
         None => {
             // Client not registered - return 404
             info!("Client {} not registered", mac_address);
@@ -189,17 +182,20 @@ async fn handle_sensor_data_request(
         Some(client) if !client.active => {
             // Client registered but not active - return 403
             info!("Client {} not active", mac_address);
-            client.update_last_seen();
             Err(warp::reject::custom(ApiError::NotActive))
         }
         Some(client) => {
             // Client is registered and active - update last seen and return data
             info!("Serving sensor data to client {}", mac_address);
-            client.update_last_seen();
 
             // Create client-specific render data
-            let render_data =
-                create_render_data_for_client(client, &sensor_values, &sensor_history);
+            let current_sensor_values =
+                crate::sensor::read_all_sensor_values(&sensor_history, &sensor_values);
+
+            let render_data = serde_json::json!({
+                "elements": client.elements,
+                "sensor_values": current_sensor_values
+            });
 
             let response = serde_json::json!({
                 "render_data": render_data,
@@ -209,6 +205,81 @@ async fn handle_sensor_data_request(
             Ok(warp::reply::json(&response))
         }
     }
+}
+
+async fn handle_client_registration(
+    registration: serde_json::Value,
+    in_memory_config: InMemoryConfig,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    info!("Client registration request: {:?}", registration);
+
+    // Extract and validate registration data
+    let mac_address = registration["mac_address"].as_str().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest("mac_address is required".to_string()))
+    })?;
+
+    let ip_address = registration["ip_address"].as_str().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest("ip_address is required".to_string()))
+    })?;
+
+    let width = registration["resolution_width"].as_u64().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest(
+            "resolution_width is required".to_string(),
+        ))
+    })? as u32;
+
+    let height = registration["resolution_height"].as_u64().ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest(
+            "resolution_height is required".to_string(),
+        ))
+    })? as u32;
+
+    // Normalize MAC address
+    let normalized_mac = mac_address.to_uppercase();
+
+    let maybe_client = in_memory_config
+        .read()
+        .await
+        .display_clients
+        .get(&normalized_mac)
+        .cloned();
+
+    // Check if client already exists in config
+    let client = if let Some(mut existing_client) = maybe_client {
+        // Update existing client
+        existing_client.ip_address = ip_address.to_string();
+        existing_client.resolution_width = width;
+        existing_client.resolution_height = height;
+
+        info!("Updated existing client: {}", &normalized_mac);
+        existing_client
+    } else {
+        // Create new client
+        let new_client = DisplayClient::new(
+            normalized_mac.clone(),
+            format!("Device: {}", mac_address),
+            ip_address.to_string(),
+            width,
+            height,
+        );
+
+        info!("Registered new client: {}", &normalized_mac);
+        new_client
+    };
+
+    // Save client to config
+    in_memory_config::create_or_update_client(&in_memory_config, &normalized_mac, client.clone())
+        .await;
+
+    // Prepare and send static data as binary response
+    let static_data = prepare_static_data_for_client(&client.elements);
+
+    // Return binary data with appropriate content-type
+    Ok(warp::reply::with_header(
+        static_data,
+        "content-type",
+        "application/octet-stream",
+    ))
 }
 
 /// Prepares all static data for the client (text, static images, conditional images)
@@ -251,95 +322,6 @@ fn prepare_static_data_for_client(elements: &[ElementConfig]) -> Vec<u8> {
     }
 }
 
-async fn handle_client_registration(
-    registration: serde_json::Value,
-    client_registry: ClientRegistry,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    info!("Client registration request: {:?}", registration);
-
-    // Extract and validate registration data
-    let mac_address = registration["mac_address"].as_str().ok_or_else(|| {
-        warp::reject::custom(ApiError::BadRequest("mac_address is required".to_string()))
-    })?;
-
-    let ip_address = registration["ip_address"].as_str().ok_or_else(|| {
-        warp::reject::custom(ApiError::BadRequest("ip_address is required".to_string()))
-    })?;
-
-    let width = registration["resolution_width"].as_u64().ok_or_else(|| {
-        warp::reject::custom(ApiError::BadRequest(
-            "resolution_width is required".to_string(),
-        ))
-    })? as u32;
-
-    let height = registration["resolution_height"].as_u64().ok_or_else(|| {
-        warp::reject::custom(ApiError::BadRequest(
-            "resolution_height is required".to_string(),
-        ))
-    })? as u32;
-
-    // Normalize MAC address
-    let normalized_mac = mac_address.to_uppercase();
-
-    // Generate client name based on MAC address
-    let client_name = format!("Display {}", &normalized_mac[..8]);
-
-    let mut clients = client_registry.write().await;
-
-    // Check if client already exists
-    let client = if let Some(existing_client) = clients.get_mut(&normalized_mac) {
-        // Update existing client
-        existing_client.ip_address = ip_address.to_string();
-        existing_client.resolution_width = width;
-        existing_client.resolution_height = height;
-        existing_client.update_last_seen();
-
-        info!("Updated existing client: {}", normalized_mac);
-        existing_client.clone()
-    } else {
-        // Create new client
-        let new_client = RegisteredClient::new(
-            normalized_mac.clone(),
-            client_name,
-            ip_address.to_string(),
-            width,
-            height,
-        );
-
-        clients.insert(normalized_mac.clone(), new_client.clone());
-        info!("Registered new client: {}", normalized_mac);
-        new_client
-    };
-
-    // Also sync with existing config system for persistence
-    let _ = crate::config::register_client(normalized_mac, ip_address.to_string(), width, height);
-
-    // Prepare and send static data as binary response
-    let static_data = prepare_static_data_for_client(&client.elements);
-
-    // Return binary data with appropriate content-type
-    Ok(warp::reply::with_header(
-        static_data,
-        "content-type",
-        "application/octet-stream",
-    ))
-}
-
-fn create_render_data_for_client(
-    client: &RegisteredClient,
-    sensor_values: &Arc<Vec<sensor_core::SensorValue>>,
-    sensor_history: &Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
-) -> serde_json::Value {
-    // Use the existing sensor reading logic but with client-specific display config
-    let current_sensor_values =
-        crate::sensor::read_all_sensor_values(sensor_history, sensor_values);
-
-    serde_json::json!({
-        "display_config": client.elements,
-        "sensor_values": current_sensor_values
-    })
-}
-
 async fn handle_rejection(
     err: warp::Rejection,
 ) -> Result<impl warp::Reply, std::convert::Infallible> {
@@ -348,9 +330,6 @@ async fn handle_rejection(
             ApiError::NotRegistered => (warp::http::StatusCode::NOT_FOUND, "Client not registered"),
             ApiError::NotActive => (warp::http::StatusCode::FORBIDDEN, "Client not active"),
             ApiError::BadRequest(msg) => (warp::http::StatusCode::BAD_REQUEST, msg.as_str()),
-            ApiError::InternalError(msg) => {
-                (warp::http::StatusCode::INTERNAL_SERVER_ERROR, msg.as_str())
-            }
         }
     } else if err.is_not_found() {
         (warp::http::StatusCode::NOT_FOUND, "Endpoint not found")

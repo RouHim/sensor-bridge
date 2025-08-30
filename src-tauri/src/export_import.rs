@@ -4,13 +4,13 @@ use sensor_core::ElementType;
 use serde::{Deserialize, Serialize};
 use serde_json::Error;
 
-use crate::config::AppConfig;
-use crate::{config, fonts, utils};
+use crate::config_file::AppConfig;
+use crate::{config_file, fonts, utils};
 
 /// Exports the current configuration to the specified file.
 pub fn export_configuration(file_path: String) {
     // Read the current config
-    let mut app_config: AppConfig = config::read_from_app_config();
+    let mut app_config: AppConfig = config_file::read();
 
     inline_files(&mut app_config);
 
@@ -28,7 +28,7 @@ pub fn export_configuration(file_path: String) {
 
 /// Inlines all files in the config as base64 encoded string.
 fn inline_files(app_config: &mut AppConfig) {
-    for registered_client in app_config.registered_clients.values_mut() {
+    for registered_client in app_config.display_clients.values_mut() {
         for element in &mut registered_client.elements {
             match element.element_type {
                 ElementType::Text => {
@@ -85,7 +85,7 @@ pub fn import_configuration(file_path: String) -> Result<AppConfig, Error> {
     let _ = fs::remove_dir_all(sensor_core::get_config_dir());
     let _ = fs::create_dir_all(sensor_core::get_config_dir());
 
-    for registered_client in app_config.registered_clients.values_mut() {
+    for registered_client in app_config.display_clients.values_mut() {
         for element in &mut registered_client.elements {
             match element.element_type {
                 ElementType::Text => {

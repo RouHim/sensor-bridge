@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use sensor_core::{ElementConfig, ElementType, SensorValue};
 use tauri::{AppHandle, Manager};
 
-use crate::http_server::RegisteredClient;
+use crate::http_server::DisplayClient;
 use crate::utils::LockResultExt;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
@@ -19,8 +19,8 @@ pub const WINDOW_LABEL: &str = "lcd-preview";
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to show the window
 /// Otherwise the window will not be shown
-pub fn show(app_handle: AppHandle, client: RegisteredClient) {
-    let network_device_id = client.mac_address;
+pub fn show(app_handle: AppHandle, client: &DisplayClient) {
+    let network_device_id = client.mac_address.clone();
     let width = client.resolution_width;
     let height = client.resolution_height;
     let lcd_elements = client.elements.clone();
@@ -106,7 +106,7 @@ fn prepare_assets(elements: Vec<ElementConfig>) {
 pub fn render(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
-    client: RegisteredClient,
+    client: DisplayClient,
 ) -> std::thread::Result<String> {
     let static_sensor_values = static_sensor_values.clone();
     let sensor_value_history = sensor_value_history.clone();

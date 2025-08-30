@@ -1,7 +1,6 @@
 use std::io::Cursor;
 use std::sync::LockResult;
 
-use chrono::{DateTime, Utc};
 use image::{DynamicImage, ImageBuffer, Rgba};
 
 /// Pretty print bytes, e.g. 534 MB
@@ -59,27 +58,6 @@ fn parse_locale_string(locale_str: &str) -> Option<String> {
     }
 }
 
-/// Formats a DateTime using system locale-aware approach
-/// Uses different format patterns based on detected locale
-pub fn format_datetime_with_system_locale(datetime: &DateTime<Utc>) -> String {
-    let locale = get_system_locale();
-
-    // Use locale-appropriate format patterns
-    let format_str = match locale.as_str() {
-        "de" => "%d.%m.%Y %H:%M:%S",     // German: DD.MM.YYYY HH:MM:SS
-        "fr" => "%d/%m/%Y %H:%M:%S",     // French: DD/MM/YYYY HH:MM:SS
-        "en" => "%m/%d/%Y %I:%M:%S %p",  // English: MM/DD/YYYY HH:MM:SS AM/PM
-        "es" => "%d/%m/%Y %H:%M:%S",     // Spanish: DD/MM/YYYY HH:MM:SS
-        "it" => "%d/%m/%Y %H:%M:%S",     // Italian: DD/MM/YYYY HH:MM:SS
-        "ja" => "%Y年%m月%d日 %H:%M:%S", // Japanese: YYYY年MM月DD日 HH:MM:SS
-        "zh" => "%Y年%m月%d日 %H:%M:%S", // Chinese: YYYY年MM月DD日 HH:MM:SS
-        _ => "%Y-%m-%d %H:%M:%S",        // Default: ISO-like format
-    };
-
-    // Convert to local time and format
-    datetime.format(format_str).to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,6 +85,27 @@ mod tests {
         // Should return some formatted string (either localized or fallback)
         assert!(!formatted.is_empty());
         println!("Formatted datetime: {}", formatted);
+    }
+
+    /// Formats a DateTime using system locale-aware approach
+    /// Uses different format patterns based on detected locale
+    pub fn format_datetime_with_system_locale(datetime: &DateTime<Utc>) -> String {
+        let locale = get_system_locale();
+
+        // Use locale-appropriate format patterns
+        let format_str = match locale.as_str() {
+            "de" => "%d.%m.%Y %H:%M:%S",     // German: DD.MM.YYYY HH:MM:SS
+            "fr" => "%d/%m/%Y %H:%M:%S",     // French: DD/MM/YYYY HH:MM:SS
+            "en" => "%m/%d/%Y %I:%M:%S %p",  // English: MM/DD/YYYY HH:MM:SS AM/PM
+            "es" => "%d/%m/%Y %H:%M:%S",     // Spanish: DD/MM/YYYY HH:MM:SS
+            "it" => "%d/%m/%Y %H:%M:%S",     // Italian: DD/MM/YYYY HH:MM:SS
+            "ja" => "%Y年%m月%d日 %H:%M:%S", // Japanese: YYYY年MM月DD日 HH:MM:SS
+            "zh" => "%Y年%m月%d日 %H:%M:%S", // Chinese: YYYY年MM月DD日 HH:MM:SS
+            _ => "%Y-%m-%d %H:%M:%S",        // Default: ISO-like format
+        };
+
+        // Convert to local time and format
+        datetime.format(format_str).to_string()
     }
 }
 

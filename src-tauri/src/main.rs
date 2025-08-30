@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
-use crate::config::AppConfig;
-use crate::config::RegisteredClientResponse;
+use crate::http_server::DisplayClient;
 use crate::utils::LockResultExt;
+use in_memory_config::InMemoryConfig;
 use log::{error, info};
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementConfig, GraphConfig,
@@ -20,11 +20,11 @@ use tauri::{
     App, State,
 };
 use tauri::{AppHandle, Manager};
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, RwLock};
 use tokio::task::JoinHandle;
 
 mod conditional_image;
-pub(crate) mod config;
+pub(crate) mod config_file;
 mod export_import;
 mod fonts;
 mod http_server;
@@ -41,6 +41,7 @@ mod utils;
 
 #[cfg(test)]
 mod fonts_test;
+mod in_memory_config;
 mod linux_amdgpu;
 
 pub struct AppState {
@@ -50,6 +51,7 @@ pub struct AppState {
     pub http_server_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     pub http_server_running: Arc<Mutex<bool>>,
     pub http_server_shutdown_tx: Arc<Mutex<Option<oneshot::Sender<()>>>>,
+    pub in_memory_config: InMemoryConfig,
 }
 
 // Number of elements to be stored in the sensor value history
@@ -58,6 +60,7 @@ pub const SENSOR_VALUE_HISTORY_SIZE: usize = 1000;
 #[tokio::main]
 async fn main() {
     // Set the app name for the dynamic cache folder detection
+    // TODO: improve me
     std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge");
 
     // Initialize the logger
@@ -76,6 +79,9 @@ async fn main() {
     // Create sensor history vector
     let sensor_value_history = Arc::new(Mutex::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
 
+    // Initialize Client Registry
+    let in_memory_config: InMemoryConfig = Arc::new(RwLock::new(config_file::read()));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -88,6 +94,7 @@ async fn main() {
             http_server_handle: Arc::new(Mutex::new(None)),
             http_server_running: Arc::new(Mutex::new(false)),
             http_server_shutdown_tx: Arc::new(Mutex::new(None)),
+            in_memory_config: in_memory_config.clone(),
         })
         .setup(|app| {
             let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
@@ -96,10 +103,9 @@ async fn main() {
             build_tray_icon(app)?;
 
             // Auto-start the HTTP server
-            let app_state = app.state::<AppState>();
-            let port = config::get_http_port();
-            info!("Auto-starting HTTP server on port {}", port);
-            if let Err(e) = start_http_server(app_state.clone()) {
+            info!("Auto-starting HTTP server");
+            let app_state = app.deref().state();
+            if let Err(e) = start_http_server(app_state) {
                 error!("Failed to auto-start HTTP server: {}", e);
             }
 
@@ -122,8 +128,6 @@ async fn main() {
             get_system_fonts,
             get_conditional_image_repo_entries,
             restart_app,
-            start_http_server,
-            stop_http_server,
             get_app_config,
             get_http_port,
             set_http_port,
@@ -192,52 +196,76 @@ async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()>
 
 /// Gets all registered clients
 #[tauri::command]
-async fn get_registered_clients() -> Result<String, String> {
-    let app_config: AppConfig = config::read_from_app_config();
-
-    // Convert RegisteredClient to RegisteredClientResponse with formatted timestamps
-    let response_clients: HashMap<String, RegisteredClientResponse> = app_config
-        .registered_clients
-        .into_iter()
-        .map(|(key, client)| (key, RegisteredClientResponse::from(client)))
-        .collect();
-
-    serde_json::to_string(&response_clients).map_err(|err| err.to_string())
+async fn get_registered_clients(app_state: State<'_, AppState>) -> Result<String, String> {
+    let config = app_state.in_memory_config.read().await;
+    let display_clients: &HashMap<String, DisplayClient> = &config.display_clients;
+    serde_json::to_string(&display_clients).map_err(|err| err.to_string())
 }
 
 /// Updates a client's name
 #[tauri::command]
-async fn update_client_name(mac_address: String, name: String) -> Result<(), String> {
-    config::update_client_name(&mac_address, name)
+async fn update_client_name(
+    app_state: State<'_, AppState>,
+    mac_address: String,
+    new_name: String,
+) -> Result<(), String> {
+    let mac_address = mac_address.trim().to_string().to_uppercase();
+    in_memory_config::update_client_name(&app_state.in_memory_config, &mac_address, &new_name)
+        .await;
+    Ok(())
 }
 
 /// Removes a registered client
 #[tauri::command]
-async fn remove_registered_client(mac_address: String) -> Result<(), String> {
-    config::remove_client(&mac_address)
+async fn remove_registered_client(
+    app_state: State<'_, AppState>,
+    mac_address: String,
+) -> Result<(), String> {
+    let mac_address = mac_address.trim().to_string().to_uppercase();
+    in_memory_config::remove_registered_client(&app_state.in_memory_config, &mac_address).await;
+    Ok(())
 }
 
 /// Sets a client's active status
 #[tauri::command]
-async fn set_client_active(mac_address: String, active: bool) -> Result<(), String> {
-    let normalized_mac_address = mac_address.trim().to_string().to_uppercase();
-    config::set_client_active(&normalized_mac_address, active)
+async fn set_client_active(
+    app_state: State<'_, AppState>,
+    mac_address: String,
+    active: bool,
+) -> Result<(), String> {
+    let mac_address = mac_address.trim().to_string().to_uppercase();
+    in_memory_config::set_client_active(&app_state.in_memory_config, &mac_address, active).await;
+    Ok(())
 }
 
 /// Updates a client's display configuration
 #[tauri::command]
-async fn update_client_display_config(mac_address: String, elements: String) -> Result<(), String> {
+async fn update_client_display_config(
+    app_state: State<'_, AppState>,
+    mac_address: String,
+    elements: String,
+) -> Result<(), String> {
+    let mac_address = mac_address.trim().to_string().to_uppercase();
     let elements: Vec<ElementConfig> = serde_json::from_str(&elements)
         .map_err(|e| format!("Invalid JSON format for elements: {}", e))?;
-
-    config::update_client_display_config(&mac_address, elements)
+    in_memory_config::update_client_display_config(
+        &app_state.in_memory_config,
+        &mac_address,
+        elements,
+    )
+    .await;
+    Ok(())
 }
 
 /// Shows LCD live preview for a registered client
 #[tauri::command]
 async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Result<(), String> {
-    let client = config::get_client(&mac_address)
-        .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
+    let client = in_memory_config::get_client(
+        &app_handle.state::<AppState>().in_memory_config,
+        &mac_address,
+    )
+    .await
+    .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
     // If the window is still present, close it
     let existing_window = app_handle.get_webview_window(lcd_preview::WINDOW_LABEL);
@@ -246,7 +274,7 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
     }
 
     // Open a new lcd preview window
-    lcd_preview::show(app_handle, client);
+    lcd_preview::show(app_handle, &client);
 
     Ok(())
 }
@@ -255,10 +283,10 @@ async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Re
 #[tauri::command]
 async fn get_lcd_preview_image(
     app_state: State<'_, AppState>,
-    _app_handle: AppHandle,
     mac_address: String,
 ) -> Result<String, String> {
-    let client = config::get_client(&mac_address)
+    let client = in_memory_config::get_client(&app_state.in_memory_config, &mac_address)
+        .await
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
     lcd_preview::render(
@@ -382,9 +410,8 @@ async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
 }
 
 /// Starts the HTTP server
-#[tauri::command]
 fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
-    let port = config::get_http_port();
+    let port = in_memory_config::get_port_sync(&app_state.in_memory_config);
     info!("Starting HTTP server on port {}", port);
     let mut server_running = app_state.http_server_running.lock().unwrap();
     let mut server_handle = app_state.http_server_handle.lock().unwrap();
@@ -393,16 +420,24 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
         return Err(format!("HTTP server is already running on port {}", port));
     }
 
-    // Start the server in a background task
     let sensor_values = app_state.static_sensor_values.clone();
     let sensor_history = app_state.sensor_value_history.clone();
+    let in_memory_config = app_state.in_memory_config.clone();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
     *app_state.http_server_shutdown_tx.lock().unwrap() = Some(shutdown_tx);
 
+    // Start the server in a background task
     let handle = tokio::spawn(async move {
-        let port = config::get_http_port();
-        match http_server::start_server(port, sensor_values, sensor_history, shutdown_rx).await {
+        match http_server::start_server(
+            port,
+            sensor_values,
+            sensor_history,
+            shutdown_rx,
+            in_memory_config,
+        )
+        .await
+        {
             Ok(server_handle) => {
                 info!("HTTP server started successfully on port {}", port);
                 // Wait for the server to complete
@@ -421,10 +456,8 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
 }
 
 /// Stops the HTTP server
-#[tauri::command]
 async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
-    let port = config::get_http_port();
-    info!("Stopping HTTP server on port {}", port);
+    info!("Stopping HTTP server");
 
     // First check if server is running and get the handle
     let handle = {
@@ -470,8 +503,8 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
 
 /// Get the HTTP server port
 #[tauri::command]
-fn get_http_port() -> Result<u16, String> {
-    Ok(config::get_http_port())
+async fn get_http_port(app_state: State<'_, AppState>) -> Result<u16, String> {
+    Ok(in_memory_config::get_port(&app_state.in_memory_config).await)
 }
 
 /// Set the HTTP server port and restart server if running
@@ -498,11 +531,14 @@ async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), 
     }
 
     // Set the new port in configuration
-    let old_port = config::get_http_port();
-    config::set_http_port(port)?;
-    
+    let old_port = in_memory_config::get_port(&app_state.in_memory_config).await;
+    in_memory_config::set_port(&app_state.in_memory_config, port).await;
+
     if !was_running {
-        info!("HTTP server port changed from {} to {} (server was not running)", old_port, port);
+        info!(
+            "HTTP server port changed from {} to {} (server was not running)",
+            old_port, port
+        );
     }
 
     // If server was running, restart it with the new port
@@ -517,17 +553,13 @@ async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), 
         info!("HTTP server successfully restarted on port {}", port);
     }
 
-    // Save the new port to the app configuration including the new port
-    let mut app_config = config::read_from_app_config();
-    app_config.http_port = port;
-    config::write_to_app_config(&app_config);
-
     Ok(())
 }
 
 /// Get the entire app configuration
 #[tauri::command]
-async fn get_app_config() -> Result<String, String> {
-    let app_config = config::read_from_app_config();
-    serde_json::to_string(&app_config).map_err(|err| err.to_string())
+async fn get_app_config(app_state: State<'_, AppState>) -> Result<String, String> {
+    let app_config = app_state.in_memory_config.read().await;
+    let app_config = app_config.deref();
+    serde_json::to_string(app_config).map_err(|err| err.to_string())
 }
