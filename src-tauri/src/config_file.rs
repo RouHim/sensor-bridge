@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// Default HTTP port
 fn default_http_port() -> u16 {
-    25555
+    55555
 }
 
 /// The app config

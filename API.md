@@ -11,10 +11,10 @@ high-performance access control and provides sensor data to registered and activ
 
 ## Base URL
 
-The server runs on port `25555` by default.
+The server runs on port `55555` by default.
 
 ```
-http://<server-ip>:25555
+http://<server-ip>:55555
 ```
 
 ## Authentication
@@ -41,10 +41,10 @@ Registers a new client or updates an existing client's information.
 
 ```json
 {
-  "mac_address": "aa:bb:cc:dd:ee:ff",
-  "ip_address": "192.168.1.100",
-  "resolution_width": 1920,
-  "resolution_height": 1080
+    "mac_address": "aa:bb:cc:dd:ee:ff",
+    "ip_address": "192.168.1.100",
+    "resolution_width": 1920,
+    "resolution_height": 1080
 }
 ```
 
@@ -61,7 +61,7 @@ The response contains a single bincode-serialized `StaticClientData` struct:
 struct StaticClientData {
     /// Font data: font family name -> font bytes
     text_data: HashMap<String, Vec<u8>>,
-    /// Static images: element ID -> PNG image bytes  
+    /// Static images: element ID -> PNG image bytes
     static_image_data: HashMap<String, Vec<u8>>,
     /// Conditional images: element ID -> (image name -> PNG image bytes)
     conditional_image_data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -71,24 +71,24 @@ struct StaticClientData {
 **Data Contents:**
 
 1. **`text_data`** - Font files keyed by font family name
-   - Contains TTF/OTF font data as binary bytes
-   - Only includes fonts used by text elements in the display configuration
+    - Contains TTF/OTF font data as binary bytes
+    - Only includes fonts used by text elements in the display configuration
 
-2. **`static_image_data`** - Pre-processed static images  
-   - Images are pre-scaled to the exact dimensions specified in element configs
-   - All images are converted to PNG format for consistency
-   - Keyed by element ID for direct lookup
+2. **`static_image_data`** - Pre-processed static images
+    - Images are pre-scaled to the exact dimensions specified in element configs
+    - All images are converted to PNG format for consistency
+    - Keyed by element ID for direct lookup
 
 3. **`conditional_image_data`** - Dynamic image sets for conditional elements
-   - Each element contains multiple images for different sensor value conditions
-   - Images are pre-processed and converted to PNG format
-   - Nested structure: element_id -> image_name -> image_bytes
+    - Each element contains multiple images for different sensor value conditions
+    - Images are pre-processed and converted to PNG format
+    - Nested structure: element_id -> image_name -> image_bytes
 
 **Client Implementation Example:**
 
 ```rust
 // Rust client example using bincode
-let response = reqwest::get("http://server:25555/api/register")
+let response = reqwest::get("http://server:55555/api/register")
     .await?
     .bytes()
     .await?;
@@ -105,7 +105,7 @@ for (element_id, image_bytes) in static_data.static_image_data {
     load_static_image(element_id, image_bytes);
 }
 
-// Access conditional images  
+// Access conditional images
 for (element_id, image_map) in static_data.conditional_image_data {
     for (image_name, image_bytes) in image_map {
         load_conditional_image(element_id, image_name, image_bytes);
@@ -116,21 +116,21 @@ for (element_id, image_map) in static_data.conditional_image_data {
 ```javascript
 // JavaScript client example
 const response = await fetch('/api/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(registrationData)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(registrationData)
 });
 
 if (response.ok) {
-  const binaryData = await response.arrayBuffer();
-  console.log(`Received ${binaryData.byteLength} bytes of static data`);
-  
-  // Note: JavaScript clients would need a bincode decoder
-  // or the server could provide a JSON alternative endpoint
-  processStaticData(new Uint8Array(binaryData));
+    const binaryData = await response.arrayBuffer();
+    console.log(`Received ${binaryData.byteLength} bytes of static data`);
+
+    // Note: JavaScript clients would need a bincode decoder
+    // or the server could provide a JSON alternative endpoint
+    processStaticData(new Uint8Array(binaryData));
 } else {
-  const errorData = await response.json();
-  console.error('Registration failed:', errorData.error);
+    const errorData = await response.json();
+    console.error('Registration failed:', errorData.error);
 }
 ```
 
@@ -147,8 +147,8 @@ if (response.ok) {
 
 ```json
 {
-  "error": "mac_address is required",
-  "status": 400
+    "error": "mac_address is required",
+    "status": 400
 }
 ```
 
@@ -168,39 +168,39 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-  "render_data": {
-    "display_config": {
-      "resolution_width": 1920,
-      "resolution_height": 1080,
-      "elements": [
-        {
-          "id": "element-uuid",
-          "name": "CPU Temperature",
-          "element_type": "text",
-          "x": 10,
-          "y": 10,
-          "text_config": {
-            "sensor_id": "cpu_temp",
-            "format": "{value} {unit}",
-            "font_size": 20,
-            "font_color": "#ffffff",
-            "width": 200,
-            "height": 30
-          }
-        }
-      ]
+    "render_data": {
+        "display_config": {
+            "resolution_width": 1920,
+            "resolution_height": 1080,
+            "elements": [
+                {
+                    "id": "element-uuid",
+                    "name": "CPU Temperature",
+                    "element_type": "text",
+                    "x": 10,
+                    "y": 10,
+                    "text_config": {
+                        "sensor_id": "cpu_temp",
+                        "format": "{value} {unit}",
+                        "font_size": 20,
+                        "font_color": "#ffffff",
+                        "width": 200,
+                        "height": 30
+                    }
+                }
+            ]
+        },
+        "sensor_values": [
+            {
+                "id": "cpu_temp",
+                "label": "CPU Temperature",
+                "value": "45.2",
+                "unit": "°C",
+                "sensor_type": "number"
+            }
+        ]
     },
-    "sensor_values": [
-      {
-        "id": "cpu_temp",
-        "label": "CPU Temperature",
-        "value": "45.2",
-        "unit": "°C",
-        "sensor_type": "number"
-      }
-    ]
-  },
-  "timestamp": 1704067200
+    "timestamp": 1704067200
 }
 ```
 
@@ -210,8 +210,8 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-  "error": "Client not registered",
-  "status": 404
+    "error": "Client not registered",
+    "status": 404
 }
 ```
 
@@ -219,8 +219,8 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-  "error": "Client not active",
-  "status": 403
+    "error": "Client not active",
+    "status": 403
 }
 ```
 
@@ -228,8 +228,8 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-  "error": "mac_address parameter required",
-  "status": 400
+    "error": "mac_address parameter required",
+    "status": 400
 }
 ```
 
@@ -251,9 +251,9 @@ Check if the server is running and responsive.
 
 ```json
 {
-  "status": "healthy",
-  "service": "sensor-bridge",
-  "timestamp": 1704067200
+    "status": "healthy",
+    "service": "sensor-bridge",
+    "timestamp": 1704067200
 }
 ```
 
@@ -262,7 +262,7 @@ Check if the server is running and responsive.
 All API endpoints return structured JSON error responses with appropriate HTTP status codes:
 
 | Status Code | Description           | Example Response                                      |
-|-------------|-----------------------|-------------------------------------------------------|
+| ----------- | --------------------- | ----------------------------------------------------- |
 | 200         | Success               | Data response                                         |
 | 400         | Bad Request           | `{"error": "mac_address is required", "status": 400}` |
 | 403         | Forbidden             | `{"error": "Client not active", "status": 403}`       |
@@ -325,13 +325,13 @@ def get_local_ip():
     return ip
 
 class SensorBridgeClient:
-    def __init__(self, server_host, server_port=25555):
+    def __init__(self, server_host, server_port=55555):
         self.server_url = f"http://{server_host}:{server_port}"
         self.mac_address = get_mac_address()
         self.ip_address = get_local_ip()
         self.resolution_width = 1920
         self.resolution_height = 1080
-        
+
     def register(self):
         """Register with the sensor bridge server"""
         registration_data = {
@@ -340,24 +340,24 @@ class SensorBridgeClient:
             "resolution_width": self.resolution_width,
             "resolution_height": self.resolution_height
         }
-        
+
         response = requests.post(
             f"{self.server_url}/api/register",
             json=registration_data
         )
-        
+
         if response.status_code == 200:
             return response.json()
         else:
             raise Exception(f"Registration failed: {response.status_code}")
-    
+
     def get_sensor_data(self):
         """Get current sensor data from the server"""
         response = requests.get(
             f"{self.server_url}/api/sensor-data",
             params={"mac_address": self.mac_address}
         )
-        
+
         if response.status_code == 200:
             return response.json()
         elif response.status_code == 404:
@@ -366,33 +366,33 @@ class SensorBridgeClient:
             raise Exception("Client not active")
         else:
             raise Exception(f"Failed to get sensor data: {response.status_code}")
-    
+
     def run(self):
         """Main client loop"""
         print(f"Registering client with MAC: {self.mac_address}")
-        
+
         # Register with server
         registration_result = self.register()
         print(f"Registration successful: {registration_result['message']}")
-        
+
         print("Waiting for activation in the server UI...")
-        
+
         while True:
             try:
                 # Get sensor data
                 data = self.get_sensor_data()
-                
+
                 # Process the display configuration and sensor values
                 render_data = data['render_data']
                 display_config = render_data['display_config']
                 sensor_values = render_data['sensor_values']
-                
+
                 print(f"Received {len(sensor_values)} sensor values")
                 print(f"Display config has {len(display_config['elements'])} elements")
-                
+
                 # Here you would render the display based on the configuration
                 # and sensor values
-                
+
             except Exception as e:
                 print(f"Error: {e}")
                 if "not active" in str(e):
@@ -400,7 +400,7 @@ class SensorBridgeClient:
                 elif "not registered" in str(e):
                     print("Client not registered, re-registering...")
                     self.register()
-                
+
             # Wait before next poll
             time.sleep(1)
 
@@ -416,7 +416,7 @@ const axios = require('axios');
 const os = require('os');
 
 class SensorBridgeClient {
-    constructor(serverHost, serverPort = 25555) {
+    constructor(serverHost, serverPort = 55555) {
         this.serverUrl = `http://${serverHost}:${serverPort}`;
         this.macAddress = this.getMacAddress();
         this.ipAddress = this.getLocalIP();
@@ -467,7 +467,7 @@ class SensorBridgeClient {
     async getSensorData() {
         try {
             const response = await axios.get(`${this.serverUrl}/api/sensor-data`, {
-                params: {mac_address: this.macAddress}
+                params: { mac_address: this.macAddress }
             });
             return response.data;
         } catch (error) {
@@ -506,7 +506,6 @@ class SensorBridgeClient {
 
                 // Here you would render the display based on the configuration
                 // and sensor values
-
             } catch (error) {
                 console.error(`Error: ${error.message}`);
 
@@ -546,22 +545,22 @@ specific configuration options:
 
 ```json
 {
-  "id": "element-uuid",
-  "name": "CPU Temperature",
-  "element_type": "text",
-  "x": 10,
-  "y": 10,
-  "text_config": {
-    "sensor_id": "cpu_temp",
-    "value_modifier": "raw",
-    "format": "{value} {unit}",
-    "font_family": "Arial",
-    "font_size": 20,
-    "font_color": "#ffffff",
-    "width": 200,
-    "height": 30,
-    "alignment": "left"
-  }
+    "id": "element-uuid",
+    "name": "CPU Temperature",
+    "element_type": "text",
+    "x": 10,
+    "y": 10,
+    "text_config": {
+        "sensor_id": "cpu_temp",
+        "value_modifier": "raw",
+        "format": "{value} {unit}",
+        "font_family": "Arial",
+        "font_size": 20,
+        "font_color": "#ffffff",
+        "width": 200,
+        "height": 30,
+        "alignment": "left"
+    }
 }
 ```
 
@@ -569,23 +568,23 @@ specific configuration options:
 
 ```json
 {
-  "id": "element-uuid",
-  "name": "CPU Usage Graph",
-  "element_type": "graph",
-  "x": 10,
-  "y": 50,
-  "graph_config": {
-    "sensor_id": "cpu_usage",
-    "min_sensor_value": 0.0,
-    "max_sensor_value": 100.0,
-    "width": 300,
-    "height": 100,
-    "graph_type": "line",
-    "graph_color": "#00ff00",
-    "graph_stroke_width": 2,
-    "background_color": "#000000",
-    "border_color": "#ffffff"
-  }
+    "id": "element-uuid",
+    "name": "CPU Usage Graph",
+    "element_type": "graph",
+    "x": 10,
+    "y": 50,
+    "graph_config": {
+        "sensor_id": "cpu_usage",
+        "min_sensor_value": 0.0,
+        "max_sensor_value": 100.0,
+        "width": 300,
+        "height": 100,
+        "graph_type": "line",
+        "graph_color": "#00ff00",
+        "graph_stroke_width": 2,
+        "background_color": "#000000",
+        "border_color": "#ffffff"
+    }
 }
 ```
 

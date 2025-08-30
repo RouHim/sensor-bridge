@@ -62,7 +62,7 @@
 
 - **Backend**: `src-tauri/src/` - Rust modules (sensor.rs, http_server.rs, config.rs, etc.)
 - **Frontend**: `src/js/` - ES6 modules (app-state.js, client-management.js, element-management.js)
-- **API**: HTTP server on port 25555, documented in API.md
+- **API**: HTTP server on port 55555, documented in API.md
 - **Config**: User config stored at `~/.config/sensor-bridge/config.json` (contains registered clients, HTTP port
   settings)
 - **CLI Rules**: `.clinerules-*` files define mode-specific agent behaviors
@@ -80,7 +80,7 @@
 - **Backend State**: `AppState` struct with `Arc<Mutex<T>>` for thread safety (root_shell, sensor_value_history,
   http_server_handle)
 - **Sensor Integration**: Custom `sensor-core` library + Linux sensors (lm-sensors, dmidecode, systemstat, AMD GPU)
-- **HTTP Server**: Warp-based REST API on port 25555 with client registration and sensor data endpoints
+- **HTTP Server**: Warp-based REST API on port 55555 with client registration and sensor data endpoints
 - **Async Runtime**: `#[tokio::main]` with `JoinHandle<()>` for background tasks and `oneshot::Sender<()>` for shutdown
 - **Frontend State**: Simple object-based state in `app-state.js` with getter/setter functions
 - **Error Handling**: `Result<T, String>` pattern throughout Rust code, try/catch in JS with user-friendly messages
