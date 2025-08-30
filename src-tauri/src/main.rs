@@ -1,7 +1,6 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
 use crate::http_server::DisplayClient;
-use crate::utils::LockResultExt;
 use in_memory_config::InMemoryConfig;
 use log::{error, info};
 use sensor_core::{
@@ -12,7 +11,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use super_shell::RootShell;
 use tauri::menu::{Menu, MenuItem};
 use tauri::{
@@ -20,7 +19,7 @@ use tauri::{
     App, State,
 };
 use tauri::{AppHandle, Manager};
-use tokio::sync::{oneshot, RwLock};
+use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 
 mod conditional_image;
@@ -45,12 +44,12 @@ mod in_memory_config;
 mod linux_amdgpu;
 
 pub struct AppState {
-    pub root_shell: Arc<Mutex<Option<RootShell>>>,
+    pub root_shell: Arc<RwLock<Option<RootShell>>>,
     pub static_sensor_values: Arc<Vec<SensorValue>>,
-    pub sensor_value_history: Arc<Mutex<Vec<Vec<SensorValue>>>>,
-    pub http_server_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
-    pub http_server_running: Arc<Mutex<bool>>,
-    pub http_server_shutdown_tx: Arc<Mutex<Option<oneshot::Sender<()>>>>,
+    pub sensor_value_history: Arc<RwLock<Vec<Vec<SensorValue>>>>,
+    pub http_server_handle: Arc<RwLock<Option<JoinHandle<()>>>>,
+    pub http_server_running: Arc<RwLock<bool>>,
+    pub http_server_shutdown_tx: Arc<RwLock<Option<oneshot::Sender<()>>>>,
     pub in_memory_config: InMemoryConfig,
 }
 
@@ -71,16 +70,16 @@ async fn main() {
     fs::create_dir_all(sensor_core::get_cache_base_dir()).unwrap();
 
     // Request root shell
-    let root_shell = Arc::new(Mutex::new(RootShell::new()));
+    let root_shell = Arc::new(RwLock::new(RootShell::new()));
 
     // Read the static sensor values
     let static_sensor_values = Arc::new(sensor::read_static_sensor_values(&root_shell));
 
     // Create sensor history vector
-    let sensor_value_history = Arc::new(Mutex::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
+    let sensor_value_history = Arc::new(RwLock::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
 
     // Initialize Client Registry
-    let in_memory_config: InMemoryConfig = Arc::new(RwLock::new(config_file::read()));
+    let in_memory_config: InMemoryConfig = Arc::new(tokio::sync::RwLock::new(config_file::read()));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -91,9 +90,9 @@ async fn main() {
             root_shell: root_shell.clone(),
             static_sensor_values,
             sensor_value_history,
-            http_server_handle: Arc::new(Mutex::new(None)),
-            http_server_running: Arc::new(Mutex::new(false)),
-            http_server_shutdown_tx: Arc::new(Mutex::new(None)),
+            http_server_handle: Arc::new(RwLock::new(None)),
+            http_server_running: Arc::new(RwLock::new(false)),
+            http_server_shutdown_tx: Arc::new(RwLock::new(None)),
             in_memory_config: in_memory_config.clone(),
         })
         .setup(|app| {
@@ -304,7 +303,7 @@ async fn get_text_preview_image(
     image_height: u32,
     text_config: TextConfig,
 ) -> Result<String, ()> {
-    let sensor_values = &app_state.sensor_value_history.lock().ignore_poison()[0];
+    let sensor_values = &app_state.sensor_value_history.read().unwrap()[0];
     let sensor_id = &text_config.sensor_id;
 
     let sensor_value = sensor_values
@@ -326,11 +325,7 @@ async fn get_graph_preview_image(
     let sensor_id = &graph_config.sensor_id;
 
     let sensor_values = sensor_core::extract_value_sequence(
-        app_state
-            .sensor_value_history
-            .lock()
-            .ignore_poison()
-            .deref(),
+        app_state.sensor_value_history.read().unwrap().deref(),
         sensor_id,
     );
 
@@ -345,7 +340,7 @@ async fn get_conditional_image_preview_image(
     element_id: String,
     mut conditional_image_config: ConditionalImageConfig,
 ) -> Result<String, ()> {
-    let sensor_values = &app_state.sensor_value_history.lock().ignore_poison()[0];
+    let sensor_values = &app_state.sensor_value_history.read().unwrap()[0];
     let sensor_id = &conditional_image_config.sensor_id;
 
     // Filter sensor values for provided sensor id
@@ -413,8 +408,8 @@ async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
 fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
     let port = in_memory_config::get_port_sync(&app_state.in_memory_config);
     info!("Starting HTTP server on port {}", port);
-    let mut server_running = app_state.http_server_running.lock().unwrap();
-    let mut server_handle = app_state.http_server_handle.lock().unwrap();
+    let mut server_running = app_state.http_server_running.write().unwrap();
+    let mut server_handle = app_state.http_server_handle.write().unwrap();
 
     if *server_running {
         return Err(format!("HTTP server is already running on port {}", port));
@@ -425,7 +420,7 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
     let in_memory_config = app_state.in_memory_config.clone();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
-    *app_state.http_server_shutdown_tx.lock().unwrap() = Some(shutdown_tx);
+    *app_state.http_server_shutdown_tx.write().unwrap() = Some(shutdown_tx);
 
     // Start the server in a background task
     let handle = tokio::spawn(async move {
@@ -461,8 +456,8 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
 
     // First check if server is running and get the handle
     let handle = {
-        let server_running = app_state.http_server_running.lock().unwrap();
-        let mut server_handle = app_state.http_server_handle.lock().unwrap();
+        let server_running = app_state.http_server_running.read().unwrap();
+        let mut server_handle = app_state.http_server_handle.write().unwrap();
 
         if !*server_running {
             return Err("HTTP server is not running".to_string());
@@ -470,7 +465,7 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
 
         if let Some(handle) = server_handle.take() {
             // Send the shutdown signal for graceful shutdown
-            if let Some(tx) = app_state.http_server_shutdown_tx.lock().unwrap().take() {
+            if let Some(tx) = app_state.http_server_shutdown_tx.write().unwrap().take() {
                 let _ = tx.send(());
                 info!("Graceful shutdown signal sent to HTTP server.");
             }
@@ -493,7 +488,7 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
         }
 
         // Mark as stopped after the task completes
-        *app_state.http_server_running.lock().unwrap() = false;
+        *app_state.http_server_running.write().unwrap() = false;
         info!("HTTP server shutdown completed.");
         Ok(())
     } else {
@@ -511,7 +506,7 @@ async fn get_http_port(app_state: State<'_, AppState>) -> Result<u16, String> {
 #[tauri::command]
 async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), String> {
     let was_running = {
-        let server_handle = app_state.http_server_running.lock().unwrap();
+        let server_handle = app_state.http_server_running.read().unwrap();
         *server_handle
     };
 

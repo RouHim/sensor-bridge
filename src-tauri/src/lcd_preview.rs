@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::thread;
 
 use log::info;
@@ -9,7 +9,6 @@ use sensor_core::{ElementConfig, ElementType, SensorValue};
 use tauri::{AppHandle, Manager};
 
 use crate::http_server::DisplayClient;
-use crate::utils::LockResultExt;
 use crate::{conditional_image, sensor, static_image, text, utils};
 
 /// Constant for the window label
@@ -104,7 +103,7 @@ fn prepare_assets(elements: Vec<ElementConfig>) {
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to render the image
 pub fn render(
-    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    sensor_value_history: &Arc<RwLock<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
     client: DisplayClient,
 ) -> std::thread::Result<String> {
@@ -121,7 +120,7 @@ pub fn render(
         // Render the image
         let image = sensor_core::render_lcd_image(
             &client.elements,
-            sensor_value_history.lock().ignore_poison().deref(),
+            sensor_value_history.read().unwrap().deref(),
             &fonts_data,
             client.resolution_width,
             client.resolution_height,

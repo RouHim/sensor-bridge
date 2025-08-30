@@ -3,7 +3,7 @@ use log::info;
 use sensor_core::{ElementConfig, StaticClientData};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use warp::Filter;
@@ -81,7 +81,7 @@ impl warp::reject::Reject for ApiError {}
 pub async fn start_server(
     port: u16,
     sensor_values: Arc<Vec<sensor_core::SensorValue>>,
-    sensor_value_history: Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
+    sensor_value_history: Arc<RwLock<Vec<Vec<sensor_core::SensorValue>>>>,
     shutdown_rx: oneshot::Receiver<()>,
     in_memory_config: InMemoryConfig,
 ) -> Result<JoinHandle<()>, Box<dyn std::error::Error + Send + Sync>> {
@@ -156,7 +156,7 @@ async fn handle_sensor_data_request(
     params: HashMap<String, String>,
     in_memory_config: InMemoryConfig,
     sensor_values: Arc<Vec<sensor_core::SensorValue>>,
-    sensor_history: Arc<Mutex<Vec<Vec<sensor_core::SensorValue>>>>,
+    sensor_history: Arc<RwLock<Vec<Vec<sensor_core::SensorValue>>>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     // Extract and validate MAC address parameter
     let mac_address = params

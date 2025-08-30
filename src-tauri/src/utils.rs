@@ -1,5 +1,4 @@
 use std::io::Cursor;
-use std::sync::LockResult;
 
 use image::{DynamicImage, ImageBuffer, Rgba};
 
@@ -61,6 +60,7 @@ fn parse_locale_string(locale_str: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{DateTime, Utc};
 
     #[test]
     fn test_locale_parsing() {
@@ -137,25 +137,4 @@ pub fn is_reachable_url(file_uri: &str) -> bool {
 /// Checks if the given file uri is a url.
 pub fn is_url(file_uri: &str) -> bool {
     file_uri.starts_with("http://") || file_uri.starts_with("https://")
-}
-
-/// Extension methods for [`LockResult`].
-///
-/// [`LockResult`]: https://doc.rust-lang.org/stable/std/sync/type.LockResult.html
-pub trait LockResultExt {
-    type Guard;
-
-    /// Returns the lock guard even if the mutex is [poisoned].
-    ///
-    /// [poisoned]: https://doc.rust-lang.org/stable/std/sync/struct.Mutex.html#poisoning
-    fn ignore_poison(self) -> Self::Guard;
-}
-
-/// Implements a method to ignore poison errors
-impl<Guard> LockResultExt for LockResult<Guard> {
-    type Guard = Guard;
-
-    fn ignore_poison(self) -> Guard {
-        self.unwrap_or_else(|e| e.into_inner())
-    }
 }
