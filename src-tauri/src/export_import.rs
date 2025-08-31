@@ -92,7 +92,7 @@ pub fn import_configuration(file_path: String) -> Result<AppConfig, Error> {
                     let text_config = element.text_config.as_mut().unwrap();
                     let font_family = &text_config.font_family;
                     if is_json(font_family) {
-                        let font_dto: FontDto = serde_json::from_str(font_family).unwrap();
+                        let font_dto: FontDto = serde_json::from_str(font_family)?;
                         fonts::install_font(&font_dto.name, &font_dto.data);
                         text_config.font_family = font_dto.name;
                     }

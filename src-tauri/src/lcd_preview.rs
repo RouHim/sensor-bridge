@@ -36,7 +36,7 @@ pub fn show(app_handle: AppHandle, client: &DisplayClient) {
             }
 
             // Give a brief moment for Tauri to process the destruction
-            std::thread::sleep(std::time::Duration::from_millis(50));
+            thread::sleep(std::time::Duration::from_millis(50));
 
             // Verify the window is actually gone
             if app_handle.get_webview_window(WINDOW_LABEL).is_some() {
@@ -44,7 +44,7 @@ pub fn show(app_handle: AppHandle, client: &DisplayClient) {
                 return;
             }
 
-            log::info!("Successfully destroyed existing LCD preview window");
+            info!("Successfully destroyed existing LCD preview window");
         }
 
         // Create a new window (either because none existed or we successfully destroyed the existing one)
@@ -106,7 +106,7 @@ pub fn render(
     sensor_value_history: &Arc<RwLock<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
     client: DisplayClient,
-) -> std::thread::Result<String> {
+) -> thread::Result<String> {
     let static_sensor_values = static_sensor_values.clone();
     let sensor_value_history = sensor_value_history.clone();
 
