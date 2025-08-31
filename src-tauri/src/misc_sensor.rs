@@ -2,6 +2,7 @@ use sensor_core::{SensorType, SensorValue};
 
 use crate::sensor;
 
+#[allow(dead_code)]
 pub struct SystemSensor {}
 
 impl sensor::SensorProvider for SystemSensor {

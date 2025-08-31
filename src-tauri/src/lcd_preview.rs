@@ -62,8 +62,10 @@ pub fn show(app_handle: AppHandle, client: &DisplayClient) {
             Ok(window) => {
                 let _ = window.set_title("LCD Preview");
                 let _ = window.set_resizable(false);
-                let _ =
-                    window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }));
+                let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                    width: width as u32,
+                    height: height as u32,
+                }));
                 let _ = window.show();
             }
             Err(e) => {
@@ -114,8 +116,12 @@ pub fn render(
         // Read the sensor values
         sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
 
-        // Build font data hashmap
-        let fonts_data: HashMap<String, Vec<u8>> = text::build_fonts_data(&client.elements);
+        // Build font data hashmap (extract just the data, ignore hashes for preview)
+        let fonts_with_hashes = text::build_fonts_data(&client.elements);
+        let fonts_data: HashMap<String, Vec<u8>> = fonts_with_hashes
+            .into_iter()
+            .map(|(key, (_hash, data))| (key, data))
+            .collect();
 
         // Render the image
         let image = sensor_core::render_lcd_image(

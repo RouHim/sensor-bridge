@@ -164,10 +164,10 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
     found_files
 }
 
-/// Pre-renders conditional images and returns the data to send.
+/// Pre-renders conditional images and returns the data to send with MD5 hashes.
 pub fn get_preparation_data(
     elements: &[ElementConfig],
-) -> HashMap<String, HashMap<String, Vec<u8>>> {
+) -> HashMap<String, HashMap<String, (String, Vec<u8>)>> {
     let conditional_image_elements: Vec<&ElementConfig> = elements
         .iter()
         .filter(|element| element.element_type == ElementType::ConditionalImage)
@@ -188,18 +188,19 @@ pub fn get_preparation_data(
     });
 
     // Pre-process / Pre-render and prepare for display transport
-    let images_data: HashMap<String, HashMap<String, Vec<u8>>> = conditional_image_elements
-        .par_iter()
-        .map(|element| (element.id.clone(), get_image_series(&element.id)))
-        .collect();
+    let images_data: HashMap<String, HashMap<String, (String, Vec<u8>)>> =
+        conditional_image_elements
+            .par_iter()
+            .map(|element| (element.id.clone(), get_image_series(&element.id)))
+            .collect();
 
     images_data
 }
 
 /// Collects conditional image data for the specified element.
-/// Returns a hashmap with the image name as key and the image data as value.
-fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
-    let mut image_series: HashMap<String, Vec<u8>> = HashMap::new();
+/// Returns a hashmap with the image name as key and the (hash, image data) tuple as value.
+fn get_image_series(element_id: &str) -> HashMap<String, (String, Vec<u8>)> {
+    let mut image_series: HashMap<String, (String, Vec<u8>)> = HashMap::new();
 
     let cache_dir = sensor_core::get_cache_dir(element_id, &ElementType::ConditionalImage);
 
@@ -213,7 +214,11 @@ fn get_image_series(element_id: &str) -> HashMap<String, Vec<u8>> {
             .to_string();
 
         let image_data = fs::read(image_path).unwrap();
-        image_series.insert(image_name, image_data);
+
+        // Calculate MD5 hash
+        let hash = format!("{:x}", md5::compute(&image_data));
+
+        image_series.insert(image_name, (hash, image_data));
     }
 
     image_series

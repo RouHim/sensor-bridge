@@ -24,10 +24,12 @@ to lowercase with colon separators (e.g., `aa:bb:cc:dd:ee:ff`).
 
 ## Client Lifecycle
 
-1. **Registration**: Client registers with server using `/api/register`
-2. **Activation**: Client must be activated through the server UI (clients start as inactive)
-3. **Data Access**: Active clients can access sensor data via `/api/sensor-data`
-4. **Cleanup**: Inactive clients are automatically removed after 24 hours
+1. **Registration**: Client registers with server using `/api/register` (returns JSON confirmation)
+2. **Static Data**: Client retrieves initial static data using `/api/static-data`
+3. **Activation**: Client must be activated through the server UI (clients start as inactive)
+4. **Data Access**: Active clients can access sensor data via `/api/sensor-data`
+5. **Dynamic Updates**: When UI elements change, `static_data_reload_required` flag prompts client to reload static data
+6. **Cleanup**: Inactive clients are automatically removed after 24 hours
 
 ## Client Registration
 
@@ -41,18 +43,140 @@ Registers a new client or updates an existing client's information.
 
 ```json
 {
-    "mac_address": "aa:bb:cc:dd:ee:ff",
-    "ip_address": "192.168.1.100",
-    "resolution_width": 1920,
-    "resolution_height": 1080
+  "mac_address": "aa:bb:cc:dd:ee:ff",
+  "ip_address": "192.168.1.100",
+  "resolution_width": 1920,
+  "resolution_height": 1080
 }
 ```
 
 **Response:**
 
+**Content-Type:** `application/json`
+
+The registration endpoint now returns a JSON confirmation. Static data is no longer returned from this endpoint.
+
+```json
+{
+  "success": true,
+  "message": "Client registered successfully",
+  "mac_address": "aa:bb:cc:dd:ee:ff"
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "error": "mac_address is required",
+  "status": 400
+}
+```
+
+**Notes:**
+
+- Registration now only handles client registration
+- Static data must be requested separately via `/api/static-data`
+- Existing clients will need to be updated to use the new flow
+
+**Data Contents:**
+
+1. **`text_data`** - Font files keyed by font family name
+    - Contains TTF/OTF font data as binary bytes
+    - Only includes fonts used by text elements in the display configuration
+
+2. **`static_image_data`** - Pre-processed static images
+    - Images are pre-scaled to the exact dimensions specified in element configs
+    - All images are converted to PNG format for consistency
+    - Keyed by element ID for direct lookup
+
+3. **`conditional_image_data`** - Dynamic image sets for conditional elements
+    - Each element contains multiple images for different sensor value conditions
+    - Images are pre-processed and converted to PNG format
+    - Nested structure: element_id -> image_name -> image_bytes
+
+**Client Implementation Example:**
+
+```rust
+// Rust client example using bincode
+let response = reqwest::get("http://server:55555/api/register")
+.await?
+.bytes()
+.await?;
+
+let static_data: StaticClientData = bincode::deserialize( & response) ?;
+
+// Access font data
+for (font_family, font_bytes) in static_data.text_data {
+load_font(font_family, font_bytes);
+}
+
+// Access static images
+for (element_id, image_bytes) in static_data.static_image_data {
+load_static_image(element_id, image_bytes);
+}
+
+// Access conditional images
+for (element_id, image_map) in static_data.conditional_image_data {
+for (image_name, image_bytes) in image_map {
+load_conditional_image(element_id, image_name, image_bytes);
+}
+}
+```
+
+```javascript
+// JavaScript client example
+const response = await fetch('/api/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(registrationData)
+});
+
+if (response.ok) {
+    const binaryData = await response.arrayBuffer();
+    console.log(`Received ${binaryData.byteLength} bytes of static data`);
+
+    // Note: JavaScript clients would need a bincode decoder
+    // or the server could provide a JSON alternative endpoint
+    processStaticData(new Uint8Array(binaryData));
+} else {
+    const errorData = await response.json();
+    console.error('Registration failed:', errorData.error);
+}
+```
+
+**Notes:**
+
+- If `name` is not provided, a default name will be generated based on MAC address
+- Clients start as inactive and must be activated through the UI
+- Existing clients are updated with new information (IP, resolution)
+
+**Error Responses:**
+
+```json
+{
+  "error": "mac_address is required",
+  "status": 400
+}
+```
+
+## Static Data
+
+### Get Static Data
+
+Retrieves static assets (fonts, images) needed for client rendering.
+
+**Endpoint:** `GET /api/static-data?mac_address={mac_address}`
+
+**Parameters:**
+
+- `mac_address`: The MAC address of the registered client
+
+**Response:**
+
 **Content-Type:** `application/octet-stream`
 
-The registration endpoint returns binary static data serialized using bincode. This contains all static assets needed by the client for rendering, including fonts, static images, and conditional images.
+Returns binary static data serialized using bincode containing all static assets needed by the client for rendering.
 
 **Binary Data Structure:**
 The response contains a single bincode-serialized `StaticClientData` struct:
@@ -84,73 +208,36 @@ struct StaticClientData {
     - Images are pre-processed and converted to PNG format
     - Nested structure: element_id -> image_name -> image_bytes
 
-**Client Implementation Example:**
+**Error Responses:**
 
-```rust
-// Rust client example using bincode
-let response = reqwest::get("http://server:55555/api/register")
-    .await?
-    .bytes()
-    .await?;
+**404 Not Found - Client not registered:**
 
-let static_data: StaticClientData = bincode::deserialize(&response)?;
-
-// Access font data
-for (font_family, font_bytes) in static_data.text_data {
-    load_font(font_family, font_bytes);
-}
-
-// Access static images
-for (element_id, image_bytes) in static_data.static_image_data {
-    load_static_image(element_id, image_bytes);
-}
-
-// Access conditional images
-for (element_id, image_map) in static_data.conditional_image_data {
-    for (image_name, image_bytes) in image_map {
-        load_conditional_image(element_id, image_name, image_bytes);
-    }
+```json
+{
+  "error": "Client not registered",
+  "status": 404
 }
 ```
 
-```javascript
-// JavaScript client example
-const response = await fetch('/api/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(registrationData)
-});
+**403 Forbidden - Client not active:**
 
-if (response.ok) {
-    const binaryData = await response.arrayBuffer();
-    console.log(`Received ${binaryData.byteLength} bytes of static data`);
+```json
+{
+  "error": "Client not active",
+  "status": 403
+}
+```
 
-    // Note: JavaScript clients would need a bincode decoder
-    // or the server could provide a JSON alternative endpoint
-    processStaticData(new Uint8Array(binaryData));
-} else {
-    const errorData = await response.json();
-    console.error('Registration failed:', errorData.error);
+**400 Bad Request - Missing MAC address:**
+
+```json
+{
+  "error": "mac_address parameter required",
+  "status": 400
 }
 ```
 
 **Notes:**
-
-- MAC address is automatically normalized to lowercase with colon separators
-- Supports various MAC address formats: `aa:bb:cc`, `AA-BB-CC`, `aabbccddeeff`
-- If `name` is not provided, a default name will be generated based on MAC address
-- Clients start as inactive and must be activated through the UI
-- Existing clients are updated with new information (IP, resolution)
-- `last_seen` timestamp is automatically updated on each interaction
-
-**Error Responses:**
-
-```json
-{
-    "error": "mac_address is required",
-    "status": 400
-}
-```
 
 ## Sensor Data
 
@@ -168,39 +255,40 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-    "render_data": {
-        "display_config": {
-            "resolution_width": 1920,
-            "resolution_height": 1080,
-            "elements": [
-                {
-                    "id": "element-uuid",
-                    "name": "CPU Temperature",
-                    "element_type": "text",
-                    "x": 10,
-                    "y": 10,
-                    "text_config": {
-                        "sensor_id": "cpu_temp",
-                        "format": "{value} {unit}",
-                        "font_size": 20,
-                        "font_color": "#ffffff",
-                        "width": 200,
-                        "height": 30
-                    }
-                }
-            ]
-        },
-        "sensor_values": [
-            {
-                "id": "cpu_temp",
-                "label": "CPU Temperature",
-                "value": "45.2",
-                "unit": "°C",
-                "sensor_type": "number"
-            }
-        ]
+  "render_data": {
+    "display_config": {
+      "resolution_width": 1920,
+      "resolution_height": 1080,
+      "elements": [
+        {
+          "id": "element-uuid",
+          "name": "CPU Temperature",
+          "element_type": "text",
+          "x": 10,
+          "y": 10,
+          "text_config": {
+            "sensor_id": "cpu_temp",
+            "format": "{value} {unit}",
+            "font_size": 20,
+            "font_color": "#ffffff",
+            "width": 200,
+            "height": 30
+          }
+        }
+      ]
     },
-    "timestamp": 1704067200
+    "sensor_values": [
+      {
+        "id": "cpu_temp",
+        "label": "CPU Temperature",
+        "value": "45.2",
+        "unit": "°C",
+        "sensor_type": "number"
+      }
+    ]
+  },
+  "timestamp": 1704067200,
+  "static_data_reload_required": false
 }
 ```
 
@@ -210,8 +298,8 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-    "error": "Client not registered",
-    "status": 404
+  "error": "Client not registered",
+  "status": 404
 }
 ```
 
@@ -219,8 +307,8 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-    "error": "Client not active",
-    "status": 403
+  "error": "Client not active",
+  "status": 403
 }
 ```
 
@@ -228,8 +316,8 @@ Retrieves current sensor data and display configuration for a registered client.
 
 ```json
 {
-    "error": "mac_address parameter required",
-    "status": 400
+  "error": "mac_address parameter required",
+  "status": 400
 }
 ```
 
@@ -238,6 +326,10 @@ Retrieves current sensor data and display configuration for a registered client.
 - Successfully serving data updates the client's `last_seen` timestamp
 - Even inactive clients get their `last_seen` timestamp updated when they call this endpoint
 - MAC address format is automatically normalized before lookup
+- **`static_data_reload_required`**: When `true`, client should call `/api/static-data` to get updated static assets (
+  fonts, images)
+- This flag is set to `true` when display configuration changes in the server UI
+- After calling `/api/static-data`, the client should continue normal polling
 
 ## Health Check
 
@@ -251,9 +343,9 @@ Check if the server is running and responsive.
 
 ```json
 {
-    "status": "healthy",
-    "service": "sensor-bridge",
-    "timestamp": 1704067200
+  "status": "healthy",
+  "service": "sensor-bridge",
+  "timestamp": 1704067200
 }
 ```
 
@@ -262,7 +354,7 @@ Check if the server is running and responsive.
 All API endpoints return structured JSON error responses with appropriate HTTP status codes:
 
 | Status Code | Description           | Example Response                                      |
-| ----------- | --------------------- | ----------------------------------------------------- |
+|-------------|-----------------------|-------------------------------------------------------|
 | 200         | Success               | Data response                                         |
 | 400         | Bad Request           | `{"error": "mac_address is required", "status": 400}` |
 | 403         | Forbidden             | `{"error": "Client not active", "status": 403}`       |
@@ -545,22 +637,22 @@ specific configuration options:
 
 ```json
 {
-    "id": "element-uuid",
-    "name": "CPU Temperature",
-    "element_type": "text",
-    "x": 10,
-    "y": 10,
-    "text_config": {
-        "sensor_id": "cpu_temp",
-        "value_modifier": "raw",
-        "format": "{value} {unit}",
-        "font_family": "Arial",
-        "font_size": 20,
-        "font_color": "#ffffff",
-        "width": 200,
-        "height": 30,
-        "alignment": "left"
-    }
+  "id": "element-uuid",
+  "name": "CPU Temperature",
+  "element_type": "text",
+  "x": 10,
+  "y": 10,
+  "text_config": {
+    "sensor_id": "cpu_temp",
+    "value_modifier": "raw",
+    "format": "{value} {unit}",
+    "font_family": "Arial",
+    "font_size": 20,
+    "font_color": "#ffffff",
+    "width": 200,
+    "height": 30,
+    "alignment": "left"
+  }
 }
 ```
 
@@ -568,23 +660,23 @@ specific configuration options:
 
 ```json
 {
-    "id": "element-uuid",
-    "name": "CPU Usage Graph",
-    "element_type": "graph",
-    "x": 10,
-    "y": 50,
-    "graph_config": {
-        "sensor_id": "cpu_usage",
-        "min_sensor_value": 0.0,
-        "max_sensor_value": 100.0,
-        "width": 300,
-        "height": 100,
-        "graph_type": "line",
-        "graph_color": "#00ff00",
-        "graph_stroke_width": 2,
-        "background_color": "#000000",
-        "border_color": "#ffffff"
-    }
+  "id": "element-uuid",
+  "name": "CPU Usage Graph",
+  "element_type": "graph",
+  "x": 10,
+  "y": 50,
+  "graph_config": {
+    "sensor_id": "cpu_usage",
+    "min_sensor_value": 0.0,
+    "max_sensor_value": 100.0,
+    "width": 300,
+    "height": 100,
+    "graph_type": "line",
+    "graph_color": "#00ff00",
+    "graph_stroke_width": 2,
+    "background_color": "#000000",
+    "border_color": "#ffffff"
+  }
 }
 ```
 

@@ -11,6 +11,7 @@ use crate::{
     linux_amdgpu, linux_lm_sensors, linux_system_sensors, misc_sensor, SENSOR_VALUE_HISTORY_SIZE,
 };
 
+#[allow(dead_code)]
 pub trait SensorProvider {
     fn get_name(&self) -> String;
 }

@@ -17,10 +17,11 @@ pub struct DisplayClient {
     pub mac_address: String,
     pub name: String,
     pub ip_address: String,
-    pub resolution_width: u32,
-    pub resolution_height: u32,
+    pub resolution_width: u16,
+    pub resolution_height: u16,
     pub active: bool,
     pub elements: Vec<ElementConfig>,
+    pub static_data_reload_required: bool,
 }
 
 /// API response version of RegisteredClient with formatted timestamp
@@ -29,8 +30,8 @@ pub struct RegisteredClientResponse {
     pub mac_address: String,
     pub name: String,
     pub ip_address: String,
-    pub resolution_width: u32,
-    pub resolution_height: u32,
+    pub resolution_width: u16,
+    pub resolution_height: u16,
     pub active: bool,
     pub elements: Vec<ElementConfig>,
 }
@@ -40,8 +41,8 @@ impl DisplayClient {
         mac_address: String,
         name: String,
         ip_address: String,
-        resolution_width: u32,
-        resolution_height: u32,
+        resolution_width: u16,
+        resolution_height: u16,
     ) -> Self {
         Self {
             mac_address,
@@ -51,6 +52,7 @@ impl DisplayClient {
             resolution_height,
             active: false, // Clients start inactive, must be activated via UI
             elements: Vec::new(),
+            static_data_reload_required: true, // New clients need initial static data
         }
     }
 }
@@ -118,7 +120,15 @@ pub async fn start_server(
         .and(in_memory_config_filter.clone())
         .and_then(handle_client_registration);
 
-    // sensor data endpoint with client verification
+    // Static data endpoint
+    let static_data_route = warp::path("api")
+        .and(warp::path("static-data"))
+        .and(warp::get())
+        .and(warp::query::<HashMap<String, String>>())
+        .and(in_memory_config_filter.clone())
+        .and_then(handle_static_data_request);
+
+    // Sensor data endpoint with client verification
     let api_sensor_data = warp::path("api")
         .and(warp::path("sensor-data"))
         .and(warp::get())
@@ -132,6 +142,7 @@ pub async fn start_server(
     let routes = health
         .or(api_sensor_data)
         .or(register)
+        .or(static_data_route)
         .recover(handle_rejection)
         .with(warp::cors().allow_any_origin());
 
@@ -199,7 +210,8 @@ async fn handle_sensor_data_request(
 
             let response = serde_json::json!({
                 "render_data": render_data,
-                "timestamp": Utc::now().timestamp()
+                "timestamp": Utc::now().timestamp(),
+                "static_data_reload_required": client.static_data_reload_required
             });
 
             Ok(warp::reply::json(&response))
@@ -226,13 +238,13 @@ async fn handle_client_registration(
         warp::reject::custom(ApiError::BadRequest(
             "resolution_width is required".to_string(),
         ))
-    })? as u32;
+    })? as u16;
 
     let height = registration["resolution_height"].as_u64().ok_or_else(|| {
         warp::reject::custom(ApiError::BadRequest(
             "resolution_height is required".to_string(),
         ))
-    })? as u32;
+    })? as u16;
 
     // Normalize MAC address
     let normalized_mac = mac_address.to_uppercase();
@@ -271,18 +283,58 @@ async fn handle_client_registration(
     in_memory_config::create_or_update_client(&in_memory_config, &normalized_mac, client.clone())
         .await;
 
-    // Prepare and send static data as binary response
-    let static_data = prepare_static_data_for_client(&client.elements);
+    // Return JSON confirmation (NO static data)
+    Ok(warp::reply::json(&serde_json::json!({
+        "success": true,
+        "message": "Client registered successfully",
+        "mac_address": normalized_mac
+    })))
+}
 
-    // Return binary data with appropriate content-type
+async fn handle_static_data_request(
+    params: HashMap<String, String>,
+    in_memory_config: InMemoryConfig,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let mac_address = params.get("mac_address").ok_or_else(|| {
+        warp::reject::custom(ApiError::BadRequest("mac_address required".to_string()))
+    })?;
+
+    // Verify client exists and is active
+    let elements = {
+        let guard = in_memory_config.read().await;
+        let client = guard
+            .display_clients
+            .get(mac_address)
+            .ok_or_else(|| warp::reject::custom(ApiError::NotRegistered))?;
+
+        if !client.active {
+            return Err(warp::reject::custom(ApiError::NotActive));
+        }
+
+        client.elements.clone()
+    };
+
+    // Reset the reload flag now that we're serving the static data
+    {
+        let mut guard = in_memory_config.write().await;
+        if let Some(client) = guard.display_clients.get_mut(mac_address) {
+            client.static_data_reload_required = false;
+            crate::config_file::write(&guard);
+        }
+    }
+
+    // Prepare and return static data
+    let static_bincode_data = prepare_static_data_for_client(&elements);
+
     Ok(warp::reply::with_header(
-        static_data,
+        static_bincode_data,
         "content-type",
         "application/octet-stream",
     ))
 }
 
 /// Prepares all static data for the client (text, static images, conditional images)
+/// This is done by gathering data from all elements and serializing it
 /// Returns the data serialized as binary using bincode
 fn prepare_static_data_for_client(elements: &[ElementConfig]) -> Vec<u8> {
     info!("Preparing static data for client");

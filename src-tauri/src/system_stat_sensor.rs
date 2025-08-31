@@ -14,6 +14,7 @@ use systemstat::{Platform, System};
 
 use crate::{sensor, utils};
 
+#[allow(dead_code)]
 pub struct SystemStatSensor {}
 
 impl sensor::SensorProvider for SystemStatSensor {

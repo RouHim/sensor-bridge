@@ -1,3 +1,4 @@
+/* global crypto */
 // Element management functionality for LCD display elements
 
 // Global drag state management
@@ -258,7 +259,7 @@ export async function addNewElement() {
     }
 
     const elementId = generateElementId();
-    const elementName = `Element ${elementId}`;
+    const elementName = `Element ${elementId.substring(0, 8)}`;
 
     // Create list item with reasonable default position
     const listItem = createListElement(elementId, elementName, ELEMENT_TYPE_TEXT);

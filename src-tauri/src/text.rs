@@ -40,8 +40,8 @@ pub fn render_preview(
 
     writer.into_inner().unwrap().into_inner()
 }
-/// Builds the font data hashmap for all text elements.
-pub fn build_fonts_data(elements: &[ElementConfig]) -> HashMap<String, Vec<u8>> {
+/// Builds the font data hashmap for all text elements with MD5 hashes.
+pub fn build_fonts_data(elements: &[ElementConfig]) -> HashMap<String, (String, Vec<u8>)> {
     elements
         .iter()
         .filter(|element| element.element_type == ElementType::Text)
@@ -49,7 +49,11 @@ pub fn build_fonts_data(elements: &[ElementConfig]) -> HashMap<String, Vec<u8>> 
             let text_config = text_element.text_config.as_ref().unwrap();
             let font_family_name = &text_config.font_family;
             let font_data = fonts::load_data(font_family_name);
-            (font_family_name.clone(), font_data)
+
+            // Calculate MD5 hash
+            let hash = format!("{:x}", md5::compute(&font_data));
+
+            (font_family_name.clone(), (hash, font_data))
         })
         .collect()
 }

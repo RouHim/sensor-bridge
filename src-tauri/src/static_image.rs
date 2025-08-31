@@ -35,8 +35,8 @@ pub fn prepare(element: &ElementConfig) -> Result<(), String> {
     Ok(())
 }
 
-/// Pre-renders static images and serializes the render data to bytes using messagepack
-pub fn get_preparation_data(elements: &[ElementConfig]) -> HashMap<String, Vec<u8>> {
+/// Pre-renders static images and serializes the render data to bytes with MD5 hashes
+pub fn get_preparation_data(elements: &[ElementConfig]) -> HashMap<String, (String, Vec<u8>)> {
     elements
         .par_iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
@@ -52,11 +52,11 @@ pub fn get_preparation_data(elements: &[ElementConfig]) -> HashMap<String, Vec<u
         .collect()
 }
 
-/// Reads each image into memory, scales it to the desired resolution, and returns it
+/// Reads each image into memory, scales it to the desired resolution, and returns it with MD5 hash
 pub fn prepare_image(
     element_id: &str,
     image_config: &ImageConfig,
-) -> Result<(String, Vec<u8>), String> {
+) -> Result<(String, (String, Vec<u8>)), String> {
     let image = load_image(&image_config.image_path)?;
     let image = image.resize_exact(
         image_config.width,
@@ -66,8 +66,11 @@ pub fn prepare_image(
     // convert to png
     let image_data = utils::rgba_to_png_bytes(image);
 
-    // Build response entry
-    Ok((element_id.to_string(), image_data))
+    // Calculate MD5 hash
+    let hash = format!("{:x}", md5::compute(&image_data));
+
+    // Build response entry with hash
+    Ok((element_id.to_string(), (hash, image_data)))
 }
 
 /// Reads an image from the filesystem or from a url and returns it as a DynamicImage

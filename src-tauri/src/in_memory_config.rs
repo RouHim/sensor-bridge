@@ -42,6 +42,7 @@ pub async fn update_client_display_config(
     let mut config = in_memory_config.write().await;
     if let Some(client) = config.display_clients.get_mut(mac_address) {
         client.elements = elements;
+        client.static_data_reload_required = true; // Set flag when elements change
         crate::config_file::write(&config);
     }
 }
