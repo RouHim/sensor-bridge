@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::thread;
 
 use log::debug;
@@ -7,17 +7,17 @@ use super_shell::RootShell;
 
 use crate::linux_dmidecode_sensors::DmiDecodeSensors;
 use crate::system_stat_sensor;
-use crate::utils::LockResultExt;
 use crate::{
     linux_amdgpu, linux_lm_sensors, linux_system_sensors, misc_sensor, SENSOR_VALUE_HISTORY_SIZE,
 };
 
+#[allow(dead_code)]
 pub trait SensorProvider {
     fn get_name(&self) -> String;
 }
 
 pub fn read_all_sensor_values(
-    sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
+    sensor_value_history: &Arc<RwLock<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
 ) -> Vec<SensorValue> {
     let static_sensor_values = static_sensor_values.iter().cloned().collect();
@@ -44,7 +44,7 @@ pub fn read_all_sensor_values(
 
     // Insert the collected sensor values at the beginning of the history
     // and remove the last element if the history is too long
-    let mut sensor_value_history = sensor_value_history.lock().ignore_poison();
+    let mut sensor_value_history = sensor_value_history.write().unwrap();
     sensor_value_history.insert(0, collected_sensor_values.clone());
     while sensor_value_history.len() > SENSOR_VALUE_HISTORY_SIZE {
         sensor_value_history.pop();
@@ -83,7 +83,7 @@ fn read_dynamic_sensor_values() -> Vec<SensorValue> {
 /// Reads the static sensor values
 /// This is done only once at startup
 pub fn read_static_sensor_values(
-    root_shell_mutex: &Arc<Mutex<Option<RootShell>>>,
+    root_shell_mutex: &Arc<RwLock<Option<RootShell>>>,
 ) -> Vec<SensorValue> {
     DmiDecodeSensors::new(root_shell_mutex.clone()).get_sensor_values()
 }

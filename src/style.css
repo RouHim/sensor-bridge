@@ -1,8 +1,109 @@
-html, body {
+html,
+body {
     height: 100%;
     max-width: 100%;
     margin: 0;
     padding: 0;
+}
+
+/* Base styles */
+:root {
+    --background: #1a1a1a;
+    --text: #fff;
+    --selection: #0078d4;
+    --form-background: #333;
+    --form-text: #fff;
+    --button-background: #333;
+    --button-text: #fff;
+    --button-hover-background: #444;
+    --button-hover-text: #fff;
+    --border: #555;
+}
+
+html,
+body {
+    height: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background);
+    color: var(--text);
+    font-family:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
+        sans-serif;
+}
+
+a {
+    color: var(--selection);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text);
+}
+
+button {
+    background-color: var(--button-background);
+    color: var(--button-text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: var(--button-hover-background);
+    color: var(--button-hover-text);
+}
+
+input,
+select,
+textarea {
+    background-color: var(--form-background);
+    color: var(--form-text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #222;
+}
+
+dialog {
+    background-color: var(--background);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 1em 0;
 }
 
 #base-container {
@@ -117,6 +218,14 @@ td {
     height: 500px;
     background-color: var(--background);
     position: absolute;
+    border: 2px solid #333;
+    border-radius: 4px;
+    outline: none;
+}
+
+#lcd-designer-pane:focus {
+    border-color: var(--selection);
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.3);
 }
 
 #lcd-designer-placed-elements {
@@ -139,15 +248,139 @@ td {
     border-bottom: none;
 }
 
-tbody tr:nth-child(odd), tbody tr:nth-child(even) {
+/* Drag and drop styles for list items */
+#lcd-designer-placed-elements > li.list-item-dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    transition: transform 0.2s ease;
+}
+
+#lcd-designer-placed-elements > li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+/* Visual indicator for drag-over state */
+#lcd-designer-placed-elements.drag-over {
+    border-color: var(--selection);
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.3);
+}
+
+/* Smooth transitions for reordering */
+#lcd-designer-placed-elements > li {
+    transition: all 0.2s ease;
+}
+
+tbody tr:nth-child(odd),
+tbody tr:nth-child(even) {
     background-color: transparent;
 }
 
+/* Element validation states */
 .invalid {
     border: 1px solid red;
+    background-color: rgba(255, 0, 0, 0.1) !important;
 }
 
-#lcd-designer-control-pad-left-right, #lcd-designer-control-pad-up, #lcd-designer-control-pad-down {
+#lcd-designer-placed-elements > li.invalid {
+    border-left: 4px solid #ff4444;
+    background-color: rgba(255, 68, 68, 0.1) !important;
+    color: #ffcccc;
+}
+
+#lcd-designer-placed-elements > li.selected {
+    background-color: var(--selection) !important;
+    color: var(--background);
+}
+
+/* Designer element states */
+.designer-element {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+/* Keep smooth animations during drag for nice UX */
+.designer-element.dragging {
+    cursor: grabbing !important;
+    opacity: 0.8;
+    z-index: 1000;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition:
+        transform 0.1s ease,
+        opacity 0.1s ease,
+        box-shadow 0.1s ease !important;
+    /* Keep position transitions off for smooth dragging, but preserve visual effects */
+}
+
+.designer-element:hover,
+.designer-element.hovering {
+    border-color: #0066cc !important;
+    box-shadow: 0 0 8px rgba(0, 102, 204, 0.4);
+    transform: scale(1.02);
+}
+
+.designer-element.selected {
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 10px rgba(0, 102, 204, 0.6);
+    background-color: rgba(0, 102, 204, 0.1) !important;
+}
+
+.designer-element.selected::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid var(--selection);
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.designer-element.invalid {
+    border-color: #ff4444 !important;
+    box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+.designer-element.invalid.selected {
+    border-color: #ff4444 !important;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.7);
+    background-color: rgba(255, 68, 68, 0.1) !important;
+}
+
+/* Validation locked state - pulsing red effect */
+#lcd-designer-placed-elements > li.validation-locked {
+    animation: validation-lock-pulse 0.6s ease-in-out 3;
+    border-left: 6px solid #ff4444 !important;
+    background-color: rgba(255, 68, 68, 0.3) !important;
+}
+
+@keyframes validation-lock-pulse {
+    0%,
+    100% {
+        background-color: rgba(255, 68, 68, 0.3);
+        border-left-color: #ff4444;
+    }
+    50% {
+        background-color: rgba(255, 68, 68, 0.6);
+        border-left-color: #ff8888;
+    }
+}
+
+/* Cursor feedback for invalid elements */
+#lcd-designer-placed-elements > li.invalid {
+    cursor: help;
+}
+
+#lcd-designer-placed-elements > li.invalid:hover {
+    background-color: rgba(255, 68, 68, 0.2) !important;
+}
+
+#lcd-designer-control-pad-left-right,
+#lcd-designer-control-pad-up,
+#lcd-designer-control-pad-down {
     color: var(--form-text);
     display: flex;
     flex-direction: row;
@@ -192,7 +425,6 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
     background-color: var(--selection);
 }
 
-
 #sensor-selection-table-filter-input {
     width: 100%;
     margin-bottom: 0;
@@ -200,4 +432,1053 @@ tbody tr:nth-child(odd), tbody tr:nth-child(even) {
 
 .sensor-selection-table-row {
     cursor: pointer;
+}
+
+/* Modern Client Configuration */
+.client-config-header {
+    background: linear-gradient(135deg, #333, #404040);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    user-select: none;
+    border-radius: 12px 12px 0 0;
+    margin: 15px 15px 0 15px;
+    border: 1px solid #333;
+    border-bottom: none;
+}
+
+.client-config-header:hover {
+    background: linear-gradient(135deg, #383838, #454545);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 15px;
+}
+
+.header-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.collapse-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+    color: #ccc;
+    stroke-width: 2;
+}
+
+.collapse-icon.expanded {
+    transform: rotate(180deg);
+}
+
+.client-config-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.client-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff4444;
+    transition: background-color 0.3s ease;
+}
+
+.status-dot.active {
+    background: #00ff88;
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+}
+
+.status-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    margin-left: 8px;
+}
+
+.status-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: 0.3s;
+    border-radius: 24px;
+    border: 1px solid #555;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: '';
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #888;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--selection);
+    border-color: var(--selection);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+    background-color: white;
+}
+
+/* Property Cards Layout (Flex-wrap) */
+.client-property-grid {
+    background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+    border: 1px solid #333;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    padding: 16px;
+    margin: 0 15px 15px 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-start;
+    max-height: 0;
+    overflow: hidden;
+    transition:
+        max-height 0.4s ease-out,
+        padding 0.4s ease-out;
+}
+
+.client-property-grid.expanded {
+    max-height: 600px;
+    transition:
+        max-height 0.4s ease-in,
+        padding 0.4s ease-in;
+}
+
+.client-property-grid.collapsed {
+    max-height: 0;
+    padding: 0 16px;
+    margin: 0 15px 15px 15px;
+}
+
+/* Individual Property Cards */
+.client-property-grid {
+    justify-content: flex-start; /* align items from left, allow wrapping */
+}
+
+.client-property-grid > .property-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: all 0.2s ease;
+    min-height: 84px;
+    display: inline-flex; /* ensure content-sized item */
+    flex-direction: column;
+    gap: 12px;
+    flex: 0 0 auto !important; /* prevent stretching */
+    width: auto !important; /* avoid full-width */
+    max-width: min(480px, 100%); /* reasonable cap to avoid ultra-wide */
+}
+
+.property-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 102, 204, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.property-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.property-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.property-title {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--selection);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.property-card-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.property-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.property-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--selection);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    outline: none;
+}
+
+.property-value {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    color: #fff;
+    font-weight: 400;
+    word-break: break-all;
+    line-height: 1.4;
+    padding: 8px 0;
+}
+
+.client-config-placeholder {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+    border-top: 1px solid #333;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 12px 12px;
+    margin: -1px 15px 15px 15px;
+}
+
+.placeholder-icon {
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.placeholder-icon i {
+    width: 32px;
+    height: 32px;
+    stroke-width: 1;
+}
+
+.placeholder-text {
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.placeholder-text strong {
+    color: #888;
+}
+
+/* Responsive Adjustments (Flex) */
+@media (max-width: 1200px) {
+    .client-property-grid {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .client-config-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .client-property-grid {
+        gap: 10px;
+    }
+
+    .client-property-grid > .property-card {
+        min-height: 80px;
+        padding: 12px;
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 1400px) {
+    .client-property-grid {
+        gap: 14px;
+    }
+}
+
+/* Modern Control Groups */
+.control-groups-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.control-group {
+    background: linear-gradient(135deg, #333, #404040);
+    border: 1px solid #444;
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 280px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.control-group:hover {
+    background: linear-gradient(135deg, #383838, #454545);
+    border-color: rgba(0, 102, 204, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.control-group-header {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-group-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.control-group-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.control-group-body {
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.control-label {
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #ccc;
+    margin: 0;
+    padding-right: 0;
+    white-space: nowrap;
+}
+
+.control-input {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.control-input:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--selection);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    outline: none;
+}
+
+.port-input {
+    width: 80px;
+}
+
+/* Complete override using wrapper approach */
+.select-wrapper {
+    position: relative !important;
+    display: inline-block !important;
+    width: 100% !important;
+}
+
+.input-with-button .select-wrapper {
+    flex: 1 !important;
+}
+
+.input-with-buttons {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.input-with-buttons .select-wrapper {
+    flex: 1 !important;
+}
+
+.input-with-buttons .action-buttons {
+    flex-shrink: 0 !important;
+}
+
+.select-wrapper::after {
+    content: '▼' !important;
+    position: absolute !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+}
+
+.select-wrapper:hover::after {
+    color: #ffffff !important;
+}
+
+.select-wrapper:focus-within::after {
+    color: #66cc !important;
+}
+
+select.control-select,
+.control-group select.control-select,
+.select-wrapper select.control-select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    background-image: none !important; /* Remove Water CSS arrow completely */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 8px 35px 8px 12px !important;
+    color: #fff !important;
+    font-size: 0.9em !important;
+    transition: all 0.2s ease !important;
+    min-width: 200px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
+    width: 100% !important;
+}
+
+select.control-select:focus,
+.control-group select.control-select:focus,
+.select-wrapper select.control-select:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+    outline: none !important;
+}
+
+select.control-select:hover,
+.control-group select.control-select:hover,
+.select-wrapper select.control-select:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+select.control-select:active,
+.control-group select.control-select:active,
+.select-wrapper select.control-select:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+}
+
+.client-select {
+    flex: 1;
+    min-width: 250px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.action-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 102, 204, 0.4);
+    transform: translateY(-1px);
+}
+
+.action-button.compact {
+    padding: 8px 10px;
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.action-button.primary {
+    background: rgba(0, 102, 204, 0.2);
+    border-color: rgba(0, 102, 204, 0.4);
+    color: var(--selection);
+}
+
+.action-button.primary:hover {
+    background: rgba(0, 102, 204, 0.3);
+    border-color: var(--selection);
+}
+
+.action-button.danger {
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.4);
+    color: #ff6b6b;
+}
+
+.action-button.danger:hover {
+    background: rgba(255, 68, 68, 0.3);
+    border-color: #ff6b6b;
+}
+
+.action-button i {
+    width: 18px;
+    height: 18px;
+}
+
+/* Setting Row Styles */
+.setting-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0;
+    margin-right: 12px;
+    gap: 0;
+}
+
+.setting-row:last-child {
+    margin-bottom: 0;
+}
+
+.input-with-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-with-toggle .port-input {
+    width: 80px;
+}
+
+/* Section Headers */
+.section-header {
+    background: linear-gradient(135deg, #333, #404040);
+    padding: 12px 16px;
+    margin: 20px 15px 0 15px;
+    border-radius: 12px 12px 0 0;
+    border: 1px solid #444;
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Element Configuration Layout */
+.element-config-container {
+    display: flex;
+    gap: 20px;
+    background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+    border: 1px solid #333;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    margin: 0 15px 15px 15px;
+    padding: 20px;
+}
+
+.element-list-panel {
+    flex: 0 0 280px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.element-config-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.panel-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.panel-body {
+    padding: 16px;
+}
+
+/* Element Actions Header */
+.element-actions-header {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.element-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Configuration Sections */
+.config-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+/* Add padding to config-grid when it's directly under config-section */
+.config-section > .config-grid {
+    padding: 16px;
+}
+
+.config-section:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 102, 204, 0.2);
+}
+
+.config-section-header {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--selection);
+    stroke-width: 2;
+}
+
+.config-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.config-subsection {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.config-subsection:last-child {
+    border-bottom: none;
+}
+
+.config-subsection-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.subsection-icon {
+    width: 16px;
+    height: 16px;
+    color: rgba(0, 102, 204, 0.8);
+    stroke-width: 2;
+}
+
+.subsection-title {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.config-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.config-label {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #ccc;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.config-input,
+.config-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.config-input,
+.config-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.config-input:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+    outline: none !important;
+}
+
+select.config-select,
+.config-section select.config-select,
+.config-field select.config-select,
+.select-wrapper select.config-select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    background-image: none !important; /* Remove Water CSS arrow completely */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 6px !important;
+    padding: 10px 35px 10px 12px !important;
+    color: #fff !important;
+    font-size: 0.9em !important;
+    transition: all 0.2s ease !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
+    width: 100% !important;
+}
+
+select.config-select:focus,
+.config-section select.config-select:focus,
+.config-field select.config-select:focus,
+.select-wrapper select.config-select:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+    outline: none !important;
+}
+
+select.config-select:hover,
+.config-section select.config-select:hover,
+.config-field select.config-select:hover,
+.select-wrapper select.config-select:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+select.config-select:active,
+.config-section select.config-select:active,
+.config-field select.config-select:active,
+.select-wrapper select.config-select:active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    background-image: none !important;
+    border-color: var(--selection) !important;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2) !important;
+}
+
+.input-with-button {
+    display: flex;
+    gap: 8px;
+}
+
+.input-with-button .config-select {
+    flex: 1;
+}
+
+.input-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; /* Fixed width to prevent layout shifts */
+    min-width: 44px;
+    overflow: hidden;
+}
+
+/* Transform-based show/hide states */
+.input-button.hidden {
+    transform: scaleX(0);
+    width: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.input-button.visible {
+    transform: scaleX(1);
+}
+
+.input-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 102, 204, 0.4);
+    color: var(--selection);
+}
+
+.input-button i {
+    width: 16px;
+    height: 16px;
+}
+
+.format-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.format-input {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.placeholder-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.placeholder-button {
+    background: rgba(0, 102, 204, 0.1);
+    border: 1px solid rgba(0, 102, 204, 0.3);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--selection);
+    font-size: 0.75em;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.placeholder-button:hover {
+    background: rgba(0, 102, 204, 0.2);
+    border-color: var(--selection);
+    transform: translateY(-1px);
+}
+
+.color-input {
+    position: relative;
+}
+
+.info-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(0, 102, 204, 0.1);
+    border: 1px solid rgba(0, 102, 204, 0.2);
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+.tip-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--selection);
+    stroke-width: 2;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.tip-text {
+    font-size: 0.8em;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tip-text strong {
+    color: var(--selection);
+}
+
+.image-package-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.catalog-selection {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.catalog-selection .config-select {
+    flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .control-groups-container {
+        gap: 15px;
+    }
+
+    .control-group {
+        min-width: 250px;
+    }
+
+    .element-config-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .element-list-panel {
+        flex: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .control-groups-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .control-group {
+        min-width: auto;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .element-actions-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .element-action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }

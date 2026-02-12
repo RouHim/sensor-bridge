@@ -4,13 +4,13 @@ use sensor_core::ElementType;
 use serde::{Deserialize, Serialize};
 use serde_json::Error;
 
-use crate::config::AppConfig;
-use crate::{config, fonts, utils};
+use crate::config_file::AppConfig;
+use crate::{config_file, fonts, utils};
 
 /// Exports the current configuration to the specified file.
 pub fn export_configuration(file_path: String) {
     // Read the current config
-    let mut app_config: AppConfig = config::read_from_app_config();
+    let mut app_config: AppConfig = config_file::read();
 
     inline_files(&mut app_config);
 
@@ -28,8 +28,8 @@ pub fn export_configuration(file_path: String) {
 
 /// Inlines all files in the config as base64 encoded string.
 fn inline_files(app_config: &mut AppConfig) {
-    for network_device in app_config.network_devices.values_mut() {
-        for element in &mut network_device.display_config.elements {
+    for registered_client in app_config.display_clients.values_mut() {
+        for element in &mut registered_client.elements {
             match element.element_type {
                 ElementType::Text => {
                     // Inline font data
@@ -85,14 +85,14 @@ pub fn import_configuration(file_path: String) -> Result<AppConfig, Error> {
     let _ = fs::remove_dir_all(sensor_core::get_config_dir());
     let _ = fs::create_dir_all(sensor_core::get_config_dir());
 
-    for network_device in app_config.network_devices.values_mut() {
-        for element in &mut network_device.display_config.elements {
+    for registered_client in app_config.display_clients.values_mut() {
+        for element in &mut registered_client.elements {
             match element.element_type {
                 ElementType::Text => {
                     let text_config = element.text_config.as_mut().unwrap();
                     let font_family = &text_config.font_family;
                     if is_json(font_family) {
-                        let font_dto: FontDto = serde_json::from_str(font_family).unwrap();
+                        let font_dto: FontDto = serde_json::from_str(font_family)?;
                         fonts::install_font(&font_dto.name, &font_dto.data);
                         text_config.font_family = font_dto.name;
                     }

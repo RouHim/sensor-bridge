@@ -1,475 +1,987 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--suppress HtmlFormInputWithoutLabel -->
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>SensorBridge</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>SensorBridge</title>
 
-    <!-- Water css dark stylesheet -->
-    <link href="libs/water-css-dark/dark.css" rel="stylesheet">
+        <!-- Water css dark stylesheet -->
+        <link href="libs/modern-css-reset/modern-css-reset.css" rel="stylesheet" />
 
-    <!-- Coloris Color Picker -->
-    <link href="libs/coloris/coloris.min.css" rel="stylesheet"/>
-    <script src="libs/coloris/coloris.min.js">
-    </script>
+        <!-- Coloris Color Picker -->
+        <link href="libs/coloris/coloris.min.css" rel="stylesheet" />
+        <script src="libs/coloris/coloris.min.js"></script>
 
-    <!--Feather icons-->
-    <script src="libs/feather-icons/feather.min.js"></script>
+        <!--Feather icons-->
+        <script src="libs/feather-icons/feather.min.js"></script>
 
-    <!-- My extensions -->
-    <script defer src="script.js" type="module"></script>
-    <link href="style.css" rel="stylesheet"/>
-</head>
+        <!-- My extensions -->
+        <script defer src="script.js" type="module"></script>
+        <link href="style.css" rel="stylesheet" />
+    </head>
 
-<body>
-<div id="base-container">
-    <dialog id="sensor-selection-dialog" style="width: 80vw; height: 80vh; padding: 0; overflow: hidden">
-        <div id="sensor-selection-table-filter">
-            <input id="sensor-selection-table-filter-input" placeholder="Start typing to filter sensors..." type="text">
-        </div>
-        <table id="sensor-selection-table">
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Value</th>
-            </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </dialog>
-
-    <div id="master-pane">
-
-        <div class="flex-container center-horizontal">
-
-            <select id="main-network-ports-select" style="width: 250px; margin-right: 5px">
-            </select>
-
-            <button class="icon-button" id="btn-add-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Add a new network device">
-                <i data-feather="plus"></i>
-            </button>
-
-            <button class="icon-button" id="lcd-btn-save-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Save device configuration">
-                <i data-feather="save"></i>
-            </button>
-
-            <button class="icon-button" id="lcd-btn-remove-network-device" style="font-size: 2em; margin-right: 10px;"
-                    title="Remove device configuration">
-                <i data-feather="trash"></i>
-            </button>
-
-            <button class="icon-button" id="btn-lcd-toggle-live-preview" style="font-size: 2em; margin-right: 10px;"
-                    title="Open live preview">
-                <i data-feather="monitor"></i>
-            </button>
-
-            <button class="icon-button" id="btn-export-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Export configuration">
-                <i data-feather="external-link"></i>
-            </button>
-
-            <button class="icon-button" id="btn-import-config" style="font-size: 2em; margin-right: 10px;"
-                    title="Import configuration">
-                <i data-feather="folder"></i>
-            </button>
-
-            <label class="kill-switch flex-item" id="kill-switch-input" title="Enable or disable the display">
-                <input class="kill-switch-input" id="main-chk-transfer-active" type="checkbox">
-                <i class="kill-switch-icon" data-feather="power"></i>
-            </label>
-
-        </div>
-
-        <hr/>
-
-        <div id="lcd-panel" style="display: none;">
-
-            <div class="flex-container center-horizontal" id="device-config">
-                <label for="lcd-txt-device-name" style="margin-right: 5px">Device name:</label>
-                <input id="lcd-txt-device-name" style="width: 150px;" title="Enter a simple name of your device">
-
-                <label for="lcd-txt-device-network-address" style="margin-left: 25px; margin-right: 5px;">Network
-                    address:</label>
-                <input id="lcd-txt-device-network-address" style="width: 150px;"
-                       title="IP Address or Hostname, e.g.: '192.168.0.156' or 'some-device.local'">
-
-                <div class="flex-container" id="lcd-config" style="margin-left: 25px">
-                    <label for="lcd-txt-resolution-width" style="margin-right: 5px">LCD Resolution:</label>
-                    <input id="lcd-txt-resolution-width" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="1024">
-                    <div style="margin-left: 5px; margin-right: 5px">x</div>
-                    <input id="lcd-txt-resolution-height" max="2147483647" min="0" style="width: 75px;" type="number"
-                           value="600">
+    <body>
+        <div id="base-container">
+            <dialog
+                id="sensor-selection-dialog"
+                style="width: 80vw; height: 80vh; padding: 0; overflow: hidden"
+            >
+                <div id="sensor-selection-table-filter">
+                    <input
+                        id="sensor-selection-table-filter-input"
+                        placeholder="Start typing to filter sensors..."
+                        type="text"
+                    />
                 </div>
-            </div>
+                <table id="sensor-selection-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </dialog>
 
-            <div class="center-horizontal">
-                <div id="lcd-designer-pane" style="position: relative; margin-bottom: 10px;">
-                </div>
-
-                <div>
-                    <div id="lcd-designer-control-pad-up">
-                        <div class="icon-button" id="lcd-btn-designer-control-pad-up">
-                            <i data-feather="arrow-up"></i>
+            <div id="master-pane">
+                <div class="control-groups-container">
+                    <!-- Client Management Controls Group -->
+                    <div class="control-group">
+                        <div class="control-group-header">
+                            <i data-feather="user" class="control-group-icon"></i>
+                            <span class="control-group-title">Client Management</span>
+                        </div>
+                        <div class="control-group-body">
+                            <div class="input-with-buttons">
+                                <div class="select-wrapper">
+                                    <select
+                                        id="main-registered-clients-select"
+                                        class="control-select client-select"
+                                        title="Select a registered client"
+                                    >
+                                        <option value="">Select a client...</option>
+                                    </select>
+                                </div>
+                                <div class="action-buttons">
+                                    <button
+                                        class="action-button compact"
+                                        id="btn-refresh-clients"
+                                        title="Refresh registered clients"
+                                    >
+                                        <i data-feather="refresh-cw"></i>
+                                    </button>
+                                    <button
+                                        class="action-button compact"
+                                        id="lcd-btn-remove-client"
+                                        title="Remove registered client"
+                                    >
+                                        <i data-feather="trash"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div id="lcd-designer-control-pad-left-right">
-                        <div class="icon-button" id="lcd-btn-designer-control-pad-left">
-                            <i data-feather="arrow-left"></i>
+                    <!-- Application Settings Controls Group -->
+                    <div class="control-group">
+                        <div class="control-group-header">
+                            <i data-feather="settings" class="control-group-icon"></i>
+                            <span class="control-group-title">Application Settings</span>
                         </div>
-                        <button data-move-unit="1" id="lcd-btn-designer-control-pad-move-unit">
-                            1px
-                        </button>
-                        <div class="icon-button" id="lcd-btn-designer-control-pad-right">
-                            <i data-feather="arrow-right"></i>
+                        <div class="control-group-body">
+                            <!-- HTTP Server Settings -->
+                            <div class="setting-row">
+                                <label for="http-port-input" class="control-label"
+                                    >Server Port:</label
+                                >
+                                <div class="input-with-button">
+                                    <input
+                                        id="http-port-input"
+                                        type="number"
+                                        min="1024"
+                                        max="65535"
+                                        value="55555"
+                                        class="control-input port-input"
+                                        title="HTTP server port (1024-65535)"
+                                    />
+                                    <button
+                                        id="btn-apply-port-change"
+                                        class="input-button hidden"
+                                        title="Apply port change and restart server"
+                                    >
+                                        <i data-feather="check"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Configuration Management -->
+                            <div class="setting-row">
+                                <div class="action-buttons">
+                                    <button
+                                        class="action-button"
+                                        id="btn-export-config"
+                                        title="Export configuration"
+                                    >
+                                        <i data-feather="external-link"></i>
+                                    </button>
+                                    <button
+                                        class="action-button"
+                                        id="btn-import-config"
+                                        title="Import configuration"
+                                    >
+                                        <i data-feather="folder"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div id="lcd-panel" style="display: none">
+                    <!-- Client Configuration Header -->
+                    <div class="client-config-header" id="client-config-header">
+                        <div class="header-left">
+                            <div
+                                class="client-status-indicator"
+                                id="client-status-container"
+                                style="display: none"
+                            >
+                                <div class="status-dot" id="client-status-dot"></div>
+                                <span id="client-status-text">Inactive</span>
+                                <label class="status-toggle">
+                                    <input type="checkbox" id="client-active-toggle" />
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="header-action-buttons">
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-save-client-config"
+                                    title="Save client configuration"
+                                >
+                                    <i data-feather="save"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="btn-lcd-toggle-live-preview"
+                                    title="Open live preview"
+                                >
+                                    <i data-feather="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="header-right">
+                            <i
+                                data-feather="chevron-down"
+                                class="collapse-icon"
+                                id="collapse-icon"
+                            ></i>
                         </div>
                     </div>
 
-                    <div id="lcd-designer-control-pad-down">
-                        <div class="icon-button" id="lcd-btn-designer-control-pad-down">
-                            <i data-feather="arrow-down"></i>
+                    <!-- Client Property Cards Grid -->
+                    <div
+                        class="client-property-grid collapsed"
+                        id="client-info-content"
+                        style="display: none"
+                    >
+                        <!-- Display Name Card -->
+                        <div class="property-card">
+                            <div class="property-card-header">
+                                <i data-feather="user" class="property-icon"></i>
+                                <span class="property-title">Display Name</span>
+                            </div>
+                            <div class="property-card-body">
+                                <input
+                                    id="lcd-txt-client-name"
+                                    type="text"
+                                    placeholder="Enter client name"
+                                    class="property-input"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- IP Address Card -->
+                        <div class="property-card">
+                            <div class="property-card-header">
+                                <i data-feather="wifi" class="property-icon"></i>
+                                <span class="property-title">IP Address</span>
+                            </div>
+                            <div class="property-card-body">
+                                <span class="property-value" id="client-info-ip">-</span>
+                            </div>
+                        </div>
+
+                        <!-- MAC Address Card -->
+                        <div class="property-card">
+                            <div class="property-card-header">
+                                <i data-feather="shield" class="property-icon"></i>
+                                <span class="property-title">MAC Address</span>
+                            </div>
+                            <div class="property-card-body">
+                                <span class="property-value" id="client-info-mac">-</span>
+                            </div>
+                        </div>
+
+                        <!-- Resolution Card -->
+                        <div class="property-card">
+                            <div class="property-card-header">
+                                <i data-feather="monitor" class="property-icon"></i>
+                                <span class="property-title">Resolution</span>
+                            </div>
+                            <div class="property-card-body">
+                                <span class="property-value" id="resolution-display"
+                                    >1920 × 1080 px</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-config-placeholder" id="client-info-placeholder">
+                        <div class="placeholder-icon">
+                            <i data-feather="monitor"></i>
+                        </div>
+                        <div class="placeholder-text">
+                            <strong>No client selected</strong>
+                            <br />Choose a client from the dropdown above to configure
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <hr>
+                <div class="center-horizontal">
+                    <div
+                        id="lcd-designer-pane"
+                        style="position: relative; margin-bottom: 10px"
+                    ></div>
 
-            <div class="row-flex-container" id="lcd-elements-detail-editor">
-                <div style="width: 25%; margin-right: 10px; padding-right: 10px; border-right: #ccc solid 1px;">
-                    <ul id="lcd-designer-placed-elements">
-                    </ul>
+                    <div>
+                        <div id="lcd-designer-control-pad-up">
+                            <div class="icon-button" id="lcd-btn-designer-control-pad-up">
+                                <i data-feather="arrow-up"></i>
+                            </div>
+                        </div>
+
+                        <div id="lcd-designer-control-pad-left-right">
+                            <div class="icon-button" id="lcd-btn-designer-control-pad-left">
+                                <i data-feather="arrow-left"></i>
+                            </div>
+                            <button data-move-unit="1" id="lcd-btn-designer-control-pad-move-unit">
+                                1px
+                            </button>
+                            <div class="icon-button" id="lcd-btn-designer-control-pad-right">
+                                <i data-feather="arrow-right"></i>
+                            </div>
+                        </div>
+
+                        <div id="lcd-designer-control-pad-down">
+                            <div class="icon-button" id="lcd-btn-designer-control-pad-down">
+                                <i data-feather="arrow-down"></i>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="lcd-sensor-entry-config" style="width: 75%">
-
-                    <button class="icon-button" id="lcd-btn-move-element-up"
-                            title="Move element up in the list (CTRL+UP)">
-                        <i data-feather="arrow-up"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-move-element-down"
-                            title="Move element down in the list (CTRL+DOWN)">
-                        <i data-feather="arrow-down"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-add-element"
-                            title="Add sensor configuration (CTRL+N)">
-                        <i data-feather="plus"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-remove-element"
-                            title="Remove sensor configuration (CTRL+DEL)">
-                        <i data-feather="trash"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-save-element" title="Save sensor configuration (CTRL+S)">
-                        <i data-feather="save"></i>
-                    </button>
-                    <button class="icon-button" id="lcd-btn-duplicate-element"
-                            title="Duplicate sensor configuration (CTRL+D)">
-                        <i data-feather="copy"></i>
-                    </button>
-
-                    <table>
-                        <colgroup>
-                            <col span="1" style="width: 200px">
-                            <col span="1">
-                        </colgroup>
-                        <tbody>
-                        <tr>
-                            <td>Name:</td>
-                            <td><input id="lcd-txt-element-name" type="text" value=""></td>
-                        </tr>
-                        <tr>
-                            <td>Typ:</td>
-                            <td><select id="lcd-cmb-element-type">
-                                <option selected value="text">Text</option>
-                                <option value="static-image">Image</option>
-                                <option value="graph">Graph</option>
-                                <option value="conditional-image">Gauge / Conditional image</option>
-                            </select></td>
-                        </tr>
-                        <tr>
-                            <td>Position X:</td>
-                            <td><input id="lcd-txt-element-position-x" max="2147483647" min="0" type="number"
-                                       value="0"></td>
-                        </tr>
-                        <tr>
-                            <td>Position Y:</td>
-                            <td><input id="lcd-txt-element-position-y" max="2147483647" min="0" type="number"
-                                       value="0"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-
-                    <table id="lcd-text-config" style="display: inherit;">
-                        <colgroup>
-                            <col span="1" style="width: 200px">
-                            <col span="1">
-                        </colgroup>
-                        <tbody>
-                        <tr>
-                            <td>Sensor:</td>
-                            <td>
-                                <select id="lcd-cmb-sensor-id-selection" style="float: left"></select>
-                                <button class="icon-button" id="lcd-text-config-btn-select-sensor-id"
-                                        style="float: left; margin-top: 5px; margin-left: 5px;"
-                                        title="Show extended sensor selection dialog">
-                                    <i data-feather="external-link"></i>
-                                </button>
-                            </td>
-                            <td>
-                                <select id="lcd-cmb-sensor-value-modifier" title="Modifies the {value} placeholder">
-                                    <option selected value="none">None</option>
-                                    <option value="min">Min</option>
-                                    <option value="max">Max</option>
-                                    <option value="avg">Avg</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Format:</td>
-                            <td><input id="lcd-txt-element-text-format" type="text" value="{value} {unit}"></td>
-                            <td>
-                                <button id="lcd-btn-add-value-placeholder"
-                                        title="Add {value} placeholder to the format string">
-                                    {value}
-                                </button>
-                                <button id="lcd-btn-add-unit-placeholder"
-                                        title="Add {unit} placeholder to the format string">
-                                    {unit}
-                                </button>
-                                <button id="lcd-btn-add-value-avg-placeholder"
-                                        title="Add {value-avg} placeholder to the format string">
-                                    {value-avg}
-                                </button>
-                                <button id="lcd-btn-add-value-min-placeholder"
-                                        title="Add {value-min} placeholder to the format string">
-                                    {value-min}
-                                </button>
-                                <button id="lcd-btn-add-value-max-placeholder"
-                                        title="Add {value-max} placeholder to the format string">
-                                    {value-max}
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Font:</td>
-                            <td><select id="lcd-cmb-element-font-family"></select></td>
-                        </tr>
-                        <tr>
-                            <td>Font size:</td>
-                            <td><input id="lcd-txt-element-font-size" max="2147483647" min="0" type="number" value="12">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Font color:</td>
-                            <td>
-                                <input data-coloris id="lcd-txt-element-font-color" type="text" value="#ffffffff">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Width:</td>
-                            <td><input id="lcd-txt-element-width" max="2147483647" min="0" type="number" value="100">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Height:</td>
-                            <td><input id="lcd-txt-element-height" max="2147483647" min="0" type="number" value="20">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Alignment:</td>
-                            <td><select id="lcd-cmb-element-text-alignment">
-                                <option selected value="left">Left</option>
-                                <option value="center">Center</option>
-                                <option value="right">Right</option>
-                            </select></td>
-                        </tr>
-                        </tbody>
-                    </table>
-
-                    <table id="lcd-static-image-config" style="display: none;">
-                        <colgroup>
-                            <col span="1" style="width: 200px">
-                            <col span="1">
-                        </colgroup>
-                        <tbody>
-                        <tr>
-                            <td>Image:</td>
-                            <td>
-                                <input id="lcd-txt-element-static-image-file" style="float: left">
-                                <button class="icon-button" id="lcd-btn-static-image-select"
-                                        style="float: left; margin-top: 5px; margin-left: 5px;">
-                                    <i data-feather="folder"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Width:</td>
-                            <td><input id="lcd-txt-element-static-image-width" max="2147483647" min="0"
-                                       type="number"
-                                       value="100"></td>
-                        </tr>
-                        <tr>
-                            <td>Height:</td>
-                            <td><input id="lcd-txt-element-static-image-height" max="2147483647" min="0"
-                                       type="number" value="100"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-
-                    <table id="lcd-graph-config" style="display: none;">
-                        <colgroup>
-                            <col span="1" style="width: 200px">
-                            <col span="1">
-                        </colgroup>
-                        <tbody>
-                        <tr>
-                            <td>Sensor:</td>
-                            <td>
-                                <select id="lcd-cmb-number-sensor-id-selection" style="float: left"></select>
-                                <button class="icon-button" id="lcd-graph-config-btn-select-sensor-id"
-                                        style="float: left; margin-top: 5px; margin-left: 5px;"
-                                        title="Show extended sensor selection dialog">
-                                    <i data-feather="external-link"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr title="If not set manually, the upper and lower graph bounds are automatically calculated from the sensor values.">
-                            <td>Min. sensor value:</td>
-                            <td><input id="lcd-txt-element-graph-min-value" max="2147483647" min="0" type="number"
-                                       value="">
-                            </td>
-                        </tr>
-                        <tr title="If not set manually, the upper and lower graph bounds are automatically calculated from the sensor values.">
-                            <td>Max. sensor value:</td>
-                            <td><input id="lcd-txt-element-graph-max-value" max="2147483647" min="0" type="number"
-                                       value="">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Graph width:</td>
-                            <td><input id="lcd-graph-width" max="2147483647" min="0" type="number"
-                                       value="200"></td>
-                        </tr>
-                        <tr>
-                            <td>Graph height:</td>
-                            <td><input id="lcd-graph-height" max="2147483647" min="0" type="number"
-                                       value="50"></td>
-                        </tr>
-                        <tr>
-                            <td>Graph type:</td>
-                            <td><select id="lcd-graph-type">
-                                <option selected value="line">Line</option>
-                                <option value="line-fill">Line filled</option>
-                            </select></td>
-                        </tr>
-                        <tr>
-                            <td>Graph color:</td>
-                            <td>
-                                <input data-coloris id="lcd-graph-color" type="text" value="#000000ff">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Graph stroke width:</td>
-                            <td><input id="lcd-graph-stroke-width" max="2147483647" min="0" type="number"
-                                       value="1"></td>
-                        </tr>
-                        <tr>
-                            <td>Graph background color:</td>
-                            <td>
-                                <input data-coloris id="lcd-graph-background-color" type="text" value="#00000000">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Graph border color:</td>
-                            <td>
-                                <input data-coloris id="lcd-graph-border-color" type="text" value="#ffffff00">
-                            </td>
-                        </tr>
-
-                        </tbody>
-                    </table>
-
-                    <table id="lcd-conditional-image-config" style="display: none;">
-                        <colgroup>
-                            <col span="1" style="width: 200px">
-                            <col span="1">
-                        </colgroup>
-                        <tbody>
-                        <tr>
-                            <td>Sensor:</td>
-                            <td>
-                                <select id="lcd-cmb-conditional-image-sensor-id-selection" style="float: left"></select>
-                                <button class="icon-button" id="lcd-conditional-image-config-btn-select-sensor-id"
-                                        style="float: left; margin-top: 5px; margin-left: 5px;"
-                                        title="Show extended sensor selection dialog">
-                                    <i data-feather="external-link"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Image Package:</td>
-                            <td>
-                                <input id="lcd-txt-element-conditional-image-images-path" style="float: left">
-                                <button class="icon-button" id="lcd-btn-conditional-image-select"
-                                        style="float: left; margin-top: 5px; margin-left: 5px;">
-                                    <i data-feather="folder"></i>
-                                </button>
-                                <button class="icon-button" id="lcd-btn-conditional-image-info"
-                                        style="float: left; margin-top: 5px; margin-left: 5px;">
-                                    <i data-feather="info"></i>
-                                </button>
-                                <button class="icon-button" id="lcd-btn-conditional-apply-catalog-entry"
-                                        title="Select entry from the repository"
-                                        style="float: left; margin-top: 5px; margin-left: 25px;">
-                                    <i data-feather="chevron-left"></i>
-                                </button>
-                                <select id="lcd-cmb-conditional-image-catalog-entry-selection"
-                                        title="Select an package from the gauge repository."
-                                        style="float: left; margin-left: 5px;">
-                                </select>
-                            </td>
-                        </tr>
-                        <tr id="lcd-conditional-image-min-value-row">
-                            <td>Min. sensor value:</td>
-                            <td><input id="lcd-txt-element-conditional-image-min-value" max="2147483647" min="0"
-                                       type="number"
-                                       value="0"></td>
-                        </tr>
-                        <tr id="lcd-conditional-image-max-value-row">
-                            <td>Max. sensor value:</td>
-                            <td><input id="lcd-txt-element-conditional-image-max-value" max="2147483647" min="0"
-                                       type="number"
-                                       value="100"></td>
-                        </tr>
-                        <tr>
-                            <td>Image width:</td>
-                            <td><input id="lcd-txt-element-conditional-image-width" max="2147483647" min="0"
-                                       type="number"
-                                       value="100"></td>
-                        </tr>
-                        <tr>
-                            <td>Image height:</td>
-                            <td><input id="lcd-txt-element-conditional-image-height" max="2147483647" min="0"
-                                       type="number" value="100"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-
-
+                <!-- Element Configuration Section -->
+                <div class="section-header">
+                    <div class="section-header-left">
+                        <i data-feather="grid" class="section-icon"></i>
+                        <h3>Element Configuration</h3>
+                    </div>
                 </div>
 
+                <div class="element-config-container" id="lcd-elements-detail-editor">
+                    <!-- Element List Panel -->
+                    <div class="element-list-panel">
+                        <div class="panel-header">
+                            <i data-feather="menu" class="panel-icon"></i>
+                            <span class="panel-title">Elements</span>
+                        </div>
+                        <div class="panel-body">
+                            <ul id="lcd-designer-placed-elements"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Element Configuration Panel -->
+                    <div class="element-config-panel" id="lcd-sensor-entry-config">
+                        <!-- Element Actions -->
+                        <div class="element-actions-header">
+                            <div class="element-action-buttons">
+                                <button
+                                    class="action-button compact primary"
+                                    id="lcd-btn-add-element"
+                                    title="Add element (CTRL+N)"
+                                >
+                                    <i data-feather="plus"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-duplicate-element"
+                                    title="Duplicate element (CTRL+D)"
+                                >
+                                    <i data-feather="copy"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-save-element"
+                                    title="Save element (CTRL+S)"
+                                >
+                                    <i data-feather="save"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-move-element-up"
+                                    title="Move element up (CTRL+UP)"
+                                >
+                                    <i data-feather="arrow-up"></i>
+                                </button>
+                                <button
+                                    class="action-button compact"
+                                    id="lcd-btn-move-element-down"
+                                    title="Move element down (CTRL+DOWN)"
+                                >
+                                    <i data-feather="arrow-down"></i>
+                                </button>
+                                <button
+                                    class="action-button compact danger"
+                                    id="lcd-btn-remove-element"
+                                    title="Remove element (CTRL+DEL)"
+                                >
+                                    <i data-feather="trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Basic Element Configuration -->
+                        <div class="config-section">
+                            <div class="config-section-header">
+                                <i data-feather="settings" class="config-icon"></i>
+                                <span class="config-title">Basic Properties</span>
+                            </div>
+                            <div class="config-grid">
+                                <div class="config-field">
+                                    <label class="config-label">Name</label>
+                                    <input
+                                        id="lcd-txt-element-name"
+                                        type="text"
+                                        value=""
+                                        class="config-input"
+                                    />
+                                </div>
+                                <div class="config-field">
+                                    <label class="config-label">Type</label>
+                                    <div class="select-wrapper">
+                                        <select id="lcd-cmb-element-type" class="config-select">
+                                            <option selected value="text">Text</option>
+                                            <option value="static-image">Image</option>
+                                            <option value="graph">Graph</option>
+                                            <option value="conditional-image">
+                                                Gauge / Conditional image
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="config-field">
+                                    <label class="config-label">Position X</label>
+                                    <input
+                                        id="lcd-txt-element-position-x"
+                                        max="2147483647"
+                                        min="0"
+                                        type="number"
+                                        value="10"
+                                        class="config-input"
+                                    />
+                                </div>
+                                <div class="config-field">
+                                    <label class="config-label">Position Y</label>
+                                    <input
+                                        id="lcd-txt-element-position-y"
+                                        max="2147483647"
+                                        min="0"
+                                        type="number"
+                                        value="10"
+                                        class="config-input"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Element Configuration -->
+                        <div id="lcd-text-config" class="config-section" style="display: inherit">
+                            <div class="config-section-header">
+                                <i data-feather="edit-2" class="config-icon"></i>
+                                <span class="config-title">Text Configuration</span>
+                            </div>
+
+                            <!-- Sensor Selection -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="activity" class="subsection-icon"></i>
+                                    <span class="subsection-title">Data Source</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Sensor</label>
+                                        <div class="input-with-button">
+                                            <div class="select-wrapper">
+                                                <select
+                                                    id="lcd-cmb-sensor-id-selection"
+                                                    class="config-select"
+                                                    title="Select a sensor"
+                                                ></select>
+                                            </div>
+                                            <button
+                                                class="input-button"
+                                                id="lcd-text-config-btn-select-sensor-id"
+                                                title="Browse sensors"
+                                            >
+                                                <i data-feather="external-link"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Value Modifier</label>
+                                        <select
+                                            id="lcd-cmb-sensor-value-modifier"
+                                            class="config-select"
+                                            title="Modifies the {value} placeholder"
+                                        >
+                                            <option selected value="none">None</option>
+                                            <option value="min">Min</option>
+                                            <option value="max">Max</option>
+                                            <option value="avg">Avg</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Text Formatting -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="edit-2" class="subsection-icon"></i>
+                                    <span class="subsection-title">Text Formatting</span>
+                                </div>
+                                <div class="config-field full-width">
+                                    <label class="config-label">Format String</label>
+                                    <div class="format-input-container">
+                                        <input
+                                            id="lcd-txt-element-text-format"
+                                            type="text"
+                                            value="{value} {unit}"
+                                            class="config-input format-input"
+                                        />
+                                        <div class="placeholder-buttons">
+                                            <button
+                                                class="placeholder-button"
+                                                id="lcd-btn-add-value-placeholder"
+                                                title="Add {value} placeholder"
+                                            >
+                                                {value}
+                                            </button>
+                                            <button
+                                                class="placeholder-button"
+                                                id="lcd-btn-add-unit-placeholder"
+                                                title="Add {unit} placeholder"
+                                            >
+                                                {unit}
+                                            </button>
+                                            <button
+                                                class="placeholder-button"
+                                                id="lcd-btn-add-value-avg-placeholder"
+                                                title="Add {value-avg} placeholder"
+                                            >
+                                                {avg}
+                                            </button>
+                                            <button
+                                                class="placeholder-button"
+                                                id="lcd-btn-add-value-min-placeholder"
+                                                title="Add {value-min} placeholder"
+                                            >
+                                                {min}
+                                            </button>
+                                            <button
+                                                class="placeholder-button"
+                                                id="lcd-btn-add-value-max-placeholder"
+                                                title="Add {value-max} placeholder"
+                                            >
+                                                {max}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Typography -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="edit-2" class="subsection-icon"></i>
+                                    <span class="subsection-title">Typography</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Font Family</label>
+                                        <select
+                                            id="lcd-cmb-element-font-family"
+                                            class="config-select"
+                                        ></select>
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Font Size</label>
+                                        <input
+                                            id="lcd-txt-element-font-size"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="12"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Font Color</label>
+                                        <input
+                                            data-coloris
+                                            id="lcd-txt-element-font-color"
+                                            type="text"
+                                            value="#ffffffff"
+                                            class="config-input color-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Alignment</label>
+                                        <select
+                                            id="lcd-cmb-element-text-alignment"
+                                            class="config-select"
+                                        >
+                                            <option selected value="left">Left</option>
+                                            <option value="center">Center</option>
+                                            <option value="right">Right</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Size & Position -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="maximize" class="subsection-icon"></i>
+                                    <span class="subsection-title">Dimensions</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Width</label>
+                                        <input
+                                            id="lcd-txt-element-width"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="100"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Height</label>
+                                        <input
+                                            id="lcd-txt-element-height"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="20"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Static Image Configuration -->
+                        <div
+                            id="lcd-static-image-config"
+                            class="config-section"
+                            style="display: none"
+                        >
+                            <div class="config-section-header">
+                                <i data-feather="image" class="config-icon"></i>
+                                <span class="config-title">Image Configuration</span>
+                            </div>
+
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="file" class="subsection-icon"></i>
+                                    <span class="subsection-title">Image Source</span>
+                                </div>
+                                <div class="config-field full-width">
+                                    <label class="config-label">Image File</label>
+                                    <div class="input-with-button">
+                                        <input
+                                            id="lcd-txt-element-static-image-file"
+                                            class="config-input"
+                                            placeholder="Select an image file..."
+                                        />
+                                        <button
+                                            class="input-button"
+                                            id="lcd-btn-static-image-select"
+                                            title="Browse for image file"
+                                        >
+                                            <i data-feather="folder"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="maximize" class="subsection-icon"></i>
+                                    <span class="subsection-title">Dimensions</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Width</label>
+                                        <input
+                                            id="lcd-txt-element-static-image-width"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="100"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Height</label>
+                                        <input
+                                            id="lcd-txt-element-static-image-height"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="100"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Graph Configuration -->
+                        <div id="lcd-graph-config" class="config-section" style="display: none">
+                            <div class="config-section-header">
+                                <i data-feather="bar-chart" class="config-icon"></i>
+                                <span class="config-title">Graph Configuration</span>
+                            </div>
+
+                            <!-- Data Source -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="activity" class="subsection-icon"></i>
+                                    <span class="subsection-title">Data Source</span>
+                                </div>
+                                <div class="config-field">
+                                    <label class="config-label">Sensor</label>
+                                    <div class="input-with-button">
+                                        <select
+                                            id="lcd-cmb-number-sensor-id-selection"
+                                            class="config-select"
+                                            title="Select a numeric sensor"
+                                        ></select>
+                                        <button
+                                            class="input-button"
+                                            id="lcd-graph-config-btn-select-sensor-id"
+                                            title="Browse sensors"
+                                        >
+                                            <i data-feather="external-link"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Data Range -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="bar-chart" class="subsection-icon"></i>
+                                    <span class="subsection-title">Data Range</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Min Value</label>
+                                        <input
+                                            id="lcd-txt-element-graph-min-value"
+                                            type="number"
+                                            value=""
+                                            class="config-input"
+                                            placeholder="Auto"
+                                            title="Leave empty for auto-scaling"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Max Value</label>
+                                        <input
+                                            id="lcd-txt-element-graph-max-value"
+                                            type="number"
+                                            value=""
+                                            class="config-input"
+                                            placeholder="Auto"
+                                            title="Leave empty for auto-scaling"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="info-tip">
+                                    <i data-feather="info" class="tip-icon"></i>
+                                    <span class="tip-text">
+                                        <strong>Auto-scaling:</strong> Leave min/max values empty to
+                                        automatically derive graph bounds from sensor data
+                                        dynamically.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Dimensions -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="maximize" class="subsection-icon"></i>
+                                    <span class="subsection-title">Dimensions</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Width</label>
+                                        <input
+                                            id="lcd-graph-width"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="200"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Height</label>
+                                        <input
+                                            id="lcd-graph-height"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="50"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Styling -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="sliders" class="subsection-icon"></i>
+                                    <span class="subsection-title">Styling</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Graph Type</label>
+                                        <select id="lcd-graph-type" class="config-select">
+                                            <option selected value="line">Line</option>
+                                            <option value="line-fill">Line Filled</option>
+                                        </select>
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Stroke Width</label>
+                                        <input
+                                            id="lcd-graph-stroke-width"
+                                            max="20"
+                                            min="1"
+                                            type="number"
+                                            value="1"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Graph Color</label>
+                                        <input
+                                            data-coloris
+                                            id="lcd-graph-color"
+                                            type="text"
+                                            value="#000000ff"
+                                            class="config-input color-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Background Color</label>
+                                        <input
+                                            data-coloris
+                                            id="lcd-graph-background-color"
+                                            type="text"
+                                            value="#00000000"
+                                            class="config-input color-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Border Color</label>
+                                        <input
+                                            data-coloris
+                                            id="lcd-graph-border-color"
+                                            type="text"
+                                            value="#ffffff00"
+                                            class="config-input color-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conditional Image Configuration -->
+                        <div
+                            id="lcd-conditional-image-config"
+                            class="config-section"
+                            style="display: none"
+                        >
+                            <div class="config-section-header">
+                                <i data-feather="target" class="config-icon"></i>
+                                <span class="config-title">Conditional Image Configuration</span>
+                            </div>
+
+                            <!-- Data Source -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="activity" class="subsection-icon"></i>
+                                    <span class="subsection-title">Data Source</span>
+                                </div>
+                                <div class="config-field">
+                                    <label class="config-label">Sensor</label>
+                                    <div class="input-with-button">
+                                        <select
+                                            id="lcd-cmb-conditional-image-sensor-id-selection"
+                                            class="config-select"
+                                            title="Select a numeric sensor"
+                                        ></select>
+                                        <button
+                                            class="input-button"
+                                            id="lcd-conditional-image-config-btn-select-sensor-id"
+                                            title="Browse sensors"
+                                        >
+                                            <i data-feather="external-link"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Image Package -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="box" class="subsection-icon"></i>
+                                    <span class="subsection-title">Image Package</span>
+                                </div>
+                                <div class="config-field full-width">
+                                    <label class="config-label">Image Package Path</label>
+                                    <div class="image-package-controls">
+                                        <div class="input-with-button">
+                                            <input
+                                                id="lcd-txt-element-conditional-image-images-path"
+                                                class="config-input"
+                                                placeholder="Select image package folder..."
+                                            />
+                                            <button
+                                                class="input-button"
+                                                id="lcd-btn-conditional-image-select"
+                                                title="Browse for image package"
+                                            >
+                                                <i data-feather="folder"></i>
+                                            </button>
+                                            <button
+                                                class="input-button"
+                                                id="lcd-btn-conditional-image-info"
+                                                title="Package information"
+                                            >
+                                                <i data-feather="info"></i>
+                                            </button>
+                                        </div>
+                                        <div class="catalog-selection">
+                                            <select
+                                                id="lcd-cmb-conditional-image-catalog-entry-selection"
+                                                class="config-select"
+                                                title="Select from gauge repository"
+                                            >
+                                                <option value="">Choose from repository...</option>
+                                            </select>
+                                            <button
+                                                class="input-button"
+                                                id="lcd-btn-conditional-apply-catalog-entry"
+                                                title="Apply selected repository entry"
+                                            >
+                                                <i data-feather="arrow-left"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Value Range -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="bar-chart" class="subsection-icon"></i>
+                                    <span class="subsection-title">Value Range</span>
+                                </div>
+                                <div class="config-grid" id="lcd-conditional-image-min-value-row">
+                                    <div class="config-field">
+                                        <label class="config-label">Min Value</label>
+                                        <input
+                                            id="lcd-txt-element-conditional-image-min-value"
+                                            max="2147483647"
+                                            min="0"
+                                            type="number"
+                                            value="0"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div
+                                        class="config-field"
+                                        id="lcd-conditional-image-max-value-row"
+                                    >
+                                        <label class="config-label">Max Value</label>
+                                        <input
+                                            id="lcd-txt-element-conditional-image-max-value"
+                                            max="2147483647"
+                                            min="0"
+                                            type="number"
+                                            value="100"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dimensions -->
+                            <div class="config-subsection">
+                                <div class="config-subsection-header">
+                                    <i data-feather="maximize" class="subsection-icon"></i>
+                                    <span class="subsection-title">Dimensions</span>
+                                </div>
+                                <div class="config-grid">
+                                    <div class="config-field">
+                                        <label class="config-label">Width</label>
+                                        <input
+                                            id="lcd-txt-element-conditional-image-width"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="100"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                    <div class="config-field">
+                                        <label class="config-label">Height</label>
+                                        <input
+                                            id="lcd-txt-element-conditional-image-height"
+                                            max="2147483647"
+                                            min="1"
+                                            type="number"
+                                            value="100"
+                                            class="config-input"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-    </div>
-</div>
-<script>
-    feather.replace()
-</script>
-</body>
+    </body>
 </html>
