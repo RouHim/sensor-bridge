@@ -12,15 +12,7 @@ use systemstat::platform::PlatformImpl;
 use systemstat::IpAddr::{V4, V6};
 use systemstat::{Platform, System};
 
-use crate::{sensor, utils};
-
-pub struct SystemStatSensor {}
-
-impl sensor::SensorProvider for SystemStatSensor {
-    fn get_name(&self) -> String {
-        "SystemStat".to_string()
-    }
-}
+use crate::utils;
 
 pub fn get_sensor_values() -> Vec<SensorValue> {
     let system_stat = System::new();

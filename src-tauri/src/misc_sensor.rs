@@ -1,15 +1,5 @@
 use sensor_core::{SensorType, SensorValue};
 
-use crate::sensor;
-
-pub struct SystemSensor {}
-
-impl sensor::SensorProvider for SystemSensor {
-    fn get_name(&self) -> String {
-        "System".to_string()
-    }
-}
-
 pub fn get_sensor_values() -> Vec<SensorValue> {
     let sensors_requests = [get_system_time];
 

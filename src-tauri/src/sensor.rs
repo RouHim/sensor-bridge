@@ -12,10 +12,6 @@ use crate::{
     linux_amdgpu, linux_lm_sensors, linux_system_sensors, misc_sensor, SENSOR_VALUE_HISTORY_SIZE,
 };
 
-pub trait SensorProvider {
-    fn get_name(&self) -> String;
-}
-
 pub fn read_all_sensor_values(
     sensor_value_history: &Arc<Mutex<Vec<Vec<SensorValue>>>>,
     static_sensor_values: &Arc<Vec<SensorValue>>,
