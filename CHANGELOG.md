@@ -1,3 +1,18 @@
+# [0.42.0](https://github.com/RouHim/sensor-bridge/compare/0.41.17...0.42.0) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** use webkit2gtk 4.1 dev libs and patch vulnerable crates ([ea19a7b](https://github.com/RouHim/sensor-bridge/commit/ea19a7b3a86210d9b2567fc7c612cbe3583c5f3e))
+* **fonts:** avoid rust-font-loader UB abort for unknown fonts ([bb4a2a3](https://github.com/RouHim/sensor-bridge/commit/bb4a2a3a40dd22b60b5e2b4a9114cbc65048e1ae))
+
+
+### Features
+
+* remove Windows support and update documentation for Linux-only functionality ([e8e696f](https://github.com/RouHim/sensor-bridge/commit/e8e696fb205b494248775a1b7fb5050736c893f6))
+* **tapestry:** update Tauri window handling and improve system tray functionality ([f10a5d4](https://github.com/RouHim/sensor-bridge/commit/f10a5d42173863248a9b32afc8e064fb696e7d66))
+* **tauri:** update Tauri and plugins to version 2, enhance configuration ([6262b97](https://github.com/RouHim/sensor-bridge/commit/6262b979797816e99e7668bd2fbe128c9036bd02))
+
 ## [0.41.17](https://github.com/RouHim/sensor-bridge/compare/0.41.16...0.41.17) (2024-03-04)
 
 ## [0.41.16](https://github.com/RouHim/sensor-bridge/compare/0.41.15...0.41.16) (2024-02-29)
