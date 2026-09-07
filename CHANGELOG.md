@@ -1,3 +1,10 @@
+## [0.42.3](https://github.com/RouHim/sensor-bridge/compare/0.42.2...0.42.3) (2026-09-07)
+
+
+### Bug Fixes
+
+* remove dead sensor structs and trait blocking release build ([7194ac0](https://github.com/RouHim/sensor-bridge/commit/7194ac005bfdad8e7599fff223dadeec1cabcbd4))
+
 ## [0.42.2](https://github.com/RouHim/sensor-bridge/compare/0.42.1...0.42.2) (2026-09-07)
 
 
