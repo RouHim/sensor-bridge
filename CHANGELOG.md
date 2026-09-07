@@ -1,3 +1,10 @@
+## [0.42.2](https://github.com/RouHim/sensor-bridge/compare/0.42.1...0.42.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** set top-level version in tauri.conf.json for Tauri v2 ([217e5f3](https://github.com/RouHim/sensor-bridge/commit/217e5f3939145700f7815535470d54c3c0a5fe21))
+
 ## [0.42.1](https://github.com/RouHim/sensor-bridge/compare/0.42.0...0.42.1) (2026-09-07)
 
 
