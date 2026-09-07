@@ -1,3 +1,10 @@
+## [0.42.4](https://github.com/RouHim/sensor-bridge/compare/0.42.3...0.42.4) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** provide Tauri v2 signing env vars for bundle build ([ad088b2](https://github.com/RouHim/sensor-bridge/commit/ad088b2aefe9d985cec90108cd3f22feac4bbf09))
+
 ## [0.42.3](https://github.com/RouHim/sensor-bridge/compare/0.42.2...0.42.3) (2026-09-07)
 
 
