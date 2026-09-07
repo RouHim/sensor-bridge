@@ -1,3 +1,10 @@
+## [0.42.1](https://github.com/RouHim/sensor-bridge/compare/0.42.0...0.42.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** pin bundle job to ubuntu-22.04 for libsensors4-dev ([39aa0f1](https://github.com/RouHim/sensor-bridge/commit/39aa0f137ed7076428c8d46a7fce6e63c1c35a49))
+
 # [0.42.0](https://github.com/RouHim/sensor-bridge/compare/0.41.17...0.42.0) (2026-09-07)
 
 
