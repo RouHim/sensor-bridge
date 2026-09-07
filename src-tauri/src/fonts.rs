@@ -13,12 +13,13 @@ pub fn load_data(font_family_name: &str) -> Vec<u8> {
 }
 
 /// Checks if the given font family name is installed on the system.
+/// Note: uses query_all instead of query_specific to work around
+/// rust-font-loader doing slice::from_raw_parts(NULL, 0) when no font
+/// matches, which aborts on Rust >= 1.98 UB precondition checks.
 pub fn exists(font_family_name: &str) -> bool {
-    let mut property = system_fonts::FontPropertyBuilder::new()
-        .family(font_family_name)
-        .build();
-    let font = system_fonts::query_specific(&mut property);
-    !font.is_empty()
+    system_fonts::query_all()
+        .iter()
+        .any(|font| font == font_family_name)
 }
 
 /// Get all system fonts.
