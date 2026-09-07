@@ -1,6 +1,6 @@
 #[cfg(target_os = "linux")]
 use std::fs;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 #[cfg(target_os = "linux")]
 use dmidecode::{BaseBoard, Bios, EntryPoint, Structure};
@@ -12,14 +12,14 @@ use sensor_core::SensorValue;
 use super_shell::RootShell;
 
 pub struct DmiDecodeSensors {
-    pub root_shell: Arc<Mutex<Option<RootShell>>>,
+    pub root_shell: Arc<RwLock<Option<RootShell>>>,
 }
 
 #[cfg(target_os = "linux")]
 const DMIDECODE_DATA_PATH: &str = "/tmp/dmidecode.bin";
 
 impl DmiDecodeSensors {
-    pub fn new(root_shell_mutex: Arc<Mutex<Option<RootShell>>>) -> DmiDecodeSensors {
+    pub fn new(root_shell_mutex: Arc<RwLock<Option<RootShell>>>) -> DmiDecodeSensors {
         DmiDecodeSensors {
             root_shell: root_shell_mutex,
         }
@@ -33,7 +33,7 @@ impl DmiDecodeSensors {
             return vec![];
         }
 
-        let mut root_shell = self.root_shell.lock().unwrap();
+        let mut root_shell = self.root_shell.write().unwrap();
         let root_shell = root_shell.as_mut().unwrap();
         root_shell.execute(format!("rm -f {DMIDECODE_DATA_PATH}"));
         root_shell.execute(format!(

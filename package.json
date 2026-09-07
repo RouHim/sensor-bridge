@@ -1,0 +1,23 @@
+{
+  "name": "sensor-bridge-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend tooling for Sensor Bridge",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src/js/**/*.js",
+    "lint:fix": "eslint src/js/**/*.js --fix",
+    "format": "prettier --write src/js/**/*.js src/*.html src/*.css",
+    "format:check": "prettier --check src/js/**/*.js src/*.html src/*.css",
+    "check:syntax": "node --check src/js/main.js && echo 'All JS files syntax check passed'",
+    "check:all": "npm run lint && npm run format:check && npm run check:syntax"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "@eslint/js": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

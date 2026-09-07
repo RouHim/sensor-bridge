@@ -2,3 +2,9 @@
 .idea
 perf.data*
 flamegraph*
+
+# JavaScript/Node.js
+node_modules/
+npm-debug.log*
+.eslintcache
+package-lock.json
