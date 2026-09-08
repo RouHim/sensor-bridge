@@ -39,7 +39,7 @@ tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 
 [dev-dependencies]
-assertor = "0.0.2"
+assertor = "0.0.4"
 pretty_assertions = "1.4.0"
 
 # Linux specific dependencies
