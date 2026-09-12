@@ -1177,14 +1177,14 @@ dependencies = [
 
 [[package]]
 name = "dns-lookup"
-version = "2.0.4"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5766087c2235fec47fafa4cfecc81e494ee679d0fd4a59887ea0919bfb0e4fc"
+checksum = "cf5597a4b7fe5275fc9dcf88ce26326bc8e4cb87d0130f33752d4c5f717793cf"
 dependencies = [
  "cfg-if",
  "libc",
- "socket2",
- "windows-sys 0.48.0",
+ "socket2 0.6.5",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2141,7 +2141,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -2829,7 +2829,7 @@ dependencies = [
  "mio 0.8.11",
  "nix 0.26.4",
  "serde",
- "socket2",
+ "socket2 0.5.10",
  "strum",
 ]
 
@@ -3910,7 +3910,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2",
+ "socket2 0.5.10",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
@@ -3948,7 +3948,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2",
+ "socket2 0.5.10",
  "tracing",
  "windows-sys 0.59.0",
 ]
@@ -4931,6 +4931,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "socket2"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
+dependencies = [
+ "libc",
+ "windows-sys 0.60.2",
+]
+
+[[package]]
 name = "softbuffer"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5717,7 +5727,7 @@ dependencies = [
  "mio 1.0.4",
  "pin-project-lite",
  "signal-hook-registry",
- "socket2",
+ "socket2 0.5.10",
  "tracing",
  "windows-sys 0.52.0",
 ]
