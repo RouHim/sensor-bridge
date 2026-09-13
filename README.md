@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.42.18/sensor-bridge_0.42.18_amd64.AppImage"><img src=".github/readme/dl-linux.png" width="250"/></a>
+    <a id="sensor-bridge-download-linux" href="https://github.com/RouHim/sensor-bridge/releases/download/0.42.19/sensor-bridge_0.42.19_amd64.AppImage"><img src=".github/readme/dl-linux.png" width="250"/></a>
 </p>
 
 ## Current state
