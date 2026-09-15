@@ -988,7 +988,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2662,7 +2662,7 @@ dependencies = [
  "png 0.18.1",
  "serde",
  "thiserror 2.0.12",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -3850,7 +3850,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4048,9 +4048,9 @@ dependencies = [
 
 [[package]]
 name = "sensor-core"
-version = "1.12.27"
+version = "1.12.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be59602d5a09295aa32bed0c0a0b23ffbc8d34dc97218ac1ae1d2d55f9f72d4e"
+checksum = "03f0d1ba07ca90112d072bee017e3ff6ec7b221390ade0a955a8e06818ddf673"
 dependencies = [
  "dirs 6.0.0",
  "image",
@@ -4388,7 +4388,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -5354,7 +5354,7 @@ dependencies = [
  "png 0.18.1",
  "serde",
  "thiserror 2.0.12",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
