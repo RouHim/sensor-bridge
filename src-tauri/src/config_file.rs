@@ -43,6 +43,13 @@ pub fn write(config: &AppConfig) {
     file.commit().expect("Failed to commit config file");
 }
 
+/// Persists the config without blocking an async worker thread.
+pub async fn write_async(config: AppConfig) {
+    if let Err(err) = tokio::task::spawn_blocking(move || write(&config)).await {
+        log::error!("Failed to persist config: {}", err);
+    }
+}
+
 /// Loads the config file from disk.
 /// If the file does not exist, it will be created.
 pub fn read() -> AppConfig {

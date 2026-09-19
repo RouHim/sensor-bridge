@@ -125,10 +125,12 @@ async fn main() {
 
             // Auto-start the HTTP server
             info!("Auto-starting HTTP server");
-            let app_state = app.deref().state();
-            if let Err(e) = start_http_server(app_state) {
-                error!("Failed to auto-start HTTP server: {}", e);
-            }
+            let app_state = app.state::<AppState>().inner().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = start_http_server(app_state).await {
+                    error!("Failed to auto-start HTTP server: {}", e);
+                }
+            });
 
             Ok(())
         })
@@ -446,14 +448,15 @@ async fn restart_app(app_handle: AppHandle) -> Result<(), ()> {
 }
 
 /// Starts the HTTP server
-fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
-    let port = in_memory_config::get_port_sync(&app_state.in_memory_config);
+async fn start_http_server(app_state: AppState) -> Result<(), String> {
+    let port = in_memory_config::get_port(&app_state.in_memory_config).await;
     info!("Starting HTTP server on port {}", port);
-    let mut server_running = app_state.http_server_running.write().unwrap();
-    let mut server_handle = app_state.http_server_handle.write().unwrap();
 
-    if *server_running {
-        return Err(format!("HTTP server is already running on port {}", port));
+    {
+        let server_running = app_state.http_server_running.read().ignore_poison();
+        if *server_running {
+            return Err(format!("HTTP server is already running on port {}", port));
+        }
     }
 
     let sensor_snapshot = app_state.sensor_snapshot.clone();
@@ -461,7 +464,7 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
     let in_memory_config = app_state.in_memory_config.clone();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
-    *app_state.http_server_shutdown_tx.write().unwrap() = Some(shutdown_tx);
+    *app_state.http_server_shutdown_tx.write().ignore_poison() = Some(shutdown_tx);
 
     // Start the server in a background task
     let handle = tokio::spawn(async move {
@@ -486,19 +489,19 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
         }
     });
 
-    *server_handle = Some(handle);
-    *server_running = true;
+    *app_state.http_server_handle.write().ignore_poison() = Some(handle);
+    *app_state.http_server_running.write().ignore_poison() = true;
     Ok(())
 }
 
 /// Stops the HTTP server
-async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
+async fn stop_http_server(app_state: AppState) -> Result<(), String> {
     info!("Stopping HTTP server");
 
     // First check if server is running and get the handle
     let handle = {
-        let server_running = app_state.http_server_running.read().unwrap();
-        let mut server_handle = app_state.http_server_handle.write().unwrap();
+        let server_running = app_state.http_server_running.read().ignore_poison();
+        let mut server_handle = app_state.http_server_handle.write().ignore_poison();
 
         if !*server_running {
             return Err("HTTP server is not running".to_string());
@@ -506,7 +509,12 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
 
         if let Some(handle) = server_handle.take() {
             // Send the shutdown signal for graceful shutdown
-            if let Some(tx) = app_state.http_server_shutdown_tx.write().unwrap().take() {
+            if let Some(tx) = app_state
+                .http_server_shutdown_tx
+                .write()
+                .ignore_poison()
+                .take()
+            {
                 let _ = tx.send(());
                 info!("Graceful shutdown signal sent to HTTP server.");
             }
@@ -529,7 +537,7 @@ async fn stop_http_server(app_state: State<'_, AppState>) -> Result<(), String> 
         }
 
         // Mark as stopped after the task completes
-        *app_state.http_server_running.write().unwrap() = false;
+        *app_state.http_server_running.write().ignore_poison() = false;
         info!("HTTP server shutdown completed.");
         Ok(())
     } else {
@@ -546,10 +554,8 @@ async fn get_http_port(app_state: State<'_, AppState>) -> Result<u16, String> {
 /// Set the HTTP server port and restart server if running
 #[tauri::command]
 async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), String> {
-    let was_running = {
-        let server_handle = app_state.http_server_running.read().unwrap();
-        *server_handle
-    };
+    let app_state = app_state.inner().clone();
+    let was_running = *app_state.http_server_running.read().ignore_poison();
 
     // If server is running, stop it first and wait for it to fully stop
     if was_running {
@@ -559,9 +565,9 @@ async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), 
         );
 
         // Use the existing stop_http_server function which properly waits for shutdown
-        if let Err(e) = stop_http_server(app_state.clone()).await {
-            return Err(format!("Failed to stop HTTP server: {}", e));
-        }
+        stop_http_server(app_state.clone())
+            .await
+            .map_err(|e| format!("Failed to stop HTTP server: {}", e))?;
 
         info!("HTTP server fully stopped, proceeding with port change");
     }
@@ -582,9 +588,9 @@ async fn set_http_port(port: u16, app_state: State<'_, AppState>) -> Result<(), 
         info!("Restarting HTTP server with new port {}", port);
 
         // Use the existing start_http_server function
-        if let Err(e) = start_http_server(app_state.clone()) {
-            return Err(format!("Failed to restart HTTP server: {}", e));
-        }
+        start_http_server(app_state.clone())
+            .await
+            .map_err(|e| format!("Failed to restart HTTP server: {}", e))?;
 
         info!("HTTP server successfully restarted on port {}", port);
     }
@@ -598,4 +604,50 @@ async fn get_app_config(app_state: State<'_, AppState>) -> Result<String, String
     let app_config = app_state.in_memory_config.read().await;
     let app_config = app_config.deref();
     serde_json::to_string(app_config).map_err(|err| err.to_string())
+}
+
+#[cfg(test)]
+mod server_lifecycle_tests {
+    use super::*;
+    use crate::config_file::AppConfig;
+
+    fn test_app_state() -> AppState {
+        std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge-server-test");
+        AppState {
+            root_shell: Arc::new(RwLock::new(None)),
+            static_sensor_values: Arc::new(vec![]),
+            sensor_snapshot: Arc::new(RwLock::new(None)),
+            sensor_value_history: Arc::new(RwLock::new(VecDeque::new())),
+            http_server_handle: Arc::new(RwLock::new(None)),
+            http_server_running: Arc::new(RwLock::new(false)),
+            http_server_shutdown_tx: Arc::new(RwLock::new(None)),
+            in_memory_config: Arc::new(tokio::sync::RwLock::new(AppConfig::default())),
+        }
+    }
+
+    #[test]
+    fn http_server_starts_and_stops_from_a_foreign_runtime() {
+        let app_state = test_app_state();
+
+        // A runtime that is NOT the one the app was built with - the situation the old
+        // synchronous port lookup panicked in (a runtime handle with no/foreign context).
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        runtime.block_on(async {
+            // Port 0 lets the OS assign a free port; nothing else may be bound during tests.
+            in_memory_config::set_port(&app_state.in_memory_config, 0).await;
+
+            assert!(!*app_state.http_server_running.read().unwrap());
+
+            start_http_server(app_state.clone())
+                .await
+                .expect("server must start without a runtime-context precondition");
+            assert!(*app_state.http_server_running.read().unwrap());
+
+            stop_http_server(app_state.clone())
+                .await
+                .expect("server must stop");
+            assert!(!*app_state.http_server_running.read().unwrap());
+        });
+    }
 }

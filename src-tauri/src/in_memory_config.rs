@@ -12,25 +12,51 @@ pub async fn update_client_name(
     mac_address: &str,
     new_name: &str,
 ) {
-    let mut config = in_memory_config.write().await;
-    if let Some(client) = config.display_clients.get_mut(mac_address) {
-        client.name = new_name.to_string();
-        crate::config_file::write(&config);
+    let updated_config = {
+        let mut config = in_memory_config.write().await;
+        match config.display_clients.get_mut(mac_address) {
+            Some(client) => {
+                client.name = new_name.to_string();
+                Some(config.clone())
+            }
+            None => None,
+        }
+    };
+
+    if let Some(config) = updated_config {
+        crate::config_file::write_async(config).await;
     }
 }
 
 pub async fn remove_registered_client(in_memory_config: &InMemoryConfig, mac_address: &str) {
-    let mut config = in_memory_config.write().await;
-    if config.display_clients.remove(mac_address).is_some() {
-        crate::config_file::write(&config);
+    let updated_config = {
+        let mut config = in_memory_config.write().await;
+        if config.display_clients.remove(mac_address).is_some() {
+            Some(config.clone())
+        } else {
+            None
+        }
+    };
+
+    if let Some(config) = updated_config {
+        crate::config_file::write_async(config).await;
     }
 }
 
 pub async fn set_client_active(in_memory_config: &InMemoryConfig, mac_address: &str, active: bool) {
-    let mut config = in_memory_config.write().await;
-    if let Some(client) = config.display_clients.get_mut(mac_address) {
-        client.active = active;
-        crate::config_file::write(&config);
+    let updated_config = {
+        let mut config = in_memory_config.write().await;
+        match config.display_clients.get_mut(mac_address) {
+            Some(client) => {
+                client.active = active;
+                Some(config.clone())
+            }
+            None => None,
+        }
+    };
+
+    if let Some(config) = updated_config {
+        crate::config_file::write_async(config).await;
     }
 }
 
@@ -39,11 +65,20 @@ pub async fn update_client_display_config(
     mac_address: &str,
     elements: Vec<ElementConfig>,
 ) {
-    let mut config = in_memory_config.write().await;
-    if let Some(client) = config.display_clients.get_mut(mac_address) {
-        client.elements = elements;
-        client.static_data_reload_required = true; // Set flag when elements change
-        crate::config_file::write(&config);
+    let updated_config = {
+        let mut config = in_memory_config.write().await;
+        match config.display_clients.get_mut(mac_address) {
+            Some(client) => {
+                client.elements = elements;
+                client.static_data_reload_required = true; // Set flag when elements change
+                Some(config.clone())
+            }
+            None => None,
+        }
+    };
+
+    if let Some(config) = updated_config {
+        crate::config_file::write_async(config).await;
     }
 }
 
@@ -60,16 +95,14 @@ pub async fn get_port(in_memory_config: &InMemoryConfig) -> u16 {
     config.http_port
 }
 
-pub fn get_port_sync(in_memory_config: &InMemoryConfig) -> u16 {
-    tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(async { get_port(in_memory_config).await })
-    })
-}
-
 pub async fn set_port(in_memory_config: &InMemoryConfig, port: u16) {
-    let mut config = in_memory_config.write().await;
-    config.http_port = port;
-    crate::config_file::write(&config);
+    let updated_config = {
+        let mut config = in_memory_config.write().await;
+        config.http_port = port;
+        config.clone()
+    };
+
+    crate::config_file::write_async(updated_config).await;
 }
 
 pub async fn create_or_update_client(
@@ -77,9 +110,13 @@ pub async fn create_or_update_client(
     mac_address: &str,
     updated_client: DisplayClient,
 ) {
-    let mut config = in_memory_config.write().await;
-    config
-        .display_clients
-        .insert(mac_address.to_string(), updated_client);
-    crate::config_file::write(&config);
+    let updated_config = {
+        let mut config = in_memory_config.write().await;
+        config
+            .display_clients
+            .insert(mac_address.to_string(), updated_client);
+        config.clone()
+    };
+
+    crate::config_file::write_async(updated_config).await;
 }
