@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::{BufWriter, Cursor};
 
 use ab_glyph::FontVec;
@@ -29,7 +29,7 @@ pub fn render_preview(
         image_width,
         image_height,
         text_config,
-        &[vec![sensor_value.unwrap().clone()]],
+        &VecDeque::from(vec![vec![sensor_value.unwrap().clone()]]),
         &font,
     );
 

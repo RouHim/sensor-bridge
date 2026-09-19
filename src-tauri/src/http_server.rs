@@ -2,7 +2,7 @@ use chrono::Utc;
 use log::info;
 use sensor_core::{ElementConfig, StaticClientData};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, RwLock};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
@@ -10,6 +10,7 @@ use warp::Filter;
 
 // Add imports for static data preparation
 use crate::in_memory_config::InMemoryConfig;
+use crate::utils::LockResultExt;
 use crate::{conditional_image, in_memory_config, static_image, text};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,6 +76,7 @@ impl From<DisplayClient> for RegisteredClientResponse {
 pub enum ApiError {
     NotRegistered,
     NotActive,
+    NotReady,
     BadRequest(String),
 }
 
@@ -82,8 +84,8 @@ impl warp::reject::Reject for ApiError {}
 
 pub async fn start_server(
     port: u16,
-    sensor_values: Arc<Vec<sensor_core::SensorValue>>,
-    sensor_value_history: Arc<RwLock<Vec<Vec<sensor_core::SensorValue>>>>,
+    sensor_snapshot: Arc<RwLock<Option<crate::sensor::SensorSnapshot>>>,
+    sensor_value_history: Arc<RwLock<VecDeque<Vec<sensor_core::SensorValue>>>>,
     shutdown_rx: oneshot::Receiver<()>,
     in_memory_config: InMemoryConfig,
 ) -> Result<JoinHandle<()>, Box<dyn std::error::Error + Send + Sync>> {
@@ -94,9 +96,9 @@ pub async fn start_server(
         let config = in_memory_config.clone();
         move || config.clone()
     });
-    let sensor_values_filter = warp::any().map({
-        let values = sensor_values.clone();
-        move || values.clone()
+    let sensor_snapshot_filter = warp::any().map({
+        let snapshot = sensor_snapshot.clone();
+        move || snapshot.clone()
     });
     let sensor_history_filter = warp::any().map({
         let history = sensor_value_history.clone();
@@ -134,7 +136,7 @@ pub async fn start_server(
         .and(warp::get())
         .and(warp::query::<HashMap<String, String>>())
         .and(in_memory_config_filter.clone())
-        .and(sensor_values_filter)
+        .and(sensor_snapshot_filter)
         .and(sensor_history_filter)
         .and_then(handle_sensor_data_request);
 
@@ -168,8 +170,8 @@ pub async fn start_server(
 async fn handle_sensor_data_request(
     params: HashMap<String, String>,
     in_memory_config: InMemoryConfig,
-    sensor_values: Arc<Vec<sensor_core::SensorValue>>,
-    sensor_history: Arc<RwLock<Vec<Vec<sensor_core::SensorValue>>>>,
+    sensor_snapshot: Arc<RwLock<Option<crate::sensor::SensorSnapshot>>>,
+    _sensor_value_history: Arc<RwLock<VecDeque<Vec<sensor_core::SensorValue>>>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     // Extract and validate MAC address parameter
     let mac_address = params
@@ -198,12 +200,13 @@ async fn handle_sensor_data_request(
             Err(warp::reject::custom(ApiError::NotActive))
         }
         Some(client) => {
-            // Client is registered and active - update last seen and return data
-            info!("Serving sensor data to client {}", mac_address);
-
-            // Create client-specific render data
-            let current_sensor_values =
-                crate::sensor::read_all_sensor_values(&sensor_history, &sensor_values);
+            // Client is registered and active - serve the latest cached snapshot
+            let current_sensor_values = sensor_snapshot
+                .read()
+                .ignore_poison()
+                .as_ref()
+                .map(|snapshot| snapshot.values.clone())
+                .ok_or_else(|| warp::reject::custom(ApiError::NotReady))?;
 
             let render_data = serde_json::json!({
                 "elements": client.elements,
@@ -212,7 +215,6 @@ async fn handle_sensor_data_request(
 
             let response = serde_json::json!({
                 "render_data": render_data,
-                "timestamp": Utc::now().timestamp(),
                 "static_data_reload_required": client.static_data_reload_required
             });
 
@@ -382,6 +384,10 @@ async fn handle_rejection(
         match api_error {
             ApiError::NotRegistered => (warp::http::StatusCode::NOT_FOUND, "Client not registered"),
             ApiError::NotActive => (warp::http::StatusCode::FORBIDDEN, "Client not active"),
+            ApiError::NotReady => (
+                warp::http::StatusCode::SERVICE_UNAVAILABLE,
+                "No sensor sample available yet",
+            ),
             ApiError::BadRequest(msg) => (warp::http::StatusCode::BAD_REQUEST, msg.as_str()),
         }
     } else if err.is_not_found() {

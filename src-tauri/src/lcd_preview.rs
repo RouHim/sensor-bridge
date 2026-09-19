@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::ops::Deref;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, RwLock};
 use std::thread;
 
@@ -9,7 +8,8 @@ use sensor_core::{ElementConfig, ElementType, SensorValue};
 use tauri::{AppHandle, Manager};
 
 use crate::http_server::DisplayClient;
-use crate::{conditional_image, sensor, static_image, text, utils};
+use crate::utils::LockResultExt;
+use crate::{conditional_image, static_image, text, utils};
 
 /// Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd-preview";
@@ -105,17 +105,12 @@ fn prepare_assets(elements: Vec<ElementConfig>) {
 /// This function is called from the main thread
 /// Therefore we need to spawn a new thread to render the image
 pub fn render(
-    sensor_value_history: &Arc<RwLock<Vec<Vec<SensorValue>>>>,
-    static_sensor_values: &Arc<Vec<SensorValue>>,
+    sensor_value_history: &Arc<RwLock<VecDeque<Vec<SensorValue>>>>,
     client: DisplayClient,
-) -> thread::Result<String> {
-    let static_sensor_values = static_sensor_values.clone();
+) -> Result<String, String> {
     let sensor_value_history = sensor_value_history.clone();
 
     thread::spawn(move || {
-        // Read the sensor values
-        sensor::read_all_sensor_values(&sensor_value_history, &static_sensor_values);
-
         // Build font data hashmap (extract just the data, ignore hashes for preview)
         let fonts_with_hashes = text::build_fonts_data(&client.elements);
         let fonts_data: HashMap<String, Vec<u8>> = fonts_with_hashes
@@ -123,22 +118,23 @@ pub fn render(
             .map(|(key, (_hash, data))| (key, data))
             .collect();
 
-        // Render the image
+        let history = sensor_value_history.read().ignore_poison();
+        if history.is_empty() {
+            return Err("No sensor data available yet".to_string());
+        }
+
         let image = sensor_core::render_lcd_image(
             &client.elements,
-            sensor_value_history.read().unwrap().deref(),
+            &history,
             &fonts_data,
             client.resolution_width,
             client.resolution_height,
         );
 
         let buf = utils::rgb_to_jpeg_bytes(image);
-
-        // Encode the buffer to a base64 string
         let engine = base64::engine::general_purpose::STANDARD;
-
-        // Return the base64 string
-        base64::Engine::encode(&engine, buf)
+        Ok(base64::Engine::encode(&engine, buf))
     })
     .join()
+    .map_err(|_| "LCD preview render thread panicked".to_string())?
 }

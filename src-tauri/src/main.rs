@@ -1,13 +1,14 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 
 use crate::http_server::DisplayClient;
+use crate::utils::LockResultExt;
 use in_memory_config::InMemoryConfig;
 use log::{error, info};
 use sensor_core::{
     conditional_image_renderer, graph_renderer, ConditionalImageConfig, ElementConfig, GraphConfig,
     SensorType, SensorValue, TextConfig,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::error::Error;
 use std::fs;
 use std::ops::Deref;
@@ -44,10 +45,12 @@ mod fonts_test;
 mod in_memory_config;
 mod linux_amdgpu;
 
+#[derive(Clone)]
 pub struct AppState {
     pub root_shell: Arc<RwLock<Option<RootShell>>>,
     pub static_sensor_values: Arc<Vec<SensorValue>>,
-    pub sensor_value_history: Arc<RwLock<Vec<Vec<SensorValue>>>>,
+    pub sensor_snapshot: Arc<RwLock<Option<sensor::SensorSnapshot>>>,
+    pub sensor_value_history: Arc<RwLock<VecDeque<Vec<SensorValue>>>>,
     pub http_server_handle: Arc<RwLock<Option<JoinHandle<()>>>>,
     pub http_server_running: Arc<RwLock<bool>>,
     pub http_server_shutdown_tx: Arc<RwLock<Option<oneshot::Sender<()>>>>,
@@ -76,8 +79,25 @@ async fn main() {
     // Read the static sensor values
     let static_sensor_values = Arc::new(sensor::read_static_sensor_values(&root_shell));
 
-    // Create sensor history vector
-    let sensor_value_history = Arc::new(RwLock::new(Vec::with_capacity(SENSOR_VALUE_HISTORY_SIZE)));
+    // Create the sensor snapshot and history state
+    let sensor_snapshot: Arc<RwLock<Option<sensor::SensorSnapshot>>> = Arc::new(RwLock::new(None));
+    let sensor_value_history: Arc<RwLock<VecDeque<Vec<SensorValue>>>> = Arc::new(RwLock::new(
+        VecDeque::with_capacity(SENSOR_VALUE_HISTORY_SIZE),
+    ));
+
+    // Start the always-on 1 Hz sampler; the first pass runs immediately.
+    // The thread never terminates, so the handle is intentionally detached.
+    let _sampler_handle = {
+        let static_sensor_values = static_sensor_values.clone();
+        let snapshot = sensor_snapshot.clone();
+        let history = sensor_value_history.clone();
+        sensor::start_sampler(
+            move || sensor::measure(&static_sensor_values),
+            snapshot,
+            history,
+            sensor::SAMPLE_INTERVAL,
+        )
+    };
 
     // Initialize Client Registry
     let in_memory_config: InMemoryConfig = Arc::new(tokio::sync::RwLock::new(config_file::read()));
@@ -90,6 +110,7 @@ async fn main() {
         .manage(AppState {
             root_shell: root_shell.clone(),
             static_sensor_values,
+            sensor_snapshot,
             sensor_value_history,
             http_server_handle: Arc::new(RwLock::new(None)),
             http_server_running: Arc::new(RwLock::new(false)),
@@ -187,11 +208,17 @@ fn build_tray_icon(app: &mut App) -> Result<(), Box<dyn Error>> {
 
 #[tauri::command]
 async fn get_sensor_values(app_state: State<'_, AppState>) -> Result<String, ()> {
-    let sensor_values = sensor::read_all_sensor_values(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-    );
-    Ok(serde_json::to_string(&sensor_values).unwrap())
+    let values = app_state
+        .sensor_snapshot
+        .read()
+        .ignore_poison()
+        .as_ref()
+        .map(|snapshot| snapshot.values.clone());
+
+    match values {
+        Some(values) => Ok(serde_json::to_string(&values).unwrap()),
+        None => Err(()),
+    }
 }
 
 /// Gets all registered clients
@@ -289,12 +316,8 @@ async fn get_lcd_preview_image(
         .await
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
 
-    lcd_preview::render(
-        &app_state.sensor_value_history,
-        &app_state.static_sensor_values,
-        client,
-    )
-    .map_err(|e| format!("Error rendering preview image: {:?}", e))
+    lcd_preview::render(&app_state.sensor_value_history, client)
+        .map_err(|e| format!("Error rendering preview image: {}", e))
 }
 
 #[tauri::command]
@@ -303,16 +326,23 @@ async fn get_text_preview_image(
     image_width: u32,
     image_height: u32,
     text_config: TextConfig,
-) -> Result<String, ()> {
-    let sensor_values = &app_state.sensor_value_history.read().unwrap()[0];
+) -> Result<String, String> {
+    let sensor_values = app_state
+        .sensor_value_history
+        .read()
+        .ignore_poison()
+        .front()
+        .cloned()
+        .ok_or_else(|| "No sensor data available yet".to_string())?;
     let sensor_id = &text_config.sensor_id;
 
     let sensor_value = sensor_values
         .iter()
-        .find(|sensor_value| sensor_value.id.eq(sensor_id));
+        .find(|sensor_value| sensor_value.id.eq(sensor_id))
+        .ok_or_else(|| format!("Sensor {} not available yet", sensor_id))?;
 
     let text_image_data =
-        text::render_preview(sensor_value, image_width, image_height, &text_config);
+        text::render_preview(Some(sensor_value), image_width, image_height, &text_config);
 
     let engine = base64::engine::general_purpose::STANDARD;
     Ok(base64::Engine::encode(&engine, text_image_data))
@@ -326,7 +356,11 @@ async fn get_graph_preview_image(
     let sensor_id = &graph_config.sensor_id;
 
     let sensor_values = sensor_core::extract_value_sequence(
-        app_state.sensor_value_history.read().unwrap().deref(),
+        app_state
+            .sensor_value_history
+            .read()
+            .ignore_poison()
+            .deref(),
         sensor_id,
     );
 
@@ -340,8 +374,14 @@ async fn get_conditional_image_preview_image(
     app_state: State<'_, AppState>,
     element_id: String,
     mut conditional_image_config: ConditionalImageConfig,
-) -> Result<String, ()> {
-    let sensor_values = &app_state.sensor_value_history.read().unwrap()[0];
+) -> Result<String, String> {
+    let sensor_values = app_state
+        .sensor_value_history
+        .read()
+        .ignore_poison()
+        .front()
+        .cloned()
+        .ok_or_else(|| "No sensor data available yet".to_string())?;
     let sensor_id = &conditional_image_config.sensor_id;
 
     // Filter sensor values for provided sensor id
@@ -367,7 +407,7 @@ async fn get_conditional_image_preview_image(
         Some(data) => data,
         None => {
             error!("Error rendering conditional image for element {element_id} and sensor {sensor_id} and value {value}");
-            return Err(());
+            return Err("Failed to render conditional image".to_string());
         }
     };
 
@@ -416,7 +456,7 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
         return Err(format!("HTTP server is already running on port {}", port));
     }
 
-    let sensor_values = app_state.static_sensor_values.clone();
+    let sensor_snapshot = app_state.sensor_snapshot.clone();
     let sensor_history = app_state.sensor_value_history.clone();
     let in_memory_config = app_state.in_memory_config.clone();
 
@@ -427,7 +467,7 @@ fn start_http_server(app_state: State<'_, AppState>) -> Result<(), String> {
     let handle = tokio::spawn(async move {
         match http_server::start_server(
             port,
-            sensor_values,
+            sensor_snapshot,
             sensor_history,
             shutdown_rx,
             in_memory_config,
