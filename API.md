@@ -19,17 +19,19 @@ http://<server-ip>:55555
 
 ## Authentication
 
-Currently, no authentication is required. Clients are identified by their MAC address, which is automatically normalized
-to lowercase with colon separators (e.g., `aa:bb:cc:dd:ee:ff`).
+Currently, no authentication is required. Clients are identified by their MAC address, which is normalized before every
+lookup: leading and trailing whitespace is removed and the address is uppercased, so `aa:bb:cc:dd:ee:ff ` and
+`AA:BB:CC:DD:EE:FF` resolve to the same client. The separator style is preserved.
 
 ## Client Lifecycle
 
 1. **Registration**: Client registers with server using `/api/register` (returns JSON confirmation)
 2. **Static Data**: Client retrieves initial static data using `/api/static-data`
-3. **Activation**: Client must be activated through the server UI (clients start as inactive)
-4. **Data Access**: Active clients can access sensor data via `/api/sensor-data`
-5. **Dynamic Updates**: When UI elements change, `static_data_reload_required` flag prompts client to reload static data
-6. **Cleanup**: Inactive clients are automatically removed after 24 hours
+3. **Confirmation**: Client confirms the persisted payload via `POST /api/static-data/ack`
+4. **Activation**: Client must be activated through the server UI (clients start as inactive)
+5. **Data Access**: Active clients can access sensor data via `/api/sensor-data`
+6. **Dynamic Updates**: When UI elements change, `static_data_reload_required` flag prompts client to reload static data
+7. **Cleanup**: Inactive clients are automatically removed after 24 hours
 
 ## Client Registration
 
@@ -172,9 +174,13 @@ Retrieves static assets (fonts, images) needed for client rendering.
 
 - `mac_address`: The MAC address of the registered client
 
-**Response:**
+**Response headers:**
 
-**Content-Type:** `application/octet-stream`
+- `Content-Type: application/octet-stream`
+- `X-Static-Data-Revision`: revision identifier of the delivered payload (MD5 of the element configuration). Pass this
+  value back to the confirmation endpoint.
+- `X-Protocol-Version`: protocol version of the bridge (`sensor_core::PROTOCOL_VERSION`). A client MUST NOT decode the
+  payload when this differs from its own protocol version.
 
 Returns binary static data serialized using bincode containing all static assets needed by the client for rendering.
 
@@ -183,12 +189,12 @@ The response contains a single bincode-serialized `StaticClientData` struct:
 
 ```rust
 struct StaticClientData {
-    /// Font data: font family name -> font bytes
-    text_data: HashMap<String, Vec<u8>>,
-    /// Static images: element ID -> PNG image bytes
-    static_image_data: HashMap<String, Vec<u8>>,
-    /// Conditional images: element ID -> (image name -> PNG image bytes)
-    conditional_image_data: HashMap<String, HashMap<String, Vec<u8>>>,
+    /// Font data: font family name -> (md5 hash, font bytes)
+    text_data: HashMap<String, (String, Vec<u8>)>,
+    /// Static images: element ID -> (md5 hash, PNG image bytes)
+    static_image_data: HashMap<String, (String, Vec<u8>)>,
+    /// Conditional images: element ID -> (image name -> (md5 hash, PNG image bytes))
+    conditional_image_data: HashMap<String, HashMap<String, (String, Vec<u8>)>>,
 }
 ```
 
@@ -239,6 +245,52 @@ struct StaticClientData {
 
 **Notes:**
 
+- `GET /api/static-data` never clears the client's reload flag. The flag is cleared only by `POST /api/static-data/ack`
+  after the client persisted the payload successfully, so a crash between download and persist cannot produce silently
+  stale assets.
+- The payload is prepared at most once per element revision and cached (bounded), so repeated fetches and clients with
+  identical element configurations are cheap.
+- When preparation of any required asset (font, static image, conditional image) or serialization fails, the endpoint
+  responds `500` and leaves the reload flag unchanged. It never serves an empty or partial payload as success.
+
+### Confirm Static Data
+
+**Endpoint:** `POST /api/static-data/ack`
+
+Confirms that the client persisted a delivered payload, so the bridge clears its per-client reload flag.
+
+**Request body:**
+
+```json
+{
+  "mac_address": "AA:BB:CC:DD:EE:FF",
+  "revision": "9f2c…"
+}
+```
+
+- `revision`: the `X-Static-Data-Revision` value of the payload the client persisted
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "pending_cleared": true
+}
+```
+
+**Error Responses:**
+
+- `404 Not Found` — client not registered
+- `403 Forbidden` — client not active
+- `400 Bad Request` — missing/invalid body
+
+**Notes:**
+
+- Only a confirmation for the revision that is current for the client's elements clears the flag: a confirmation that
+  arrives after the elements changed leaves the newer pending update in place.
+- Repeated confirmations are idempotent (`pending_cleared: false` when the flag was already clear).
+
 ## Sensor Data
 
 ### Get Sensor Data
@@ -287,7 +339,6 @@ Retrieves current sensor data and display configuration for a registered client.
       }
     ]
   },
-  "timestamp": 1704067200,
   "static_data_reload_required": false
 }
 ```
@@ -323,13 +374,13 @@ Retrieves current sensor data and display configuration for a registered client.
 
 **Notes:**
 
-- Successfully serving data updates the client's `last_seen` timestamp
-- Even inactive clients get their `last_seen` timestamp updated when they call this endpoint
+- Sensor values are served from the bridge's latest cached snapshot. The bridge samples all sensors once per second in a
+  dedicated thread; requests never trigger a measurement.
+- Before the first sampling pass completes, the endpoint responds `503`:
+  `{"error": "No sensor sample available yet", "status": 503}`
+- `static_data_reload_required: true` means the client should fetch and persist static data, then confirm it via
+  `POST /api/static-data/ack`.
 - MAC address format is automatically normalized before lookup
-- **`static_data_reload_required`**: When `true`, client should call `/api/static-data` to get updated static assets (
-  fonts, images)
-- This flag is set to `true` when display configuration changes in the server UI
-- After calling `/api/static-data`, the client should continue normal polling
 
 ## Health Check
 
@@ -345,6 +396,7 @@ Check if the server is running and responsive.
 {
   "status": "healthy",
   "service": "sensor-bridge",
+  "protocol_version": 2,
   "timestamp": 1704067200
 }
 ```
@@ -367,16 +419,15 @@ All API endpoints return structured JSON error responses with appropriate HTTP s
 
 The server automatically handles different MAC address formats:
 
-- `aa:bb:cc:dd:ee:ff` → `aa:bb:cc:dd:ee:ff` (no change)
-- `AA:BB:CC:DD:EE:FF` → `aa:bb:cc:dd:ee:ff` (lowercase)
-- `AA-BB-CC-DD-EE-FF` → `aa:bb:cc:dd:ee:ff` (colon separators)
-- `aabbccddeeff` → `aa:bb:cc:dd:ee:ff` (add separators)
+- Case variants of the same MAC address resolve to the same client on register, sensor-data, static-data and confirmation
+- Leading/trailing whitespace around the MAC address is ignored
+- Separator style (colons, dashes, none) is preserved and intentionally not rewritten
 
 ### Client Lifecycle Management
 
 - **Registration**: Clients are added to the in-memory registry
 - **Activation**: Must be done through the server UI
-- **Activity Tracking**: `last_seen` timestamp updated on each API call
+- **Static Data Confirmation**: The per-client reload flag is cleared only after the client confirms a persisted payload via `POST /api/static-data/ack`
 - **Automatic Cleanup**: Clients inactive for 24+ hours are automatically removed
 
 ### Performance Optimizations
@@ -443,6 +494,21 @@ class SensorBridgeClient:
         else:
             raise Exception(f"Registration failed: {response.status_code}")
 
+    def persist_static_data(self, payload):
+        # write the payload where the display reads it
+        ...
+
+    def fetch_and_persist_static_data(self):
+        response = requests.get(f"{self.base_url}/api/static-data", params={"mac_address": self.mac_address})
+        response.raise_for_status()
+        self.persist_static_data(response.content)
+        revision = response.headers["X-Static-Data-Revision"]
+        ack = requests.post(
+            f"{self.base_url}/api/static-data/ack",
+            json={"mac_address": self.mac_address, "revision": revision},
+        )
+        ack.raise_for_status()
+
     def get_sensor_data(self):
         """Get current sensor data from the server"""
         response = requests.get(
@@ -450,8 +516,14 @@ class SensorBridgeClient:
             params={"mac_address": self.mac_address}
         )
 
-        if response.status_code == 200:
-            return response.json()
+        if response.status_code == 503:
+            print("Bridge has no sensor sample yet")
+            return None
+        elif response.status_code == 200:
+            data = response.json()
+            if data["static_data_reload_required"]:
+                self.fetch_and_persist_static_data()
+            return data
         elif response.status_code == 404:
             raise Exception("Client not registered")
         elif response.status_code == 403:
@@ -473,6 +545,9 @@ class SensorBridgeClient:
             try:
                 # Get sensor data
                 data = self.get_sensor_data()
+                if data is None:
+                    time.sleep(1)
+                    continue
 
                 # Process the display configuration and sensor values
                 render_data = data['render_data']
@@ -598,6 +673,10 @@ class SensorBridgeClient {
 
                 // Here you would render the display based on the configuration
                 // and sensor values
+
+                // Static data follows the same flow as the Python client: fetch
+                // /api/static-data, keep the X-Static-Data-Revision header, then POST
+                // it to /api/static-data/ack before using the assets.
             } catch (error) {
                 console.error(`Error: ${error.message}`);
 
