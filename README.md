@@ -32,7 +32,7 @@ Sensor Bridge has been completely redesigned with a modern HTTP-based architectu
 * **Automatic Client Discovery**: Clients register themselves with MAC address, IP, and resolution
 * **Multiple Display Support**: Connect unlimited display clients simultaneously
 * **WUSIWUG Configuration**: Design and manage displays
-* **Real-time Data**: a single 1 Hz sampler serves every connected display from the latest cached sample
+* **Real-time Data**: A single 1 Hz sampler serves every connected display from the latest cached sample
 * **Flexible Display Elements**: Support for text, graphs, images, and conditional displays
 * **Client Management**: Enable/disable clients, assign custom names, and remove devices
 * **Export/Import**: Save and share your display configurations
@@ -92,4 +92,4 @@ Quick reference:
 - `GET /api/sensor-data?mac_address={mac}` - Get the latest cached sensor sample
 - `GET /api/static-data?mac_address={mac}` - Fetch static assets (fonts, images)
 - `POST /api/static-data/ack` - Confirm that static assets were persisted
-- `GET /api/health` - Server health check and protocol version
+- `GET /health` - Server health check and protocol version

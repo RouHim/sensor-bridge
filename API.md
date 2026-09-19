@@ -61,6 +61,7 @@ The registration endpoint now returns a JSON confirmation. Static data is no lon
 ```json
 {
   "success": true,
+  "protocol_version": 2,
   "message": "Client registered successfully",
   "mac_address": "aa:bb:cc:dd:ee:ff"
 }
@@ -284,6 +285,7 @@ Confirms that the client persisted a delivered payload, so the bridge clears its
 - `404 Not Found` — client not registered
 - `403 Forbidden` — client not active
 - `400 Bad Request` — missing/invalid body
+- `500 Internal Server Error` — static data unavailable: `{"error": "Static data unavailable", "status": 500}`
 
 **Notes:**
 
@@ -499,12 +501,12 @@ class SensorBridgeClient:
         ...
 
     def fetch_and_persist_static_data(self):
-        response = requests.get(f"{self.base_url}/api/static-data", params={"mac_address": self.mac_address})
+        response = requests.get(f"{self.server_url}/api/static-data", params={"mac_address": self.mac_address})
         response.raise_for_status()
         self.persist_static_data(response.content)
         revision = response.headers["X-Static-Data-Revision"]
         ack = requests.post(
-            f"{self.base_url}/api/static-data/ack",
+            f"{self.server_url}/api/static-data/ack",
             json={"mac_address": self.mac_address, "revision": revision},
         )
         ack.raise_for_status()
