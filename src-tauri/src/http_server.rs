@@ -2,11 +2,11 @@ use chrono::Utc;
 use log::info;
 use sensor_core::{ElementConfig, StaticClientData};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use warp::{Filter, Reply};
+use warp::Filter;
 
 // Add imports for static data preparation
 use crate::in_memory_config::InMemoryConfig;
@@ -23,18 +23,6 @@ pub struct DisplayClient {
     pub active: bool,
     pub elements: Vec<ElementConfig>,
     pub static_data_reload_required: bool,
-}
-
-/// API response version of RegisteredClient with formatted timestamp
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RegisteredClientResponse {
-    pub mac_address: String,
-    pub name: String,
-    pub ip_address: String,
-    pub resolution_width: u16,
-    pub resolution_height: u16,
-    pub active: bool,
-    pub elements: Vec<ElementConfig>,
 }
 
 impl DisplayClient {
@@ -58,39 +46,24 @@ impl DisplayClient {
     }
 }
 
-impl From<DisplayClient> for RegisteredClientResponse {
-    fn from(client: DisplayClient) -> Self {
-        RegisteredClientResponse {
-            mac_address: client.mac_address,
-            name: client.name,
-            ip_address: client.ip_address,
-            resolution_width: client.resolution_width,
-            resolution_height: client.resolution_height,
-            active: client.active,
-            elements: client.elements,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum ApiError {
     NotRegistered,
     NotActive,
     NotReady,
+    StaticDataUnavailable,
     BadRequest(String),
 }
 
 impl warp::reject::Reject for ApiError {}
 
-pub async fn start_server(
-    port: u16,
-    sensor_snapshot: Arc<RwLock<Option<crate::sensor::SensorSnapshot>>>,
-    sensor_value_history: Arc<RwLock<VecDeque<Vec<sensor_core::SensorValue>>>>,
-    shutdown_rx: oneshot::Receiver<()>,
+/// Builds the HTTP API routes. Factored out of `start_server` so that the
+/// handler contract is testable without binding a socket.
+pub fn routes(
     in_memory_config: InMemoryConfig,
-) -> Result<JoinHandle<()>, Box<dyn std::error::Error + Send + Sync>> {
-    info!("Starting HTTP server on port {}", port);
-
+    sensor_snapshot: Arc<RwLock<Option<crate::sensor::SensorSnapshot>>>,
+    static_data_cache: crate::static_data_cache::StaticDataCacheHandle,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     // Create filter helpers
     let in_memory_config_filter = warp::any().map({
         let config = in_memory_config.clone();
@@ -100,23 +73,28 @@ pub async fn start_server(
         let snapshot = sensor_snapshot.clone();
         move || snapshot.clone()
     });
-    let sensor_history_filter = warp::any().map({
-        let history = sensor_value_history.clone();
-        move || history.clone()
+    let static_data_cache_filter = warp::any().map({
+        let cache = static_data_cache.clone();
+        move || cache.clone()
     });
 
     // Health check endpoint
-    let health = warp::path("health").and(warp::get()).map(|| {
-        warp::reply::json(&serde_json::json!({
-            "status": "healthy",
-            "service": "sensor-bridge",
-            "timestamp": Utc::now().timestamp()
-        }))
-    });
+    let health = warp::path("health")
+        .and(warp::path::end())
+        .and(warp::get())
+        .map(|| {
+            warp::reply::json(&serde_json::json!({
+                "status": "healthy",
+                "service": "sensor-bridge",
+                "protocol_version": sensor_core::PROTOCOL_VERSION,
+                "timestamp": Utc::now().timestamp()
+            }))
+        });
 
     // Registration endpoint
     let register = warp::path("api")
         .and(warp::path("register"))
+        .and(warp::path::end())
         .and(warp::post())
         .and(warp::body::json())
         .and(in_memory_config_filter.clone())
@@ -125,28 +103,53 @@ pub async fn start_server(
     // Static data endpoint
     let static_data_route = warp::path("api")
         .and(warp::path("static-data"))
+        .and(warp::path::end())
         .and(warp::get())
         .and(warp::query::<HashMap<String, String>>())
         .and(in_memory_config_filter.clone())
+        .and(static_data_cache_filter)
         .and_then(handle_static_data_request);
+
+    // Static data confirmation endpoint
+    let static_data_ack_route = warp::path("api")
+        .and(warp::path("static-data"))
+        .and(warp::path("ack"))
+        .and(warp::path::end())
+        .and(warp::post())
+        .and(warp::body::json())
+        .and(in_memory_config_filter.clone())
+        .and_then(handle_static_data_ack);
 
     // Sensor data endpoint with client verification
     let api_sensor_data = warp::path("api")
         .and(warp::path("sensor-data"))
+        .and(warp::path::end())
         .and(warp::get())
         .and(warp::query::<HashMap<String, String>>())
-        .and(in_memory_config_filter.clone())
+        .and(in_memory_config_filter)
         .and(sensor_snapshot_filter)
-        .and(sensor_history_filter)
         .and_then(handle_sensor_data_request);
 
     // Combine routes with proper error handling
-    let routes = health
+    health
         .or(api_sensor_data)
         .or(register)
+        .or(static_data_ack_route)
         .or(static_data_route)
         .recover(handle_rejection)
-        .with(warp::cors().allow_any_origin());
+        .with(warp::cors().allow_any_origin())
+}
+
+pub async fn start_server(
+    port: u16,
+    sensor_snapshot: Arc<RwLock<Option<crate::sensor::SensorSnapshot>>>,
+    static_data_cache: crate::static_data_cache::StaticDataCacheHandle,
+    shutdown_rx: oneshot::Receiver<()>,
+    in_memory_config: InMemoryConfig,
+) -> Result<JoinHandle<()>, Box<dyn std::error::Error + Send + Sync>> {
+    info!("Starting HTTP server on port {}", port);
+
+    let routes = routes(in_memory_config, sensor_snapshot, static_data_cache);
 
     // Start the server with graceful shutdown
     let server = warp::serve(routes)
@@ -171,7 +174,6 @@ async fn handle_sensor_data_request(
     params: HashMap<String, String>,
     in_memory_config: InMemoryConfig,
     sensor_snapshot: Arc<RwLock<Option<crate::sensor::SensorSnapshot>>>,
-    _sensor_value_history: Arc<RwLock<VecDeque<Vec<sensor_core::SensorValue>>>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     // Extract and validate MAC address parameter
     let mac_address = params
@@ -184,7 +186,7 @@ async fn handle_sensor_data_request(
         .to_string();
 
     // Normalize MAC address format
-    let normalized_mac = mac_address.to_uppercase();
+    let normalized_mac = sensor_core::normalize_mac(&mac_address);
 
     let guard = in_memory_config.read().await;
     let display_clients = &guard.display_clients;
@@ -267,7 +269,7 @@ async fn handle_client_registration(
         existing_client.resolution_width = width;
         existing_client.resolution_height = height;
 
-        info!("Updated existing client: {}", &normalized_mac);
+        info!("Updated existing client: {}", normalized_mac);
         existing_client
     } else {
         // Create new client
@@ -279,7 +281,7 @@ async fn handle_client_registration(
             height,
         );
 
-        info!("Registered new client: {}", &normalized_mac);
+        info!("Registered new client: {}", normalized_mac);
         new_client
     };
 
@@ -291,6 +293,7 @@ async fn handle_client_registration(
     Ok(warp::reply::json(&serde_json::json!({
         "success": true,
         "message": "Client registered successfully",
+        "protocol_version": sensor_core::PROTOCOL_VERSION,
         "mac_address": normalized_mac
     })))
 }
@@ -298,17 +301,21 @@ async fn handle_client_registration(
 async fn handle_static_data_request(
     params: HashMap<String, String>,
     in_memory_config: InMemoryConfig,
+    static_data_cache: crate::static_data_cache::StaticDataCacheHandle,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let mac_address = params.get("mac_address").ok_or_else(|| {
         warp::reject::custom(ApiError::BadRequest("mac_address required".to_string()))
     })?;
+    let mac_address = sensor_core::normalize_mac(mac_address);
 
-    // Verify client exists and is active
+    // Verify the client exists and is active. The reload flag is deliberately
+    // NOT touched here: it clears only through POST /api/static-data/ack, after
+    // the client persisted the delivered payload.
     let elements = {
         let guard = in_memory_config.read().await;
         let client = guard
             .display_clients
-            .get(mac_address)
+            .get(&mac_address)
             .ok_or_else(|| warp::reject::custom(ApiError::NotRegistered))?;
 
         if !client.active {
@@ -318,38 +325,88 @@ async fn handle_static_data_request(
         client.elements.clone()
     };
 
-    // Reset the reload flag now that we're serving the static data
-    {
-        let mut guard = in_memory_config.write().await;
-        if let Some(client) = guard.display_clients.get_mut(mac_address) {
-            client.static_data_reload_required = false;
-            crate::config_file::write(&guard);
-        }
-    }
+    // Preparation performs network and disk I/O - keep it off the async workers.
+    let prepared = tokio::task::spawn_blocking(move || {
+        let mut cache = static_data_cache.lock().ignore_poison();
+        cache.get_or_prepare(&elements, prepare_static_data_for_client)
+    })
+    .await
+    .map_err(|_| warp::reject::custom(ApiError::StaticDataUnavailable))?
+    .map_err(|err| {
+        log::error!("Failed to prepare static data: {}", err);
+        warp::reject::custom(ApiError::StaticDataUnavailable)
+    })?;
 
-    // Prepare and return static data. A preparation failure must not be answered
-    // with a degraded payload, so it becomes a 5xx instead.
-    let response = match prepare_static_data_for_client(&elements) {
-        Ok(static_bincode_data) => warp::reply::with_header(
-            static_bincode_data,
-            "content-type",
-            "application/octet-stream",
-        )
-        .into_response(),
-        Err(err) => {
-            log::error!("Failed to prepare static data: {}", err);
-            warp::reply::with_status(
-                warp::reply::json(&serde_json::json!({
-                    "error": "Failed to prepare static data",
-                    "status": 500
-                })),
-                warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-            )
-            .into_response()
+    let reply = warp::reply::with_header(
+        (*prepared.bytes).clone(),
+        "content-type",
+        "application/octet-stream",
+    );
+    let reply = warp::reply::with_header(reply, "x-static-data-revision", prepared.revision);
+    let reply = warp::reply::with_header(
+        reply,
+        "x-protocol-version",
+        sensor_core::PROTOCOL_VERSION.to_string(),
+    );
+
+    Ok(reply)
+}
+
+/// Request body of `POST /api/static-data/ack`.
+#[derive(Debug, Deserialize)]
+pub struct StaticDataAckRequest {
+    pub mac_address: String,
+    pub revision: String,
+}
+
+/// Clears a client's static-data reload flag after the client persisted the
+/// payload. Only a confirmation for the revision that is current for the
+/// client's elements clears the flag, so a stale confirmation can never
+/// discard a newer pending update. Repeated confirmations are idempotent.
+async fn handle_static_data_ack(
+    ack: StaticDataAckRequest,
+    in_memory_config: InMemoryConfig,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let mac_address = sensor_core::normalize_mac(&ack.mac_address);
+
+    // Ordered against every other commit: no older snapshot can win the rename race.
+    let _persist = crate::config_file::lock_persist().await;
+
+    // Revision check and flag update happen under the same write guard, so an
+    // element change between them cannot be confirmed away by a stale ack.
+    let (pending_cleared, updated_config) = {
+        let mut config = in_memory_config.write().await;
+        let client = config
+            .display_clients
+            .get_mut(&mac_address)
+            .ok_or_else(|| warp::reject::custom(ApiError::NotRegistered))?;
+
+        if !client.active {
+            return Err(warp::reject::custom(ApiError::NotActive));
+        }
+
+        let current_revision = crate::static_data_cache::elements_revision(&client.elements)
+            .map_err(|err| {
+                log::error!("Failed to compute elements revision: {}", err);
+                warp::reject::custom(ApiError::StaticDataUnavailable)
+            })?;
+
+        if client.static_data_reload_required && ack.revision == current_revision {
+            client.static_data_reload_required = false;
+            (true, Some(config.clone()))
+        } else {
+            (false, None)
         }
     };
 
-    Ok(response)
+    if let Some(config) = updated_config {
+        crate::config_file::write_async(config).await;
+    }
+
+    Ok(warp::reply::json(&serde_json::json!({
+        "success": true,
+        "pending_cleared": pending_cleared
+    })))
 }
 
 /// Prepares all static data for the client (text, static images, conditional images)
@@ -380,6 +437,10 @@ async fn handle_rejection(
             ApiError::NotReady => (
                 warp::http::StatusCode::SERVICE_UNAVAILABLE,
                 "No sensor sample available yet",
+            ),
+            ApiError::StaticDataUnavailable => (
+                warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "Static data unavailable",
             ),
             ApiError::BadRequest(msg) => (warp::http::StatusCode::BAD_REQUEST, msg.as_str()),
         }

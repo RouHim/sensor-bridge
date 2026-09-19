@@ -43,6 +43,8 @@ mod utils;
 
 #[cfg(test)]
 mod fonts_test;
+#[cfg(test)]
+mod http_server_test;
 mod in_memory_config;
 mod linux_amdgpu;
 
@@ -469,7 +471,7 @@ async fn start_http_server(app_state: AppState) -> Result<(), String> {
     }
 
     let sensor_snapshot = app_state.sensor_snapshot.clone();
-    let sensor_history = app_state.sensor_value_history.clone();
+    let static_data_cache = app_state.static_data_cache.clone();
     let in_memory_config = app_state.in_memory_config.clone();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
@@ -480,7 +482,7 @@ async fn start_http_server(app_state: AppState) -> Result<(), String> {
         match http_server::start_server(
             port,
             sensor_snapshot,
-            sensor_history,
+            static_data_cache,
             shutdown_rx,
             in_memory_config,
         )
