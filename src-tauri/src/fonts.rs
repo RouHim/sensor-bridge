@@ -3,13 +3,34 @@ use std::fs;
 
 use font_loader::system_fonts;
 
-/// Loads a system font data by its font family name.
-pub fn load_data(font_family_name: &str) -> Vec<u8> {
+/// Loads system font data by font family name.
+/// Returns an error instead of panicking when the font cannot be loaded.
+///
+/// The installed families are checked up front because fontconfig silently
+/// substitutes a default font for an unknown family: `system_fonts::get` would
+/// hand out Noto Sans for a typo, which is exactly the degraded payload this
+/// must not produce.
+pub fn try_load_data(font_family_name: &str) -> Result<Vec<u8>, String> {
+    if !exists(font_family_name) {
+        return Err(format!("Failed to load font '{}'", font_family_name));
+    }
+
     let property = system_fonts::FontPropertyBuilder::new()
         .family(font_family_name)
         .build();
-    let font = system_fonts::get(&property).unwrap();
-    font.0
+
+    match system_fonts::get(&property) {
+        Some(font) => Ok(font.0),
+        None => Err(format!("Failed to load font '{}'", font_family_name)),
+    }
+}
+
+/// Loads a system font data by its font family name.
+///
+/// Panics when the font cannot be loaded; callers that must not abort use
+/// [`try_load_data`].
+pub fn load_data(font_family_name: &str) -> Vec<u8> {
+    try_load_data(font_family_name).expect("failed to load font")
 }
 
 /// Checks if the given font family name is installed on the system.

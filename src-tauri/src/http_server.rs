@@ -6,7 +6,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, RwLock};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use warp::Filter;
+use warp::{Filter, Reply};
 
 // Add imports for static data preparation
 use crate::in_memory_config::InMemoryConfig;
@@ -327,54 +327,47 @@ async fn handle_static_data_request(
         }
     }
 
-    // Prepare and return static data
-    let static_bincode_data = prepare_static_data_for_client(&elements);
+    // Prepare and return static data. A preparation failure must not be answered
+    // with a degraded payload, so it becomes a 5xx instead.
+    let response = match prepare_static_data_for_client(&elements) {
+        Ok(static_bincode_data) => warp::reply::with_header(
+            static_bincode_data,
+            "content-type",
+            "application/octet-stream",
+        )
+        .into_response(),
+        Err(err) => {
+            log::error!("Failed to prepare static data: {}", err);
+            warp::reply::with_status(
+                warp::reply::json(&serde_json::json!({
+                    "error": "Failed to prepare static data",
+                    "status": 500
+                })),
+                warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+            )
+            .into_response()
+        }
+    };
 
-    Ok(warp::reply::with_header(
-        static_bincode_data,
-        "content-type",
-        "application/octet-stream",
-    ))
+    Ok(response)
 }
 
 /// Prepares all static data for the client (text, static images, conditional images)
-/// This is done by gathering data from all elements and serializing it
-/// Returns the data serialized as binary using bincode
-fn prepare_static_data_for_client(elements: &[ElementConfig]) -> Vec<u8> {
+/// and serializes it. Fails when any required asset cannot be prepared or
+/// serialization fails, so a degraded payload is never served as success.
+fn prepare_static_data_for_client(elements: &[ElementConfig]) -> Result<Vec<u8>, String> {
     info!("Preparing static data for client");
 
-    // Prepare text data (fonts)
-    let text_data = text::build_fonts_data(elements);
-
-    // Prepare static image data
-    let static_image_data = static_image::get_preparation_data(elements);
-
-    // Prepare conditional image data
-    let conditional_image_data = conditional_image::get_preparation_data(elements);
-
-    // Bundle all data together
     let static_data = StaticClientData {
-        text_data,
-        static_image_data,
-        conditional_image_data,
+        text_data: text::build_fonts_data(elements)?,
+        static_image_data: static_image::get_preparation_data(elements)?,
+        conditional_image_data: conditional_image::get_preparation_data(elements)?,
     };
 
-    // Serialize to binary format using bincode-next (bincode-1-compatible config)
-    match crate::serialization::encode(&static_data) {
-        Ok(binary_data) => {
-            info!("Serialized static data: {} bytes", binary_data.len());
-            binary_data
-        }
-        Err(e) => {
-            log::error!("Failed to serialize static data: {}", e);
-            crate::serialization::encode(&StaticClientData {
-                text_data: HashMap::new(),
-                static_image_data: HashMap::new(),
-                conditional_image_data: HashMap::new(),
-            })
-            .unwrap_or_default()
-        }
-    }
+    let binary_data = crate::serialization::encode(&static_data)?;
+    info!("Serialized static data: {} bytes", binary_data.len());
+
+    Ok(binary_data)
 }
 
 async fn handle_rejection(
@@ -410,4 +403,71 @@ async fn handle_rejection(
     }));
 
     Ok(warp::reply::with_status(json, code))
+}
+
+#[cfg(test)]
+mod preparation_tests {
+    use super::*;
+    use sensor_core::ElementType;
+
+    fn test_font_family() -> String {
+        crate::fonts::get_all()
+            .first()
+            .cloned()
+            .expect("this test needs at least one system font")
+    }
+
+    fn text_element(id: &str) -> ElementConfig {
+        ElementConfig {
+            id: id.to_string(),
+            element_type: ElementType::Text,
+            text_config: Some(sensor_core::TextConfig {
+                font_family: test_font_family(),
+                format: "{value}".to_string(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+
+    fn missing_image_element(id: &str) -> ElementConfig {
+        ElementConfig {
+            id: id.to_string(),
+            element_type: ElementType::StaticImage,
+            image_config: Some(sensor_core::ImageConfig {
+                width: 4,
+                height: 4,
+                image_path: "/definitely/not/a/real/image.png".to_string(),
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn empty_element_list_prepares_an_empty_payload() {
+        let payload = prepare_static_data_for_client(&[]).expect("no elements is not a failure");
+        assert!(
+            !payload.is_empty(),
+            "an empty StaticClientData still serializes to bytes"
+        );
+    }
+
+    #[test]
+    fn missing_image_file_fails_preparation() {
+        let result = prepare_static_data_for_client(&[missing_image_element("broken")]);
+        assert!(
+            result.is_err(),
+            "a missing asset must not degrade into an empty payload"
+        );
+    }
+
+    #[test]
+    fn unknown_font_failure_is_reported() {
+        let mut element = text_element("unknown-font");
+        element.text_config.as_mut().unwrap().font_family =
+            "Definitely Not A Font 12345".to_string();
+
+        let result = prepare_static_data_for_client(&[element]);
+        assert!(result.is_err(), "an unloadable font must fail preparation");
+    }
 }

@@ -112,7 +112,7 @@ pub fn render(
 
     thread::spawn(move || {
         // Build font data hashmap (extract just the data, ignore hashes for preview)
-        let fonts_with_hashes = text::build_fonts_data(&client.elements);
+        let fonts_with_hashes = text::build_fonts_data(&client.elements)?;
         let fonts_data: HashMap<String, Vec<u8>> = fonts_with_hashes
             .into_iter()
             .map(|(key, (_hash, data))| (key, data))

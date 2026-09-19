@@ -42,19 +42,30 @@ pub fn render_preview(
     writer.into_inner().unwrap().into_inner()
 }
 /// Builds the font data hashmap for all text elements with MD5 hashes.
-pub fn build_fonts_data(elements: &[ElementConfig]) -> HashMap<String, (String, Vec<u8>)> {
-    elements
+/// Fails when a configured font cannot be loaded: a degraded payload must
+/// never reach a client, because the client replaces its whole asset set.
+pub fn build_fonts_data(
+    elements: &[ElementConfig],
+) -> Result<HashMap<String, (String, Vec<u8>)>, String> {
+    let mut fonts_data: HashMap<String, (String, Vec<u8>)> = HashMap::new();
+
+    for text_element in elements
         .iter()
         .filter(|element| element.element_type == ElementType::Text)
-        .map(|text_element| {
-            let text_config = text_element.text_config.as_ref().unwrap();
-            let font_family_name = &text_config.font_family;
-            let font_data = fonts::load_data(font_family_name);
+    {
+        let text_config = text_element
+            .text_config
+            .as_ref()
+            .ok_or_else(|| format!("Text element {} has no text config", text_element.id))?;
+        let font_family_name = &text_config.font_family;
 
-            // Calculate MD5 hash
-            let hash = format!("{:x}", md5::compute(&font_data));
+        let font_data = fonts::try_load_data(font_family_name)?;
 
-            (font_family_name.clone(), (hash, font_data))
-        })
-        .collect()
+        // Calculate MD5 hash
+        let hash = format!("{:x}", md5::compute(&font_data));
+
+        fonts_data.insert(font_family_name.clone(), (hash, font_data));
+    }
+
+    Ok(fonts_data)
 }

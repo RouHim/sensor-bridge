@@ -36,21 +36,35 @@ pub fn prepare(element: &ElementConfig) -> Result<(), String> {
     Ok(())
 }
 
-/// Pre-renders static images and serializes the render data to bytes with MD5 hashes
-pub fn get_preparation_data(elements: &[ElementConfig]) -> HashMap<String, (String, Vec<u8>)> {
-    elements
-        .par_iter()
+/// Pre-renders static images and serializes the render data to bytes with MD5 hashes.
+/// Fails when any image cannot be loaded or prepared: a client replaces its whole
+/// asset set with the delivered payload, so a partial payload must not be served.
+pub fn get_preparation_data(
+    elements: &[ElementConfig],
+) -> Result<HashMap<String, (String, Vec<u8>)>, String> {
+    let image_elements: Vec<&ElementConfig> = elements
+        .iter()
         .filter(|element| element.element_type == ElementType::StaticImage)
-        .filter_map(|element| {
-            match prepare_image(&element.id, element.image_config.as_ref().unwrap()) {
-                Ok(result) => Some(result),
-                Err(e) => {
-                    log::error!("Failed to prepare image for element {}: {}", element.id, e);
-                    None
-                }
-            }
+        .collect();
+
+    let prepared = image_elements
+        .par_iter()
+        .map(|element| {
+            let image_config = element.image_config.as_ref().ok_or_else(|| {
+                format!("Static image element {} has no image config", element.id)
+            })?;
+
+            prepare_image(&element.id, image_config)
         })
-        .collect()
+        .collect::<Vec<_>>();
+
+    let mut static_image_data: HashMap<String, (String, Vec<u8>)> = HashMap::new();
+    for result in prepared {
+        let (element_id, entry) = result?;
+        static_image_data.insert(element_id, entry);
+    }
+
+    Ok(static_image_data)
 }
 
 /// Reads each image into memory, scales it to the desired resolution, and returns it with MD5 hash

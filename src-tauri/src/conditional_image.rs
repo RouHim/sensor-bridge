@@ -171,55 +171,74 @@ fn find_recursive_in(search_folder: &PathBuf) -> Vec<String> {
 }
 
 /// Pre-renders conditional images and returns the data to send with MD5 hashes.
+/// Fails when an archive cannot be unpacked or an image cannot be read: a client
+/// replaces its whole asset set with the delivered payload, so a partial payload
+/// must not be served.
+// The nested map is the wire shape itself; a type alias would only hide it.
+#[allow(clippy::type_complexity)]
 pub fn get_preparation_data(
     elements: &[ElementConfig],
-) -> HashMap<String, HashMap<String, (String, Vec<u8>)>> {
+) -> Result<HashMap<String, HashMap<String, (String, Vec<u8>)>>, String> {
     let conditional_image_elements: Vec<&ElementConfig> = elements
         .iter()
         .filter(|element| element.element_type == ElementType::ConditionalImage)
         .collect();
 
     // Unpack archive to cache folder
-    conditional_image_elements.par_iter().for_each(|element| {
-        if let Err(e) = prepare_element(
-            &element.id,
-            element.conditional_image_config.as_ref().unwrap(),
-        ) {
-            log::error!(
-                "Failed to prepare conditional image for element {}: {}",
-                element.id,
-                e
-            );
-        }
-    });
+    let prepared_archives: Vec<Result<(), String>> = conditional_image_elements
+        .par_iter()
+        .map(|element| {
+            let config = element.conditional_image_config.as_ref().ok_or_else(|| {
+                format!(
+                    "Conditional image element {} has no image config",
+                    element.id
+                )
+            })?;
+
+            prepare_element(&element.id, config).map(|_| ())
+        })
+        .collect();
+    for result in prepared_archives {
+        result?;
+    }
 
     // Pre-process / Pre-render and prepare for display transport
-    let images_data: HashMap<String, HashMap<String, (String, Vec<u8>)>> =
-        conditional_image_elements
-            .par_iter()
-            .map(|element| (element.id.clone(), get_image_series(&element.id)))
-            .collect();
+    let prepared_series = conditional_image_elements
+        .par_iter()
+        .map(|element| get_image_series(&element.id).map(|series| (element.id.clone(), series)))
+        .collect::<Vec<Result<_, String>>>();
 
-    images_data
+    let mut images_data: HashMap<String, HashMap<String, (String, Vec<u8>)>> = HashMap::new();
+    for result in prepared_series {
+        let (element_id, series) = result?;
+        images_data.insert(element_id, series);
+    }
+
+    Ok(images_data)
 }
 
 /// Collects conditional image data for the specified element.
 /// Returns a hashmap with the image name as key and the (hash, image data) tuple as value.
-fn get_image_series(element_id: &str) -> HashMap<String, (String, Vec<u8>)> {
+fn get_image_series(element_id: &str) -> Result<HashMap<String, (String, Vec<u8>)>, String> {
     let mut image_series: HashMap<String, (String, Vec<u8>)> = HashMap::new();
 
     let cache_dir = sensor_core::get_cache_dir(element_id, &ElementType::ConditionalImage);
 
-    for image_path in fs::read_dir(cache_dir).unwrap() {
-        let image_path = image_path.unwrap().path();
+    let entries = fs::read_dir(&cache_dir)
+        .map_err(|e| format!("Failed to read cache dir {:?}: {}", cache_dir, e))?;
+
+    for entry in entries {
+        let image_path = entry
+            .map_err(|e| format!("Failed to read cache entry in {:?}: {}", cache_dir, e))?
+            .path();
         let image_name = image_path
             .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| format!("Invalid image file name in {:?}", image_path))?
             .to_string();
 
-        let image_data = fs::read(image_path).unwrap();
+        let image_data =
+            fs::read(&image_path).map_err(|e| format!("Failed to read {:?}: {}", image_path, e))?;
 
         // Calculate MD5 hash
         let hash = format!("{:x}", md5::compute(&image_data));
@@ -227,7 +246,7 @@ fn get_image_series(element_id: &str) -> HashMap<String, (String, Vec<u8>)> {
         image_series.insert(image_name, (hash, image_data));
     }
 
-    image_series
+    Ok(image_series)
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

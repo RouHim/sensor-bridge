@@ -30,10 +30,15 @@ fn test_font_not_installed() {
 #[test]
 fn test_load_font_data() {
     // GIVEN is font that is already known to the system
-    let font_name = "Arial";
+    // (a hardcoded name like "Arial" is not necessarily installed, and a font
+    // family that is not installed must no longer be substituted silently)
+    let font_name = fonts::get_all()
+        .first()
+        .cloned()
+        .expect("this test needs at least one system font");
 
     // WHEN loading the font data
-    let font_exists = fonts::load_data(font_name);
+    let font_exists = fonts::load_data(&font_name);
 
     // THEN the font should be found
     assert_that!(font_exists.len()).is_greater_than(0);
