@@ -3,7 +3,7 @@ use std::fs;
 use std::sync::{Arc, RwLock};
 
 #[cfg(target_os = "linux")]
-use dmidecode::{BaseBoard, Bios, EntryPoint, Structure};
+use dmidecode::{BaseBoard, Bios, EntryPoint, MemoryDevice, Structure};
 #[cfg(target_os = "linux")]
 use log::info;
 #[cfg(target_os = "linux")]
@@ -60,7 +60,7 @@ fn parse_sensor_values(dmidecode_data: &[u8]) -> Vec<SensorValue> {
 }
 
 #[cfg(target_os = "linux")]
-fn parse_base_board(main_board: BaseBoard) -> Vec<SensorValue> {
+fn parse_base_board(main_board: BaseBoard<'_>) -> Vec<SensorValue> {
     let manufacturer = main_board.manufacturer;
     let product_name = main_board.product;
     let version = main_board.version;
@@ -91,7 +91,7 @@ fn parse_base_board(main_board: BaseBoard) -> Vec<SensorValue> {
 }
 
 #[cfg(target_os = "linux")]
-fn parse_bios(bios: Bios) -> Vec<SensorValue> {
+fn parse_bios(bios: Bios<'_>) -> Vec<SensorValue> {
     let bios_vendor = bios.vendor;
     let bios_version = bios.bios_version;
     let bios_release_date = bios.bios_release_date;
@@ -144,7 +144,7 @@ fn parse_bios(bios: Bios) -> Vec<SensorValue> {
 }
 
 #[cfg(target_os = "linux")]
-fn parse_memory_device(memory_device: dmidecode::MemoryDevice) -> Vec<SensorValue> {
+fn parse_memory_device(memory_device: MemoryDevice<'_>) -> Vec<SensorValue> {
     let device_location = memory_device.device_locator;
     let memory_type = format!("{:?}", memory_device.memory_type).to_uppercase();
     let form_factor = format!("{:?}", memory_device.form_factor).to_uppercase();

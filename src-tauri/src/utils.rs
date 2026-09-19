@@ -1,6 +1,37 @@
 use std::io::Cursor;
+use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
 
 use image::{DynamicImage, ImageBuffer, Rgba};
+
+/// Recovers a lock guard from a poisoned lock instead of panicking.
+/// The guarded data is plain state that must survive a panicking consumer.
+pub trait LockResultExt<T> {
+    fn ignore_poison(self) -> T;
+}
+
+impl<'a, T: ?Sized> LockResultExt<MutexGuard<'a, T>>
+    for Result<MutexGuard<'a, T>, PoisonError<MutexGuard<'a, T>>>
+{
+    fn ignore_poison(self) -> MutexGuard<'a, T> {
+        self.unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl<'a, T: ?Sized> LockResultExt<RwLockReadGuard<'a, T>>
+    for Result<RwLockReadGuard<'a, T>, PoisonError<RwLockReadGuard<'a, T>>>
+{
+    fn ignore_poison(self) -> RwLockReadGuard<'a, T> {
+        self.unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl<'a, T: ?Sized> LockResultExt<RwLockWriteGuard<'a, T>>
+    for Result<RwLockWriteGuard<'a, T>, PoisonError<RwLockWriteGuard<'a, T>>>
+{
+    fn ignore_poison(self) -> RwLockWriteGuard<'a, T> {
+        self.unwrap_or_else(PoisonError::into_inner)
+    }
+}
 
 /// Pretty print bytes, e.g. 534 MB
 /// Returns a tuple of (value, unit)
