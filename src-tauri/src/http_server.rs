@@ -253,7 +253,7 @@ async fn handle_client_registration(
     })? as u16;
 
     // Normalize MAC address
-    let normalized_mac = mac_address.to_uppercase();
+    let normalized_mac = sensor_core::normalize_mac(mac_address);
 
     let maybe_client = in_memory_config
         .read()

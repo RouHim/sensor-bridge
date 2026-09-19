@@ -249,7 +249,7 @@ async fn update_client_name(
     mac_address: String,
     new_name: String,
 ) -> Result<(), String> {
-    let mac_address = mac_address.trim().to_string().to_uppercase();
+    let mac_address = sensor_core::normalize_mac(&mac_address);
     in_memory_config::update_client_name(&app_state.in_memory_config, &mac_address, &new_name)
         .await;
     Ok(())
@@ -261,7 +261,7 @@ async fn remove_registered_client(
     app_state: State<'_, AppState>,
     mac_address: String,
 ) -> Result<(), String> {
-    let mac_address = mac_address.trim().to_string().to_uppercase();
+    let mac_address = sensor_core::normalize_mac(&mac_address);
     in_memory_config::remove_registered_client(&app_state.in_memory_config, &mac_address).await;
     Ok(())
 }
@@ -273,7 +273,7 @@ async fn set_client_active(
     mac_address: String,
     active: bool,
 ) -> Result<(), String> {
-    let mac_address = mac_address.trim().to_string().to_uppercase();
+    let mac_address = sensor_core::normalize_mac(&mac_address);
     in_memory_config::set_client_active(&app_state.in_memory_config, &mac_address, active).await;
     Ok(())
 }
@@ -285,7 +285,7 @@ async fn update_client_display_config(
     mac_address: String,
     elements: String,
 ) -> Result<(), String> {
-    let mac_address = mac_address.trim().to_string().to_uppercase();
+    let mac_address = sensor_core::normalize_mac(&mac_address);
     let elements: Vec<ElementConfig> = serde_json::from_str(&elements)
         .map_err(|e| format!("Invalid JSON format for elements: {}", e))?;
     in_memory_config::update_client_display_config(
@@ -300,6 +300,7 @@ async fn update_client_display_config(
 /// Shows LCD live preview for a registered client
 #[tauri::command]
 async fn show_lcd_live_preview(app_handle: AppHandle, mac_address: String) -> Result<(), String> {
+    let mac_address = sensor_core::normalize_mac(&mac_address);
     let client = in_memory_config::get_client(
         &app_handle.state::<AppState>().in_memory_config,
         &mac_address,
@@ -325,6 +326,7 @@ async fn get_lcd_preview_image(
     app_state: State<'_, AppState>,
     mac_address: String,
 ) -> Result<String, String> {
+    let mac_address = sensor_core::normalize_mac(&mac_address);
     let client = in_memory_config::get_client(&app_state.in_memory_config, &mac_address)
         .await
         .ok_or_else(|| format!("Client with MAC address {} not found", mac_address))?;
