@@ -50,22 +50,22 @@ pub fn pretty_bytes(value: f64) -> (f64, String) {
     (value, units[unit].to_string())
 }
 
-/// Convert an rgb image to a png buffer
+/// Convert an rgba image to a jpeg buffer (quality 100, alpha channel dropped).
 pub fn rgb_to_jpeg_bytes(image: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
-    image
-        .write_to(&mut cursor, image::ImageOutputFormat::Jpeg(100))
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, 100)
+        .encode_image(&image)
         .unwrap();
     buf
 }
 
-/// Convert rgba an image to a png buffer
+/// Convert an rgba image to a png buffer
 pub fn rgba_to_png_bytes(image: DynamicImage) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
     image
-        .write_to(&mut cursor, image::ImageOutputFormat::Png)
+        .write_to(&mut cursor, image::ImageFormat::Png)
         .unwrap();
     buf
 }
@@ -78,4 +78,33 @@ pub fn is_reachable_url(file_uri: &str) -> bool {
 /// Checks if the given file uri is a url.
 pub fn is_url(file_uri: &str) -> bool {
     file_uri.starts_with("http://") || file_uri.starts_with("https://")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encodes_rgba_as_jpeg() {
+        let image = image::RgbaImage::from_pixel(8, 4, image::Rgba([0, 255, 0, 255]));
+
+        let bytes = rgb_to_jpeg_bytes(image);
+
+        let decoded = image::load_from_memory(&bytes).expect("frame must be a decodable JPEG");
+        assert_eq!((decoded.width(), decoded.height()), (8, 4));
+    }
+
+    #[test]
+    fn encodes_rgba_as_png() {
+        let image = image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
+            4,
+            4,
+            image::Rgba([1, 2, 3, 255]),
+        ));
+
+        let bytes = rgba_to_png_bytes(image);
+
+        let decoded = image::load_from_memory(&bytes).expect("image must be a decodable PNG");
+        assert_eq!((decoded.width(), decoded.height()), (4, 4));
+    }
 }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::{BufWriter, Cursor};
 
+use ab_glyph::FontVec;
 use sensor_core::{ElementConfig, ElementType, SensorValue, TextConfig};
 
 use crate::fonts;
@@ -22,7 +23,7 @@ pub fn render_preview(
 ) -> Vec<u8> {
     // Initialize image buffer
     let font_data = fonts::load_data(&text_config.font_family);
-    let font = rusttype::Font::try_from_bytes(&font_data).unwrap();
+    let font = FontVec::try_from_vec(font_data).unwrap();
 
     let text_image = sensor_core::text_renderer::render(
         image_width,
@@ -35,7 +36,7 @@ pub fn render_preview(
     // Render to png
     let mut writer = BufWriter::new(Cursor::new(Vec::new()));
     text_image
-        .write_to(&mut writer, image::ImageOutputFormat::Png)
+        .write_to(&mut writer, image::ImageFormat::Png)
         .unwrap();
 
     writer.into_inner().unwrap().into_inner()

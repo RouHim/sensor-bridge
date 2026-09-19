@@ -51,8 +51,12 @@ pub fn prepare_element(
         fs::read(zip_file_path).map_err(|e| format!("Failed to read zip file: {}", e))?
     };
 
-    zip_extract::extract(Cursor::new(zip_file_data), &cache_folder_path, true)
-        .map_err(|e| format!("Failed to extract zip: {}", e))?;
+    // zip-extract is unmaintained (its own deprecation notice points at the `zip` crate);
+    // replacing it would mean reimplementing strip-toplevel extraction, so the call is
+    // explicitly acknowledged instead.
+    #[allow(deprecated)]
+    let extract_result = zip_extract::extract(Cursor::new(zip_file_data), &cache_folder_path, true);
+    extract_result.map_err(|e| format!("Failed to extract zip: {}", e))?;
 
     // Make sure that the cache folder path only contains supported images
     // First index all supported image paths
