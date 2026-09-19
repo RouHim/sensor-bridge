@@ -27,10 +27,15 @@ pub fn try_load_data(font_family_name: &str) -> Result<Vec<u8>, String> {
 
 /// Loads a system font data by its font family name.
 ///
-/// Panics when the font cannot be loaded; callers that must not abort use
-/// [`try_load_data`].
+/// This is the permissive loader for the preview and export paths: when the
+/// family is not installed, fontconfig substitutes a default font instead of
+/// failing. Payload preparation must not use it; it uses [`try_load_data`].
 pub fn load_data(font_family_name: &str) -> Vec<u8> {
-    try_load_data(font_family_name).expect("failed to load font")
+    let property = system_fonts::FontPropertyBuilder::new()
+        .family(font_family_name)
+        .build();
+    let font = system_fonts::get(&property).unwrap();
+    font.0
 }
 
 /// Checks if the given font family name is installed on the system.
