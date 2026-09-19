@@ -63,7 +63,7 @@ The registration endpoint now returns a JSON confirmation. Static data is no lon
   "success": true,
   "protocol_version": 2,
   "message": "Client registered successfully",
-  "mac_address": "aa:bb:cc:dd:ee:ff"
+  "mac_address": "AA:BB:CC:DD:EE:FF"
 }
 ```
 
@@ -102,7 +102,8 @@ The registration endpoint now returns a JSON confirmation. Static data is no lon
 
 ```rust
 // Rust client example using bincode
-let response = reqwest::get("http://server:55555/api/register")
+// Registration answers with JSON only, so static data is fetched separately.
+let response = reqwest::get("http://server:55555/api/static-data?mac_address=AA:BB:CC:DD:EE:FF")
 .await?
 .bytes()
 .await?;
@@ -129,21 +130,25 @@ load_conditional_image(element_id, image_name, image_bytes);
 
 ```javascript
 // JavaScript client example
-const response = await fetch('/api/register', {
+const registrationResponse = await fetch('/api/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(registrationData)
 });
 
-if (response.ok) {
-    const binaryData = await response.arrayBuffer();
+if (registrationResponse.ok) {
+    // Registration answers with JSON only; static data is fetched separately.
+    const staticDataResponse = await fetch(
+        `/api/static-data?mac_address=${registrationData.mac_address}`
+    );
+    const binaryData = await staticDataResponse.arrayBuffer();
     console.log(`Received ${binaryData.byteLength} bytes of static data`);
 
     // Note: JavaScript clients would need a bincode decoder
     // or the server could provide a JSON alternative endpoint
     processStaticData(new Uint8Array(binaryData));
 } else {
-    const errorData = await response.json();
+    const errorData = await registrationResponse.json();
     console.error('Registration failed:', errorData.error);
 }
 ```

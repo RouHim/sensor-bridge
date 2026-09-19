@@ -346,29 +346,55 @@ async function loadInitialData() {
     }
 }
 
+// Bounded retry budget for the first sensor load. `get_sensor_values` fails until
+// the sampler's first measurement pass has published a snapshot, which takes
+// several seconds on a cold start (each pass runs the blocking measurement windows).
+const SENSOR_LOAD_ATTEMPTS = 6;
+const SENSOR_LOAD_RETRY_DELAY_MS = 1000;
+
 /**
- * Loads sensor data from the backend
+ * Waits for the given duration
+ * @param {number} milliseconds - Delay in milliseconds
+ * @returns {Promise<void>} Resolves once the delay elapsed
+ */
+function delay(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+/**
+ * Loads sensor data from the backend.
+ *
+ * Retries a bounded number of times because the backend answers with an error
+ * until its first sampling pass has published a snapshot.
  */
 async function loadSensorData() {
-    try {
-        // Load sensor data
-        const sensorDataResponse = await invoke('get_sensor_values');
+    for (let attempt = 1; attempt <= SENSOR_LOAD_ATTEMPTS; attempt++) {
+        try {
+            // Load sensor data
+            const sensorDataResponse = await invoke('get_sensor_values');
 
-        // Parse the JSON response
-        const sensorData = JSON.parse(sensorDataResponse);
+            // Parse the JSON response
+            const sensorData = JSON.parse(sensorDataResponse);
 
-        // Update app state with sensor data
-        setSensorValues(sensorData);
+            // Update app state with sensor data
+            setSensorValues(sensorData);
 
-        // Populate all sensor dropdowns with the loaded sensors
-        populateAllSensorDropdowns();
+            // Populate all sensor dropdowns with the loaded sensors
+            populateAllSensorDropdowns();
 
-        // Sensor data loaded
-    } catch (error) {
-        console.error('Failed to load sensor data:', error);
-        // Set empty array as fallback
-        setSensorValues([]);
-        throw error;
+            // Sensor data loaded
+            return;
+        } catch (error) {
+            if (attempt === SENSOR_LOAD_ATTEMPTS) {
+                console.error('Failed to load sensor data:', error);
+                // Set empty array as fallback
+                setSensorValues([]);
+                throw error;
+            }
+
+            console.warn(`Sensor data not available yet (attempt ${attempt}/${SENSOR_LOAD_ATTEMPTS}), retrying`, error);
+            await delay(SENSOR_LOAD_RETRY_DELAY_MS);
+        }
     }
 }
 

@@ -51,7 +51,6 @@ mod linux_amdgpu;
 #[derive(Clone)]
 pub struct AppState {
     pub root_shell: Arc<RwLock<Option<RootShell>>>,
-    pub static_sensor_values: Arc<Vec<SensorValue>>,
     pub sensor_snapshot: Arc<RwLock<Option<sensor::SensorSnapshot>>>,
     pub sensor_value_history: Arc<RwLock<VecDeque<Vec<SensorValue>>>>,
     pub http_server_handle: Arc<RwLock<Option<JoinHandle<()>>>>,
@@ -119,7 +118,6 @@ async fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
             root_shell: root_shell.clone(),
-            static_sensor_values,
             sensor_snapshot,
             sensor_value_history,
             http_server_handle: Arc::new(RwLock::new(None)),
@@ -628,7 +626,6 @@ mod server_lifecycle_tests {
         std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge-server-test");
         AppState {
             root_shell: Arc::new(RwLock::new(None)),
-            static_sensor_values: Arc::new(vec![]),
             sensor_snapshot: Arc::new(RwLock::new(None)),
             sensor_value_history: Arc::new(RwLock::new(VecDeque::new())),
             http_server_handle: Arc::new(RwLock::new(None)),

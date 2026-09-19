@@ -151,12 +151,21 @@ mod sampler_tests {
             Duration::from_millis(50),
         );
 
+        let elapsed_start = Instant::now();
         thread::sleep(Duration::from_millis(180));
+        let elapsed = elapsed_start.elapsed();
 
         let len = history.read().ignore_poison().len();
+        // The fixed grid starts a pass at 0/50/100/150 ms, so at least three
+        // passes always complete within 180 ms. The upper bound cannot be a
+        // constant: on a loaded machine the sleep (and the passes) stretch, so it
+        // is derived from the time actually elapsed - one pass per grid interval,
+        // plus the pass that starts immediately.
+        assert!(len >= 3, "expected at least 3 passes in 180ms, got {len}");
+        let max_passes = (elapsed.as_millis() / 50) as usize + 1;
         assert!(
-            (3..=4).contains(&len),
-            "expected 3-4 passes in 180ms, got {len}"
+            len <= max_passes,
+            "expected at most {max_passes} passes in {elapsed:?}, got {len}"
         );
         assert!(snapshot.read().ignore_poison().is_some());
     }

@@ -94,7 +94,11 @@ fn response_json(body: &[u8]) -> serde_json::Value {
 #[tokio::test]
 async fn static_data_delivery_matrix() {
     std::env::set_var("SENSOR_BRIDGE_APP_NAME", "sensor-bridge-http-test");
-    let _ = std::fs::remove_dir_all(sensor_core::get_config_dir());
+    // Captured once, right after setting the app name: the variable is
+    // process-global and other tests flip it, so resolving the config dir again
+    // later could target a different test's directory and delete under it.
+    let config_dir = sensor_core::get_config_dir();
+    let _ = std::fs::remove_dir_all(&config_dir);
 
     let mut app_config = AppConfig::default();
     app_config.display_clients.insert(
@@ -404,5 +408,5 @@ async fn static_data_delivery_matrix() {
     assert_eq!(body["protocol_version"], sensor_core::PROTOCOL_VERSION);
     assert_eq!(body["mac_address"], CLIENT_A);
 
-    let _ = std::fs::remove_dir_all(sensor_core::get_config_dir());
+    let _ = std::fs::remove_dir_all(&config_dir);
 }
