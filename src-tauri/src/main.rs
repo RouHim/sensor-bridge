@@ -35,6 +35,7 @@ mod linux_system_sensors;
 mod misc_sensor;
 mod sensor;
 mod serialization;
+mod static_data_cache;
 mod static_image;
 mod system_stat_sensor;
 mod text;
@@ -55,6 +56,7 @@ pub struct AppState {
     pub http_server_running: Arc<RwLock<bool>>,
     pub http_server_shutdown_tx: Arc<RwLock<Option<oneshot::Sender<()>>>>,
     pub in_memory_config: InMemoryConfig,
+    pub static_data_cache: static_data_cache::StaticDataCacheHandle,
 }
 
 // Number of elements to be stored in the sensor value history
@@ -102,6 +104,12 @@ async fn main() {
     // Initialize Client Registry
     let in_memory_config: InMemoryConfig = Arc::new(tokio::sync::RwLock::new(config_file::read()));
 
+    // Caches prepared static-data payloads, keyed by elements revision
+    let static_data_cache: static_data_cache::StaticDataCacheHandle =
+        Arc::new(std::sync::Mutex::new(
+            static_data_cache::StaticDataCache::new(static_data_cache::STATIC_DATA_CACHE_CAPACITY),
+        ));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -116,6 +124,7 @@ async fn main() {
             http_server_running: Arc::new(RwLock::new(false)),
             http_server_shutdown_tx: Arc::new(RwLock::new(None)),
             in_memory_config: in_memory_config.clone(),
+            static_data_cache,
         })
         .setup(|app| {
             let title = format!("Sensor Bridge {}", env!("CARGO_PKG_VERSION"));
@@ -622,6 +631,11 @@ mod server_lifecycle_tests {
             http_server_running: Arc::new(RwLock::new(false)),
             http_server_shutdown_tx: Arc::new(RwLock::new(None)),
             in_memory_config: Arc::new(tokio::sync::RwLock::new(AppConfig::default())),
+            static_data_cache: Arc::new(std::sync::Mutex::new(
+                static_data_cache::StaticDataCache::new(
+                    static_data_cache::STATIC_DATA_CACHE_CAPACITY,
+                ),
+            )),
         }
     }
 

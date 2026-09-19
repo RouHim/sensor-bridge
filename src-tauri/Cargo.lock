@@ -4565,6 +4565,7 @@ dependencies = [
  "lazy_static",
  "lm-sensors",
  "log",
+ "lru",
  "md5",
  "pretty_assertions",
  "rayon",

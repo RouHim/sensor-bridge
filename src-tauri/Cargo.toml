@@ -40,6 +40,7 @@ tauri-plugin-dialog = "2.7.3"
 tauri-plugin-fs = "2.5.2"
 lm-sensors = "0.5.1"
 dmidecode = "1.0.1"
+lru = "0.18.4"
 
 [dev-dependencies]
 assertor = "0.0.4"
