@@ -44,7 +44,7 @@ export default [
             'no-undef': 'error',
 
             // Style consistency (matching existing project style)
-            indent: ['error', 4], // Project uses 4-space indentation
+            indent: ['error', 4, { SwitchCase: 1 }], // 4 spaces; Prettier indents switch cases one level
             quotes: ['error', 'single', { avoidEscape: true }],
             semi: ['error', 'always'],
             'comma-dangle': ['error', 'never'],

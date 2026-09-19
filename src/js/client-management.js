@@ -35,7 +35,7 @@ export async function loadRegisteredClients() {
         } catch (parseError) {
             console.error('Failed to parse clients response:', parseError);
             console.error('Raw response:', clientsResponse);
-            throw new Error('Invalid response format from server');
+            throw new Error('Invalid response format from server', { cause: parseError });
         }
 
         // Convert HashMap object to array of clients

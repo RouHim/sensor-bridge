@@ -65,7 +65,7 @@ export async function importConfig() {
                         alert('Error while loading registered clients. ' + error);
                     });
                 }
-            } catch (error) {
+            } catch {
                 // Fallback to browser confirm if Tauri dialog fails
                 const shouldRestart = confirm(
                     'The config was imported successfully. A restart is required to apply the changes. Do you want to restart now?'
