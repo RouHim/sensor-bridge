@@ -1,6 +1,7 @@
 use image::DynamicImage;
 use std::collections::HashMap;
 use std::fs;
+use std::io::Read;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sensor_core::{ElementConfig, ElementType, ImageConfig};
@@ -83,15 +84,13 @@ fn load_image(path_to_image: &str) -> Result<DynamicImage, String> {
             .call()
             .map_err(|e| format!("Failed to fetch image from URL {}: {}", path_to_image, e))?;
 
-        response
-            .into_reader()
-            .read_to_end(&mut image_data)
-            .map_err(|e| {
-                format!(
-                    "Failed to read image data from URL {}: {}",
-                    path_to_image, e
-                )
-            })?;
+        let mut reader = response.into_body().into_reader();
+        reader.read_to_end(&mut image_data).map_err(|e| {
+            format!(
+                "Failed to read image data from URL {}: {}",
+                path_to_image, e
+            )
+        })?;
 
         image::load_from_memory(&image_data)
             .map_err(|e| format!("Failed to decode image from URL {}: {}", path_to_image, e))

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 use std::path::PathBuf;
 
 use crate::utils;
@@ -38,9 +38,11 @@ pub fn prepare_element(
     // Unzip to cache folder
     let zip_file_data = if utils::is_reachable_url(zip_file_path) {
         let mut zip_data = vec![];
-        ureq::get(zip_file_path)
+        let response = ureq::get(zip_file_path)
             .call()
-            .map_err(|e| format!("Failed to fetch zip from URL: {}", e))?
+            .map_err(|e| format!("Failed to fetch zip from URL: {}", e))?;
+        response
+            .into_body()
             .into_reader()
             .read_to_end(&mut zip_data)
             .map_err(|e| format!("Failed to read zip data from URL: {}", e))?;
@@ -233,9 +235,8 @@ pub struct ConditionalImageRepoEntry {
 
 /// Returns a list of all available conditional image repos.
 pub fn get_repo_entries() -> Vec<ConditionalImageRepoEntry> {
-    ureq::get(REPO_METADATA_URL)
-        .call()
-        .unwrap()
-        .into_json()
-        .unwrap()
+    let response = ureq::get(REPO_METADATA_URL).call().unwrap();
+    let mut body = response.into_body();
+
+    body.read_json().unwrap()
 }

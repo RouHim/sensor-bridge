@@ -147,8 +147,10 @@ pub async fn start_server(
         .with(warp::cors().allow_any_origin());
 
     // Start the server with graceful shutdown
-    let (addr, server) =
-        warp::serve(routes).bind_with_graceful_shutdown(([0, 0, 0, 0], port), async move {
+    let server = warp::serve(routes)
+        .bind(([0, 0, 0, 0], port))
+        .await
+        .graceful(async move {
             // Wait for the shutdown signal
             let _ = shutdown_rx.await;
             info!(
@@ -157,8 +159,8 @@ pub async fn start_server(
             );
         });
 
-    info!("HTTP server bound to address: {}", addr);
-    let handle = tokio::spawn(server);
+    info!("HTTP server bound to port {}", port);
+    let handle = tokio::spawn(server.run());
 
     Ok(handle)
 }
@@ -355,16 +357,15 @@ fn prepare_static_data_for_client(elements: &[ElementConfig]) -> Vec<u8> {
         conditional_image_data,
     };
 
-    // Serialize to binary format using bincode
-    match bincode::serialize(&static_data) {
+    // Serialize to binary format using bincode-next (bincode-1-compatible config)
+    match crate::serialization::encode(&static_data) {
         Ok(binary_data) => {
             info!("Serialized static data: {} bytes", binary_data.len());
             binary_data
         }
         Err(e) => {
             log::error!("Failed to serialize static data: {}", e);
-            // Return empty data on error
-            bincode::serialize(&StaticClientData {
+            crate::serialization::encode(&StaticClientData {
                 text_data: HashMap::new(),
                 static_image_data: HashMap::new(),
                 conditional_image_data: HashMap::new(),

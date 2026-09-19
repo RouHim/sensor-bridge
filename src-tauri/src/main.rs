@@ -33,6 +33,7 @@ mod linux_lm_sensors;
 mod linux_system_sensors;
 mod misc_sensor;
 mod sensor;
+mod serialization;
 mod static_image;
 mod system_stat_sensor;
 mod text;
