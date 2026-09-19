@@ -43,7 +43,19 @@ pub fn write(config: &AppConfig) {
     file.commit().expect("Failed to commit config file");
 }
 
+/// Serializes config persistence so that the order of commits matches the order
+/// of mutations. Mutators acquire this BEFORE the config write guard and hold it
+/// across `write_async`, so a slower writer can never rename an older snapshot
+/// over a newer one (atomic renames make the last rename win).
+static PERSIST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+pub async fn lock_persist() -> tokio::sync::MutexGuard<'static, ()> {
+    PERSIST_LOCK.lock().await
+}
+
 /// Persists the config without blocking an async worker thread.
+/// Must be called while holding the persist lock (see [`lock_persist`]), otherwise
+/// concurrent writes can commit out of order and lose the newest snapshot.
 pub async fn write_async(config: AppConfig) {
     if let Err(err) = tokio::task::spawn_blocking(move || write(&config)).await {
         log::error!("Failed to persist config: {}", err);
