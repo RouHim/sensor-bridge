@@ -26,12 +26,19 @@ lookup: leading and trailing whitespace is removed and the address is uppercased
 ## Client Lifecycle
 
 1. **Registration**: Client registers with server using `/api/register` (returns JSON confirmation)
-2. **Static Data**: Client retrieves initial static data using `/api/static-data`
-3. **Confirmation**: Client confirms the persisted payload via `POST /api/static-data/ack`
-4. **Activation**: Client must be activated through the server UI (clients start as inactive)
-5. **Data Access**: Active clients can access sensor data via `/api/sensor-data`
-6. **Dynamic Updates**: When UI elements change, `static_data_reload_required` flag prompts client to reload static data
-7. **Cleanup**: Inactive clients are automatically removed after 24 hours
+2. **Activation**: Client must be activated through the server UI (clients start as inactive)
+3. **Static Data**: Active client retrieves initial static data using `/api/static-data`
+4. **Confirmation**: Client confirms the persisted payload via `POST /api/static-data/ack`
+5. **Sensor Data**: Active client polls `/api/sensor-data` for the element configuration and sensor values
+6. **Dynamic Updates**: When UI elements change, the `static_data_reload_required` flag prompts the client to reload
+   static data (steps 3, 4 again)
+7. **Removal**: A client stays registered until it is removed through the server UI; the bridge never removes
+   inactive clients automatically
+
+A client cannot fetch static data before it has been activated: `/api/static-data` answers `403` while the client is
+inactive, and the server sends the flag that triggers the fetch (`static_data_reload_required`) only in its
+`/api/sensor-data` response, which is likewise `403` until activation. An inactive client therefore keeps answering
+`403` until it is activated or removed through the server UI.
 
 ## Client Registration
 
@@ -102,29 +109,95 @@ The registration endpoint now returns a JSON confirmation. Static data is no lon
 
 ```rust
 // Rust client example using bincode
-// Registration answers with JSON only, so static data is fetched separately.
-let response = reqwest::get("http://server:55555/api/static-data?mac_address=AA:BB:CC:DD:EE:FF")
+// Registration answers with JSON only. The client must be activated through the
+// server UI before static data can be fetched (inactive clients get 403).
+reqwest::Client::new()
+.post("http://server:55555/api/register")
+.json(&registration_data)
+.send()
 .await?
-.bytes()
-.await?;
+.error_for_status()?;
 
-let static_data: StaticClientData = bincode::deserialize( & response) ?;
+loop {
+    let response = reqwest::get("http://server:55555/api/sensor-data?mac_address=AA:BB:CC:DD:EE:FF")
+        .await?;
 
-// Access font data
-for (font_family, font_bytes) in static_data.text_data {
-load_font(font_family, font_bytes);
-}
+    // 403 means the client is not active yet - keep waiting for the server UI.
+    if response.status() == reqwest::StatusCode::FORBIDDEN {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        continue;
+    }
 
-// Access static images
-for (element_id, image_bytes) in static_data.static_image_data {
-load_static_image(element_id, image_bytes);
-}
+    // 503 means the bridge has no sample yet - it answers this until the
+    // sampler's first pass publishes a snapshot, which happens on every cold
+    // start, so keep polling instead of aborting the loop.
+    if response.status() == reqwest::StatusCode::SERVICE_UNAVAILABLE {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        continue;
+    }
 
-// Access conditional images
-for (element_id, image_map) in static_data.conditional_image_data {
-for (image_name, image_bytes) in image_map {
-load_conditional_image(element_id, image_name, image_bytes);
-}
+    let sensor_data: serde_json::Value = response.error_for_status()?.json().await?;
+
+    // Fetch static data only when the server asks for it; static_data_reload_required
+    // is true for a newly registered client and after any element edit. Activation
+    // itself does not re-arm it, so a client that already acked its assets keeps
+    // using them across a deactivation/reactivation cycle.
+    if sensor_data["static_data_reload_required"] == true {
+        // A failing fetch or ack must not end the loop: the flag stays set on the
+        // server until the ack arrives, so the next poll retries - 403 (deactivated
+        // meanwhile), 500 (bridge has no payload ready), 404 (client removed from
+        // the registry) and transport errors alike. The async block turns the `?`
+        // chain into a single value that is logged and skipped here.
+        let fetched: Result<(), Box<dyn std::error::Error>> = async {
+            let response =
+                reqwest::get("http://server:55555/api/static-data?mac_address=AA:BB:CC:DD:EE:FF")
+                    .await?;
+
+            // A 403 arrives as a JSON error body, so validate the status before
+            // reading the revision header: only the 200 response carries it.
+            let response = response.error_for_status()?;
+            let revision = response.headers()["x-static-data-revision"].clone();
+            let static_data: StaticClientData =
+                bincode::deserialize(&response.bytes().await?)?;
+
+            // Access font data (values are (md5 hash, bytes) pairs)
+            for (font_family, (font_hash, font_bytes)) in static_data.text_data {
+                load_font(font_family, font_bytes); // skip when font_hash is unchanged
+            }
+
+            // Access static images
+            for (element_id, (image_hash, image_bytes)) in static_data.static_image_data {
+                load_static_image(element_id, image_bytes); // skip when image_hash is unchanged
+            }
+
+            // Access conditional images
+            for (element_id, image_map) in static_data.conditional_image_data {
+                for (image_name, (image_hash, image_bytes)) in image_map {
+                    load_conditional_image(element_id, image_name, image_bytes); // image_hash detects changes
+                }
+            }
+
+            // Confirm the persisted payload so the server can clear the flag.
+            reqwest::Client::new()
+                .post("http://server:55555/api/static-data/ack")
+                .json(&serde_json::json!({
+                    "mac_address": "AA:BB:CC:DD:EE:FF",
+                    "revision": revision.to_str()?
+                }))
+                .send()
+                .await?
+                .error_for_status()?;
+
+            Ok(())
+        }
+        .await;
+
+        if let Err(err) = fetched {
+            eprintln!("Static data fetch failed, retrying on the next poll: {err}");
+        }
+    }
+
+    tokio::time::sleep(Duration::from_secs(1)).await;
 }
 ```
 
@@ -137,16 +210,44 @@ const registrationResponse = await fetch('/api/register', {
 });
 
 if (registrationResponse.ok) {
-    // Registration answers with JSON only; static data is fetched separately.
-    const staticDataResponse = await fetch(
-        `/api/static-data?mac_address=${registrationData.mac_address}`
+    // Registration answers with JSON only. Static data can only be fetched once the
+    // client has been activated through the server UI, so gate the fetch on the
+    // sensor-data response's static_data_reload_required flag.
+    const sensorDataResponse = await fetch(
+        `/api/sensor-data?mac_address=${registrationData.mac_address}`
     );
-    const binaryData = await staticDataResponse.arrayBuffer();
-    console.log(`Received ${binaryData.byteLength} bytes of static data`);
+    if (!sensorDataResponse.ok) {
+        console.error('Client is not active yet:', await sensorDataResponse.json());
+    } else {
+        const sensorData = await sensorDataResponse.json();
 
-    // Note: JavaScript clients would need a bincode decoder
-    // or the server could provide a JSON alternative endpoint
-    processStaticData(new Uint8Array(binaryData));
+        if (sensorData.static_data_reload_required) {
+            const staticDataResponse = await fetch(
+                `/api/static-data?mac_address=${registrationData.mac_address}`
+            );
+            if (!staticDataResponse.ok) {
+                // A 403 (inactive client) arrives as a JSON error body.
+                console.error('Static data fetch failed:', await staticDataResponse.json());
+            } else {
+                const binaryData = await staticDataResponse.arrayBuffer();
+                console.log(`Received ${binaryData.byteLength} bytes of static data`);
+
+                // Note: JavaScript clients would need a bincode decoder
+                // or the server could provide a JSON alternative endpoint
+                processStaticData(new Uint8Array(binaryData));
+
+                // Confirm the persisted payload so the server can clear the flag.
+                await fetch('/api/static-data/ack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mac_address: registrationData.mac_address,
+                        revision: staticDataResponse.headers.get('X-Static-Data-Revision')
+                    })
+                });
+            }
+        }
+    }
 } else {
     const errorData = await registrationResponse.json();
     console.error('Registration failed:', errorData.error);
@@ -205,6 +306,8 @@ struct StaticClientData {
 ```
 
 **Data Contents:**
+
+Every stored value is an `(md5 hash, bytes)` pair: the hash changes whenever the underlying asset changes, so a client that already holds an asset with the same hash can skip re-loading it.
 
 1. **`text_data`** - Font files keyed by font family name
     - Contains TTF/OTF font data as binary bytes
@@ -302,7 +405,7 @@ Confirms that the client persisted a delivered payload, so the bridge clears its
 
 ### Get Sensor Data
 
-Retrieves current sensor data and display configuration for a registered client.
+Retrieves the current element configuration and sensor values for a registered client.
 
 **Endpoint:** `GET /api/sensor-data?mac_address={mac_address}`
 
@@ -315,27 +418,23 @@ Retrieves current sensor data and display configuration for a registered client.
 ```json
 {
   "render_data": {
-    "display_config": {
-      "resolution_width": 1920,
-      "resolution_height": 1080,
-      "elements": [
-        {
-          "id": "element-uuid",
-          "name": "CPU Temperature",
-          "element_type": "text",
-          "x": 10,
-          "y": 10,
-          "text_config": {
-            "sensor_id": "cpu_temp",
-            "format": "{value} {unit}",
-            "font_size": 20,
-            "font_color": "#ffffff",
-            "width": 200,
-            "height": 30
-          }
+    "elements": [
+      {
+        "id": "element-uuid",
+        "name": "CPU Temperature",
+        "element_type": "text",
+        "x": 10,
+        "y": 10,
+        "text_config": {
+          "sensor_id": "cpu_temp",
+          "format": "{value} {unit}",
+          "font_size": 20,
+          "font_color": "#ffffff",
+          "width": 200,
+          "height": 30
         }
-      ]
-    },
+      }
+    ],
     "sensor_values": [
       {
         "id": "cpu_temp",
@@ -435,14 +534,13 @@ The server automatically handles different MAC address formats:
 - **Registration**: Clients are added to the in-memory registry
 - **Activation**: Must be done through the server UI
 - **Static Data Confirmation**: The per-client reload flag is cleared only after the client confirms a persisted payload via `POST /api/static-data/ack`
-- **Automatic Cleanup**: Clients inactive for 24+ hours are automatically removed
+- **Removal**: A client is removed only through the server UI; inactive clients are not removed automatically, they keep answering `403` until activated again or removed
 
 ### Performance Optimizations
 
 - **In-Memory Registry**: Fast client lookups using `Arc<RwLock<HashMap>>`
 - **Concurrent Access**: Multiple clients can be served simultaneously
 - **Efficient Updates**: No file I/O on every API request
-- **Background Cleanup**: Hourly cleanup task removes stale clients
 
 ## Client Implementation Example
 
@@ -556,13 +654,13 @@ class SensorBridgeClient:
                     time.sleep(1)
                     continue
 
-                # Process the display configuration and sensor values
+                # Process the element configuration and sensor values
                 render_data = data['render_data']
-                display_config = render_data['display_config']
+                elements = render_data['elements']
                 sensor_values = render_data['sensor_values']
 
                 print(f"Received {len(sensor_values)} sensor values")
-                print(f"Display config has {len(display_config['elements'])} elements")
+                print(f"Element configuration has {len(elements)} elements")
 
                 # Here you would render the display based on the configuration
                 # and sensor values
@@ -672,11 +770,11 @@ class SensorBridgeClient {
             try {
                 const data = await this.getSensorData();
                 const renderData = data.render_data;
-                const displayConfig = renderData.display_config;
+                const elements = renderData.elements;
                 const sensorValues = renderData.sensor_values;
 
                 console.log(`Received ${sensorValues.length} sensor values`);
-                console.log(`Display config has ${displayConfig.elements.length} elements`);
+                console.log(`Element configuration has ${elements.length} elements`);
 
                 // Here you would render the display based on the configuration
                 // and sensor values

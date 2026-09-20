@@ -95,6 +95,9 @@ fn load_image(path_to_image: &str) -> Result<DynamicImage, String> {
     if utils::is_reachable_url(path_to_image) {
         let mut image_data = vec![];
         let response = ureq::get(path_to_image)
+            .config()
+            .timeout_global(Some(utils::STATIC_DATA_REQUEST_TIMEOUT))
+            .build()
             .call()
             .map_err(|e| format!("Failed to fetch image from URL {}: {}", path_to_image, e))?;
 

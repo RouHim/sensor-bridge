@@ -4556,6 +4556,7 @@ dependencies = [
  "atomic-write-file",
  "base64 0.23.1",
  "bincode-next",
+ "bytes",
  "chrono",
  "dirs 7.0.0",
  "dmidecode",

@@ -39,6 +39,9 @@ pub fn prepare_element(
     let zip_file_data = if utils::is_reachable_url(zip_file_path) {
         let mut zip_data = vec![];
         let response = ureq::get(zip_file_path)
+            .config()
+            .timeout_global(Some(utils::STATIC_DATA_REQUEST_TIMEOUT))
+            .build()
             .call()
             .map_err(|e| format!("Failed to fetch zip from URL: {}", e))?;
         response
@@ -258,7 +261,12 @@ pub struct ConditionalImageRepoEntry {
 
 /// Returns a list of all available conditional image repos.
 pub fn get_repo_entries() -> Vec<ConditionalImageRepoEntry> {
-    let response = ureq::get(REPO_METADATA_URL).call().unwrap();
+    let response = ureq::get(REPO_METADATA_URL)
+        .config()
+        .timeout_global(Some(utils::STATIC_DATA_REQUEST_TIMEOUT))
+        .build()
+        .call()
+        .unwrap();
     let mut body = response.into_body();
 
     body.read_json().unwrap()

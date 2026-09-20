@@ -9,7 +9,8 @@ use tauri::{AppHandle, Manager};
 
 use crate::http_server::DisplayClient;
 use crate::utils::LockResultExt;
-use crate::{conditional_image, static_image, text, utils};
+use crate::AppState;
+use crate::{conditional_image, fonts, static_image, utils};
 
 /// Constant for the window label
 pub const WINDOW_LABEL: &str = "lcd-preview";
@@ -48,8 +49,20 @@ pub fn show(app_handle: AppHandle, client: &DisplayClient) {
         }
 
         // Create a new window (either because none existed or we successfully destroyed the existing one)
-        // Prepare static assets
-        prepare_assets(lcd_elements);
+        // Prepare static assets. The preview prepares the very same
+        // element-id-keyed folders the HTTP static-data path rebuilds, so it
+        // must take the shared preparation mutex: an overlapping cold
+        // static-data preparation would otherwise observe an
+        // emptied-but-not-yet-refilled directory and cache the degraded empty
+        // payload. The guard is released before the window is built - it must
+        // not be held while the preview runs.
+        let cache = app_handle.state::<AppState>().static_data_cache.clone();
+        let prepare_lock = cache.lock().ignore_poison().prepare_lock();
+
+        {
+            let _preparing = prepare_lock.lock().ignore_poison();
+            prepare_assets(lcd_elements);
+        }
 
         let lcd_preview_window = tauri::WebviewWindowBuilder::new(
             &app_handle,
@@ -111,25 +124,41 @@ pub fn render(
     let sensor_value_history = sensor_value_history.clone();
 
     thread::spawn(move || {
-        // Build font data hashmap (extract just the data, ignore hashes for preview)
-        let fonts_with_hashes = text::build_fonts_data(&client.elements)?;
-        let fonts_data: HashMap<String, Vec<u8>> = fonts_with_hashes
-            .into_iter()
-            .map(|(key, (_hash, data))| (key, data))
-            .collect();
+        // Build font data hashmap (ignore hashes for preview). The preview uses
+        // the permissive loader so that a font family which is not installed
+        // falls back to a system font instead of failing the whole preview.
+        let mut fonts_data: HashMap<String, Vec<u8>> = HashMap::new();
+        for element in client
+            .elements
+            .iter()
+            .filter(|element| element.element_type == ElementType::Text)
+        {
+            let Some(text_config) = element.text_config.as_ref() else {
+                continue;
+            };
 
-        let history = sensor_value_history.read().ignore_poison();
-        if history.is_empty() {
-            return Err("No sensor data available yet".to_string());
+            fonts_data.insert(
+                text_config.font_family.clone(),
+                fonts::load_data(&text_config.font_family),
+            );
         }
 
-        let image = sensor_core::render_lcd_image(
-            &client.elements,
-            &history,
-            &fonts_data,
-            client.resolution_width,
-            client.resolution_height,
-        );
+        // Take the history only for the render; the JPEG and base64 encoding run
+        // after the lock is released so the sampler is never blocked by them.
+        let image = {
+            let history = sensor_value_history.read().ignore_poison();
+            if history.is_empty() {
+                return Err("No sensor data available yet".to_string());
+            }
+
+            sensor_core::render_lcd_image(
+                &client.elements,
+                &history,
+                &fonts_data,
+                client.resolution_width,
+                client.resolution_height,
+            )
+        };
 
         let buf = utils::rgb_to_jpeg_bytes(image);
         let engine = base64::engine::general_purpose::STANDARD;

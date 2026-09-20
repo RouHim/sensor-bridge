@@ -201,9 +201,16 @@ mod tests {
             std::env::set_var("SENSOR_BRIDGE_APP_NAME", TEST_APP_NAME);
 
             let persisted = crate::config_file::read();
-            if persisted.display_clients.is_empty() {
-                // A foreign snapshot (the lifecycle test's empty config) landed in our
-                // directory - not a lost update of ours.
+            // A foreign snapshot can land in our directory between the last rename
+            // and this read: the sibling lifecycle test's empty config, or the http
+            // test's clients written through the same process-global app name.
+            // The http test's clients are the trap: one of our MACs may appear in
+            // its snapshot, so only a snapshot holding ALL of our clients counts as
+            // ours - anything less is interference and is skipped, while a
+            // genuinely lost update of ours is still asserted below.
+            let owns_snapshot = (0..CLIENT_COUNT)
+                .all(|index| persisted.display_clients.contains_key(&mac_address(index)));
+            if !owns_snapshot {
                 continue;
             }
 

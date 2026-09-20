@@ -21,6 +21,7 @@ tauri = { version = "2.11.5", features = ["protocol-asset", "tray-icon"] }
 systemstat = "0.2.7"
 rayon = "1.12.0"
 base64 = "0.23.1"
+bytes = "1"
 warp = { version = "0.4.3", features = ["server"] }
 tokio = { version = "1.53.1", features = ["full"] }
 image = "0.25.10"
@@ -59,7 +60,9 @@ default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 
 [profile.release]
-panic = "abort" # Strip expensive panic clean-up logic
+# Unwinding stays enabled on purpose: a panicking sampler pass is isolated by
+# catch_unwind, and the LCD preview thread join reports a panic instead of
+# taking the whole process down.
 codegen-units = 1 # Compile crates one after another so the compiler can optimize better
 lto = true # Enables link to optimizations
 strip = true # Strip debug symbols

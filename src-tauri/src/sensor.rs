@@ -54,8 +54,10 @@ pub fn append_sample(history: &mut VecDeque<Vec<SensorValue>>, sample: Vec<Senso
 ///
 /// The loop never terminates on its own. A panicking measurement pass is logged,
 /// keeps the last good snapshot in place and appends no history entry. The
-/// schedule is a fixed grid (`deadline += interval`), so slow passes cannot
-/// accumulate drift.
+/// schedule is a fixed grid (`deadline += interval`) while passes keep up, so
+/// slow-but-in-time passes cannot accumulate drift; a pass that overruns its
+/// interval re-bases the deadline to `now + interval`, skipping the missed ticks
+/// instead of running back-to-back.
 pub fn start_sampler<F>(
     measure_pass: F,
     snapshot: Arc<RwLock<Option<SensorSnapshot>>>,
@@ -81,6 +83,11 @@ where
                 }
 
                 deadline += interval;
+                if deadline <= Instant::now() {
+                    // The pass overran the interval: skip the ticks that were missed
+                    // and re-base, instead of running back-to-back at full duty cycle.
+                    deadline = Instant::now() + interval;
+                }
                 sensor_core::sleep_until(deadline);
             }
         })
@@ -144,6 +151,11 @@ mod sampler_tests {
         let snapshot = Arc::new(RwLock::new(None));
         let history = Arc::new(RwLock::new(VecDeque::new()));
 
+        // The sampler anchors its grid inside the spawned thread, so the clock
+        // starts before the spawn: the measured interval is then a superset of
+        // the window the passes are counted over.
+        let elapsed_start = Instant::now();
+
         let _handle = start_sampler(
             Vec::new,
             snapshot.clone(),
@@ -151,17 +163,21 @@ mod sampler_tests {
             Duration::from_millis(50),
         );
 
-        let elapsed_start = Instant::now();
         thread::sleep(Duration::from_millis(180));
-        let elapsed = elapsed_start.elapsed();
 
+        // Read the count before stopping the clock, so the interval covers every
+        // pass that can be in it.
         let len = history.read().ignore_poison().len();
-        // The fixed grid starts a pass at 0/50/100/150 ms, so at least three
-        // passes always complete within 180 ms. The upper bound cannot be a
-        // constant: on a loaded machine the sleep (and the passes) stretch, so it
-        // is derived from the time actually elapsed - one pass per grid interval,
-        // plus the pass that starts immediately.
-        assert!(len >= 3, "expected at least 3 passes in 180ms, got {len}");
+        let elapsed = elapsed_start.elapsed();
+        // Liveness only: the schedule re-bases its deadline after each pass, so an
+        // overrunning pass skips the ticks it missed instead of catching up. A
+        // loaded machine can therefore complete fewer passes inside the 180 ms
+        // window without any product defect, and only the "at least one pass ran"
+        // contract holds. The upper bound cannot be a constant: on a loaded machine
+        // the sleep (and the passes) stretch, so it is derived from the time
+        // actually elapsed - at most one pass per grid interval, plus the pass that
+        // starts immediately.
+        assert!(len >= 1, "expected at least 1 pass in 180ms, got {len}");
         let max_passes = (elapsed.as_millis() / 50) as usize + 1;
         assert!(
             len <= max_passes,

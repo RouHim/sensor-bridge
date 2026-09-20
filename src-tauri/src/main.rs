@@ -408,8 +408,22 @@ async fn get_conditional_image_preview_image(
     };
 
     let sensor_value = value.to_string();
-    conditional_image_config.images_path =
-        conditional_image::prepare_element(&element_id, &conditional_image_config).unwrap();
+    // The UI preview prepares the same element-id-keyed folders the HTTP
+    // static-data path rebuilds, so it takes the shared preparation mutex:
+    // preparation removes and recreates those folders non-idempotently, and an
+    // overlapping pair of writers would collide on disk. The cache map lock is
+    // only taken to clone the preparation-lock handle, never while acquiring it.
+    let images_path = {
+        let prepare_lock = app_state
+            .static_data_cache
+            .lock()
+            .ignore_poison()
+            .prepare_lock();
+        let _preparing = prepare_lock.lock().ignore_poison();
+
+        conditional_image::prepare_element(&element_id, &conditional_image_config).unwrap()
+    };
+    conditional_image_config.images_path = images_path;
 
     let graph_data: Vec<u8> = match conditional_image_renderer::render(
         &element_id,

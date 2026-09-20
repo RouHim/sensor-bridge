@@ -1,5 +1,6 @@
 use std::io::Cursor;
 use std::sync::{MutexGuard, PoisonError, RwLockReadGuard, RwLockWriteGuard};
+use std::time::Duration;
 
 use image::{DynamicImage, ImageBuffer, Rgba};
 
@@ -70,9 +71,20 @@ pub fn rgba_to_png_bytes(image: DynamicImage) -> Vec<u8> {
     buf
 }
 
+/// Timeout for every network request issued while preparing static data. ureq's
+/// defaults set no timeout at all, so a stalled URL asset would otherwise block
+/// the static-data path forever.
+pub const STATIC_DATA_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+
 /// Checks if the given file uri is a url AND reachable.
 pub fn is_reachable_url(file_uri: &str) -> bool {
-    is_url(file_uri) && ureq::head(file_uri).call().is_ok()
+    is_url(file_uri)
+        && ureq::head(file_uri)
+            .config()
+            .timeout_global(Some(STATIC_DATA_REQUEST_TIMEOUT))
+            .build()
+            .call()
+            .is_ok()
 }
 
 /// Checks if the given file uri is a url.

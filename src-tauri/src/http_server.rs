@@ -326,19 +326,55 @@ async fn handle_static_data_request(
     };
 
     // Preparation performs network and disk I/O - keep it off the async workers.
-    let prepared = tokio::task::spawn_blocking(move || {
-        let mut cache = static_data_cache.lock().ignore_poison();
-        cache.get_or_prepare(&elements, prepare_static_data_for_client)
-    })
+    // The cache lock is only taken for the map lookups, never across preparation:
+    // one slow asset must not stall already-cached payloads of other clients.
+    // Cold preparations, however, are serialized against each other (see below),
+    // because they rebuild shared on-disk asset folders.
+    let prepared = tokio::task::spawn_blocking(
+        move || -> Result<crate::static_data_cache::PreparedStaticData, String> {
+            let revision = crate::static_data_cache::elements_revision(&elements)?;
+
+            if let Some(hit) = static_data_cache.lock().ignore_poison().get(&revision) {
+                return Ok(hit);
+            }
+
+            // Serialize cold preparations: preparation rebuilds the shared
+            // on-disk asset folders non-idempotently (each element's cache dir
+            // is removed and recreated before re-extraction/resizing), so two
+            // concurrent cold requests for one revision would race on disk -
+            // the loser fails a rename, or even serves the emptied directory as
+            // a successful empty payload. The lock is released on every exit
+            // path (hit, failure, success), and a request that queued behind a
+            // preparation of the same revision finds it cached by the re-check,
+            // so a revision is prepared once per cold burst.
+            let prepare_lock = static_data_cache.lock().ignore_poison().prepare_lock();
+            let _preparing = prepare_lock.lock().ignore_poison();
+
+            if let Some(hit) = static_data_cache.lock().ignore_poison().get(&revision) {
+                return Ok(hit);
+            }
+
+            let bytes = prepare_static_data_for_client(&elements)?;
+
+            Ok(static_data_cache
+                .lock()
+                .ignore_poison()
+                .put(revision, bytes))
+        },
+    )
     .await
-    .map_err(|_| warp::reject::custom(ApiError::StaticDataUnavailable))?
+    .map_err(|err| {
+        log::error!("Static-data preparation task failed: {}", err);
+        warp::reject::custom(ApiError::StaticDataUnavailable)
+    })?
     .map_err(|err| {
         log::error!("Failed to prepare static data: {}", err);
         warp::reject::custom(ApiError::StaticDataUnavailable)
     })?;
 
+    // Serving clones the refcounted payload, never the bytes themselves.
     let reply = warp::reply::with_header(
-        (*prepared.bytes).clone(),
+        warp::reply::Response::new(prepared.bytes.clone().into()),
         "content-type",
         "application/octet-stream",
     );
