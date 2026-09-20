@@ -312,7 +312,7 @@ jobs:
           bash .github/helper/set-asset-url-to-readme.sh $LINUX_ASSET_URL
 
       - name: Commit and push updated README.md
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v11
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
