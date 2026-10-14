@@ -49,7 +49,10 @@ pub fn prepare_element(
         fs::read(zip_file_path).unwrap()
     };
 
-    zip_extract::extract(Cursor::new(zip_file_data), &cache_folder_path, true).unwrap();
+    let mut archive = zip::ZipArchive::new(Cursor::new(zip_file_data)).unwrap();
+    archive
+        .extract_unwrapped_root_dir(&cache_folder_path, zip::read::root_dir_common_filter)
+        .unwrap();
 
     // Make sure that the cache folder path only contains supported images
     // First index all supported image paths
