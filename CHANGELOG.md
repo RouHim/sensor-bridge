@@ -1,3 +1,10 @@
+## [0.42.47](https://github.com/RouHim/sensor-bridge/compare/0.42.46...0.42.47) (2026-10-14)
+
+
+### Bug Fixes
+
+* replace deprecated zip-extract with zip 4 ZipArchive API ([dd036d3](https://github.com/RouHim/sensor-bridge/commit/dd036d3849c2bc0058fa200d959b9be0e2965d44))
+
 ## [0.42.46](https://github.com/RouHim/sensor-bridge/compare/0.42.45...0.42.46) (2026-10-10)
 
 ## [0.42.45](https://github.com/RouHim/sensor-bridge/compare/0.42.44...0.42.45) (2026-10-08)
