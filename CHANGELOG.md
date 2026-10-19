@@ -1,3 +1,5 @@
+## [0.42.58](https://github.com/RouHim/sensor-bridge/compare/0.42.57...0.42.58) (2026-10-19)
+
 ## [0.42.57](https://github.com/RouHim/sensor-bridge/compare/0.42.56...0.42.57) (2026-10-19)
 
 ## [0.42.56](https://github.com/RouHim/sensor-bridge/compare/0.42.55...0.42.56) (2026-10-18)
