@@ -4551,9 +4551,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "super-shell"
-version = "1.2.4"
+version = "1.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42bf5b17d04fed30f573faec15fcf50b00e1e9646b08b7e2ccef95443fe603bc"
+checksum = "a9564f5c7a312c2408768f8102489b1a230e8e6e27ba553e4838e40bea020512"
 
 [[package]]
 name = "swift-rs"
